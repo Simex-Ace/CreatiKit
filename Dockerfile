@@ -5,6 +5,12 @@ WORKDIR /app
 # 复制 package.json 和 lock 文件
 COPY package.json package-lock.json* ./
 
+# =========================================================
+#  ↓↓↓ 我们要做的唯一修改就是在这里，添加下面这一行 ↓↓↓
+# =========================================================
+# 在安装依赖前，先安装编译 sharp 所需的系统工具
+RUN apk add --no-cache libc6-compat build-base python3
+
 # 安装依赖
 RUN npm ci
 
