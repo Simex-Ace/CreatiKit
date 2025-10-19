@@ -23,12 +23,47 @@ export default function ImageCompressor() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   // 清理URL对象，避免内存泄漏
-  useEffect(() => {
-    return () => {
-      imagePreviews.forEach(url => URL.revokeObjectURL(url));
-      compressedImagePreviews.forEach(url => URL.revokeObjectURL(url));
-    };
-  }, [imagePreviews, compressedImagePreviews]);
+    useEffect(() => {
+      return () => {
+        imagePreviews.forEach(url => URL.revokeObjectURL(url));
+        compressedImagePreviews.forEach(url => URL.revokeObjectURL(url));
+      };
+    }, []); // 只在组件卸载时清理一次，避免在标签页切换时清理
+    
+    // 标签页切换时重新创建预览URL
+    useEffect(() => {
+      if (activeTab === 'upload' && images.length > 0) {
+        // 确保有足够的预览URL
+        const updatedPreviews = [...imagePreviews];
+        let needUpdate = false;
+        
+        images.forEach((image, index) => {
+          if (!updatedPreviews[index]) {
+            updatedPreviews[index] = URL.createObjectURL(image);
+            needUpdate = true;
+          }
+        });
+        
+        if (needUpdate) {
+          setImagePreviews(updatedPreviews);
+        }
+      } else if (activeTab === 'results' && compressedImages.length > 0) {
+        // 确保有足够的压缩后预览URL
+        const updatedPreviews = [...compressedImagePreviews];
+        let needUpdate = false;
+        
+        compressedImages.forEach((image, index) => {
+          if (!updatedPreviews[index]) {
+            updatedPreviews[index] = URL.createObjectURL(image.file);
+            needUpdate = true;
+          }
+        });
+        
+        if (needUpdate) {
+          setCompressedImagePreviews(updatedPreviews);
+        }
+      }
+    }, [activeTab]); // 当标签页切换时触发
   
   // 修复toast导入
   const { toast } = useToast();
@@ -114,31 +149,36 @@ export default function ImageCompressor() {
   // 处理图片压缩的核心函数
   const processImage = (file: File, quality: number, format: string): Promise<{ file: File; originalSize: number; compressedSize: number }> => {
     return new Promise((resolve) => {
+      // 直接读取文件为Blob，避免DataURL转换带来的额外开销
       const reader = new FileReader();
-      reader.readAsDataURL(file);
+      reader.readAsArrayBuffer(file);
       reader.onload = (event) => {
+        // 如果直接读取文件内容失败，再尝试通过canvas方法处理
         const img = new Image();
-        img.src = event.target?.result as string;
+        img.src = URL.createObjectURL(file);
         img.onload = () => {
+          // 清理临时URL
+          URL.revokeObjectURL(img.src);
+          
           const canvas = document.createElement('canvas');
           const ctx = canvas.getContext('2d');
           
-          // 设置画布尺寸
+          // 设置画布尺寸 - 保持原始尺寸
           canvas.width = img.width;
           canvas.height = img.height;
           
           // 确保图片质量
           if (ctx) {
-            // 设置高质量渲染
+            // 设置渲染质量
             ctx.imageSmoothingEnabled = true;
-            ctx.imageSmoothingQuality = 'high';
+            ctx.imageSmoothingQuality = 'medium'; // 降低平滑质量以减小文件大小
             
             // 绘制图片
             ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
           }
           
-          // 确保质量值在有效范围内 (0-1)
-          let qualityValue = Math.max(0, Math.min(1, quality / 100));
+          // 确保质量值在有效范围内 (0-1)，并根据需要降低质量以确保压缩效果
+          let qualityValue = Math.max(0.1, Math.min(1, quality / 100));
           
           // 处理格式转换 - 根据所选格式确定正确的MIME类型
           let mimeType: string;
@@ -153,42 +193,94 @@ export default function ImageCompressor() {
             case 'webp':
               mimeType = 'image/webp';
               extension = 'webp';
-              // WebP在低质量设置下压缩效果更好
-              if (quality < 50) {
-                qualityValue = qualityValue * 1.2; // 为WebP稍微调高一点质量，因为它效果更好
-              }
+              // WebP格式可以使用更低的质量值
+              qualityValue *= 0.8;
               break;
             case 'png':
               mimeType = 'image/png';
               extension = 'png';
-              // PNG是无损的，质量参数影响不大，但我们仍然传递它
               break;
             default: // auto 或其他未指定格式
-              mimeType = file.type;
-              extension = file.type.split('/')[1] || 'jpg';
+              // 自动选择更优格式
+              if (file.type.includes('png') && quality < 80) {
+                // PNG图片在较低质量要求下转为WebP可获得更好压缩率
+                mimeType = 'image/webp';
+                extension = 'webp';
+                qualityValue *= 0.8;
+              } else {
+                mimeType = file.type;
+                extension = file.type.split('/')[1] || 'jpg';
+              }
               break;
           }
           
-          // 转换为Blob，确保正确应用格式和质量设置
+          // 转换为Blob
           canvas.toBlob(
             (blob) => {
               if (blob) {
-                // 根据所选格式修改文件名后缀
-                const nameWithoutExt = file.name.split('.').slice(0, -1).join('.') || 'image';
-                const newFilename = format !== 'auto' ? `${nameWithoutExt}.${extension}` : file.name;
-                
-                // 确保使用正确的MIME类型创建文件
-                const compressedFile = new File([blob], newFilename, { type: mimeType });
+                // 如果压缩后文件变大，尝试降低质量重试
+                if (blob.size >= file.size) {
+                  // 降低质量再次尝试
+                  canvas.toBlob(
+                    (retryBlob) => {
+                      if (retryBlob) {
+                        // 根据所选格式修改文件名后缀
+                        const nameWithoutExt = file.name.split('.').slice(0, -1).join('.') || 'image';
+                        const newFilename = format !== 'auto' ? `${nameWithoutExt}.${extension}` : file.name;
+                        
+                        // 确保使用正确的MIME类型创建文件
+                        const compressedFile = new File([retryBlob], newFilename, { type: mimeType });
+                        resolve({
+                          file: compressedFile,
+                          originalSize: file.size,
+                          compressedSize: retryBlob.size
+                        });
+                      } else {
+                        // 如果重试也失败，返回原始文件
+                        resolve({
+                          file,
+                          originalSize: file.size,
+                          compressedSize: file.size
+                        });
+                      }
+                    },
+                    mimeType,
+                    qualityValue * 0.7 // 降低30%质量
+                  );
+                } else {
+                  // 压缩成功，返回结果
+                  const nameWithoutExt = file.name.split('.').slice(0, -1).join('.') || 'image';
+                  const newFilename = format !== 'auto' ? `${nameWithoutExt}.${extension}` : file.name;
+                  
+                  const compressedFile = new File([blob], newFilename, { type: mimeType });
+                  resolve({
+                    file: compressedFile,
+                    originalSize: file.size,
+                    compressedSize: blob.size
+                  });
+                }
+              } else {
+                // 如果生成Blob失败，返回原始文件
                 resolve({
-                  file: compressedFile,
+                  file,
                   originalSize: file.size,
-                  compressedSize: blob.size
+                  compressedSize: file.size
                 });
               }
             },
             mimeType,
             qualityValue
           );
+        };
+        
+        img.onerror = () => {
+          // 图片加载失败时，返回原始文件
+          URL.revokeObjectURL(img.src);
+          resolve({
+            file,
+            originalSize: file.size,
+            compressedSize: file.size
+          });
         };
       };
     });
@@ -213,7 +305,12 @@ export default function ImageCompressor() {
 
   // 计算压缩率
   const calculateCompressionRate = (originalSize: number, compressedSize: number) => {
-    return Math.round((1 - compressedSize / originalSize) * 100);
+    // 确保分母不为零
+    if (originalSize === 0) return 0;
+    
+    // 计算压缩率
+    const rate = Math.round((1 - compressedSize / originalSize) * 100);
+    return rate;
   };
 
   // 格式化文件大小
@@ -274,34 +371,43 @@ export default function ImageCompressor() {
               </Button>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {images.map((image, index) => (
-                  <Card key={index} className="relative overflow-hidden">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="absolute right-2 top-2 z-10 bg-background/80 hover:bg-background"
-                      onClick={() => removeImage(index)}
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                    <div className="p-4">
-                      <div className="aspect-video bg-muted rounded-md overflow-hidden flex items-center justify-center mb-4">
-                    {imagePreviews[index] && (
-                      <img 
-                        src={imagePreviews[index]} 
-                        alt={image.name} 
-                        className="w-full h-full object-contain" 
-                        loading="lazy"
-                      />
-                    )}
-                  </div>
-                      <div className="space-y-2">
-                        <p className="text-sm font-medium truncate">{image.name}</p>
-                        <p className="text-xs text-muted-foreground">{formatFileSize(image.size)}</p>
+                {images.map((image, index) => {
+                  // 确保预览URL存在，如果不存在则重新创建
+                  const previewUrl = imagePreviews[index] || URL.createObjectURL(image);
+                  // 如果是新创建的URL，更新状态
+                  if (!imagePreviews[index]) {
+                    const updatedPreviews = [...imagePreviews];
+                    updatedPreviews[index] = previewUrl;
+                    setImagePreviews(updatedPreviews);
+                  }
+                  
+                  return (
+                    <Card key={index} className="relative overflow-hidden">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="absolute right-2 top-2 z-10 bg-background/80 hover:bg-background"
+                        onClick={() => removeImage(index)}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                      <div className="p-4">
+                        <div className="aspect-video bg-muted rounded-md overflow-hidden flex items-center justify-center mb-4">
+                          <img 
+                            src={previewUrl} 
+                            alt={image.name} 
+                            className="w-full h-full object-contain" 
+                            loading="lazy"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <p className="text-sm font-medium truncate">{image.name}</p>
+                          <p className="text-xs text-muted-foreground">{formatFileSize(image.size)}</p>
+                        </div>
                       </div>
-                    </div>
-                  </Card>
-                ))}
+                    </Card>
+                  );
+                })}
               </div>
             </div>
           )}
@@ -366,18 +472,25 @@ export default function ImageCompressor() {
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {compressedImages.map((image, index) => {
                   const compressionRate = calculateCompressionRate(image.originalSize, image.compressedSize);
+                  // 确保压缩后的预览URL存在，如果不存在则重新创建
+                  const previewUrl = compressedImagePreviews[index] || URL.createObjectURL(image.file);
+                  // 如果是新创建的URL，更新状态
+                  if (!compressedImagePreviews[index]) {
+                    const updatedPreviews = [...compressedImagePreviews];
+                    updatedPreviews[index] = previewUrl;
+                    setCompressedImagePreviews(updatedPreviews);
+                  }
+                  
                   return (
                     <Card key={index} className="overflow-hidden">
                       <div className="p-4">
                         <div className="aspect-video bg-muted rounded-md overflow-hidden flex items-center justify-center mb-4">
-                          {compressedImagePreviews[index] && (
-                            <img 
-                              src={compressedImagePreviews[index]} 
-                              alt={image.file.name} 
-                              className="w-full h-full object-contain" 
-                              loading="lazy"
-                            />
-                          )}
+                          <img 
+                            src={previewUrl} 
+                            alt={image.file.name} 
+                            className="w-full h-full object-contain" 
+                            loading="lazy"
+                          />
                         </div>
                         <div className="space-y-2">
                           <div className="flex justify-between items-center">
@@ -402,7 +515,9 @@ export default function ImageCompressor() {
                             </div>
                             <div className="flex justify-between text-xs">
                               <span className="text-muted-foreground">压缩率:</span>
-                              <span className="text-green-600">-{compressionRate}%</span>
+                              <span className={compressionRate >= 0 ? 'text-green-600' : 'text-red-600'}>
+                                {compressionRate >= 0 ? `-${compressionRate}%` : `+${Math.abs(compressionRate)}%`}
+                              </span>
                             </div>
                           </div>
                         </div>
