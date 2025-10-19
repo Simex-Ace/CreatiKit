@@ -28,9 +28,8 @@ services:
         caPort: 3000
         customRuntimeConfig:
           command:
-            - npm
-          args:
-            - start
+            - node
+            - server.js
       triggers:
         - name: httpTrigger
           type: http
