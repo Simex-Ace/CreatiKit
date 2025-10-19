@@ -29,7 +29,7 @@ services:
         customRuntimeConfig:
           command:
             - node
-            - server.js
+            - ./.next/standalone/server.js
       triggers:
         - name: httpTrigger
           type: http
