@@ -28,10 +28,9 @@ services:
         caPort: 3000
         customRuntimeConfig:
           command:
-            - npm
-          args:
-            - run
-            - start
+            - /bin/sh
+            - -c
+            - "echo '--- Start File Listing ---' && ls -R /code && echo '--- End File Listing ---' && node /code/.next/standalone/server.js"
       triggers:
         - name: httpTrigger
           type: http
