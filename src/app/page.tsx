@@ -31,7 +31,7 @@ export default function Home() {
   };
 
   const handleCodeTools = () => {
-    showAlert('代码工具功能正在开发中，敬请期待');
+    router.push('/code-tools');
   };
 
   const handleFreeUse = () => {
@@ -101,15 +101,15 @@ export default function Home() {
             </Button>
           </Card>
 
-          {/* 开发工具卡片 */}
+          {/* 代码工具卡片 */}
           <Card className="p-6 transition-all duration-300 hover:shadow-lg">
             <FileCode className="h-12 w-12 text-green-600 mb-4" />
             <h3 className="text-xl font-semibold mb-2">代码工具</h3>
             <p className="text-muted-foreground mb-4">
-              代码格式化、压缩和转换工具，提升开发效率
+              代码格式化工具，支持多种编程语言
             </p>
-            <Button disabled className="w-full" onClick={handleCodeTools}>
-              即将推出
+            <Button className="w-full" onClick={handleCodeTools}>
+              立即使用
             </Button>
           </Card>
         </div>
