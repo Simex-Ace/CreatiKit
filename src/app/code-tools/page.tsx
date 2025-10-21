@@ -21,9 +21,16 @@ if (true) {
 console.log("这是一个示例");
 }}`);
   const [formattedCode, setFormattedCode] = useState('');
+  const [minifiedCode, setMinifiedCode] = useState('');
   const [language, setLanguage] = useState('javascript');
   const [emptyLineMode, setEmptyLineMode] = useState<'keepOne' | 'removeAll'>('keepOne');
+  const [minifyOptions, setMinifyOptions] = useState({
+    removeComments: true,
+    removeWhitespace: true,
+    preserveImportant: true
+  });
   const [copySuccess, setCopySuccess] = useState(false);
+  const [currentTab, setCurrentTab] = useState('formatter');
 
   // 语言示例代码
   const languageExamples = {
@@ -102,6 +109,175 @@ print(f"数字: {i}")`,
     setLanguage(newLanguage);
     setCode(languageExamples[newLanguage as keyof typeof languageExamples]);
     setFormattedCode('');
+    setMinifiedCode('');
+  };
+
+  // 处理选项卡切换
+  const handleTabChange = (tab: string) => {
+    setCurrentTab(tab);
+  };
+
+  // 代码压缩逻辑
+  const minifyCode = () => {
+    let minified = code;
+    
+    // 根据语言应用不同的压缩策略
+    switch (language) {
+      case 'javascript':
+      case 'typescript':
+        minified = minifyJavaScript(minified);
+        break;
+      case 'css':
+        minified = minifyCSS(minified);
+        break;
+      case 'html':
+        minified = minifyHTML(minified);
+        break;
+      case 'json':
+        try {
+          // JSON压缩直接使用parse和stringify
+          const parsed = JSON.parse(minified);
+          minified = JSON.stringify(parsed);
+        } catch (e) {
+          // 如果JSON无效，使用基本压缩
+          minified = minifyBasic(minified);
+        }
+        break;
+      case 'xml':
+        minified = minifyXML(minified);
+        break;
+      // Python压缩功能已移除
+      default:
+        minified = minifyBasic(minified);
+    }
+    
+    setMinifiedCode(minified);
+  };
+
+  // JavaScript/TypeScript压缩
+  const minifyJavaScript = (code: string): string => {
+    let result = code;
+    
+    // 移除注释
+    if (minifyOptions.removeComments) {
+      // 移除单行注释
+      result = result.replace(/\/\/.*$/gm, '');
+      // 移除多行注释
+      result = result.replace(/\/\*[\s\S]*?\*\//g, '');
+    }
+    
+    // 移除空白字符
+    if (minifyOptions.removeWhitespace) {
+      // 保留字符串内的空格
+      result = result.replace(/\s+/g, ' ')
+        .replace(/\s*{\s*/g, '{')
+        .replace(/\s*}\s*/g, '}')
+        .replace(/\s*\(\s*/g, '(')
+        .replace(/\s*\)\s*/g, ')')
+        .replace(/\s*;\s*/g, ';')
+        .replace(/\s*,\s*/g, ',')
+        .replace(/\s*:\s*/g, ':')
+        .replace(/\s*=\s*/g, '=')
+        .trim();
+    }
+    
+    return result;
+  };
+
+  // CSS压缩
+  const minifyCSS = (code: string): string => {
+    let result = code;
+    
+    // 移除注释
+    if (minifyOptions.removeComments) {
+      result = result.replace(/\/\*[\s\S]*?\*\//g, '');
+    }
+    
+    // 移除空白字符
+    if (minifyOptions.removeWhitespace) {
+      // 处理!important
+      if (minifyOptions.preserveImportant) {
+        // 临时替换!important以保留它
+        result = result.replace(/!\s*important/g, '##IMPORTANT##');
+      }
+      
+      result = result.replace(/\s+/g, ' ')
+        .replace(/\s*{\s*/g, '{')
+        .replace(/\s*}\s*/g, '}')
+        .replace(/\s*;\s*/g, ';')
+        .replace(/\s*:\s*/g, ':')
+        .replace(/\s*,\s*/g, ',')
+        .trim();
+      
+      // 恢复!important
+      if (minifyOptions.preserveImportant) {
+        result = result.replace(/##IMPORTANT##/g, '!important');
+      }
+    }
+    
+    return result;
+  };
+
+  // HTML压缩
+  const minifyHTML = (code: string): string => {
+    let result = code;
+    
+    // 移除注释
+    if (minifyOptions.removeComments) {
+      result = result.replace(/<!--[\s\S]*?-->/g, '');
+    }
+    
+    // 移除空白字符
+    if (minifyOptions.removeWhitespace) {
+      result = result.replace(/\s+/g, ' ')
+        .replace(/\s*<\s*/g, '<')
+        .replace(/\s*>\s*/g, '>')
+        .trim();
+    }
+    
+    return result;
+  };
+
+  // XML压缩
+  const minifyXML = (code: string): string => {
+    let result = code;
+    
+    // 移除注释
+    if (minifyOptions.removeComments) {
+      result = result.replace(/<!--[\s\S]*?-->/g, '');
+    }
+    
+    // 移除空白字符
+    if (minifyOptions.removeWhitespace) {
+      result = result.replace(/\s+/g, ' ')
+        .replace(/\s*<\s*/g, '<')
+        .replace(/\s*>\s*/g, '>')
+        .trim();
+    }
+    
+    return result;
+  };
+
+  // Python压缩功能已移除
+
+  // 基本压缩（适用于其他语言）
+  const minifyBasic = (code: string): string => {
+    let result = code;
+    
+    // 移除多余的空行
+    if (minifyOptions.removeWhitespace) {
+      result = result.replace(/\n\s*\n/g, '\n');
+    }
+    
+    return result;
+  };
+
+  // 更新压缩选项
+  const updateMinifyOptions = (key: keyof typeof minifyOptions, value: boolean) => {
+    setMinifyOptions(prev => ({
+      ...prev,
+      [key]: value
+    }));
   };
 
   // 高级代码格式化逻辑，包含语法修复和专业格式化
@@ -613,6 +789,19 @@ print(f"数字: {i}")`,
     setTimeout(() => setCopySuccess(false), 2000);
   };
 
+  // 下载压缩后的代码文件
+  const downloadMinifiedCode = () => {
+    const blob = new Blob([minifiedCode || code], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `minified.${getFileExtension(language)}`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
   // 下载代码文件
   const downloadCode = () => {
     const blob = new Blob([formattedCode || code], { type: 'text/plain' });
@@ -646,6 +835,7 @@ print(f"数字: {i}")`,
   const clearCode = () => {
     setCode('');
     setFormattedCode('');
+    setMinifiedCode('');
   };
 
   return (
@@ -658,9 +848,10 @@ print(f"数字: {i}")`,
         <p className="text-gray-600">简单的代码格式化和编辑工具</p>
       </div>
 
-      <Tabs defaultValue="formatter" className="w-full">
-        <TabsList className="grid w-full max-w-md mx-auto grid-cols-1 mb-4">
+      <Tabs defaultValue="formatter" className="w-full" onValueChange={handleTabChange}>
+        <TabsList className="grid w-full max-w-md mx-auto grid-cols-2 mb-4">
           <TabsTrigger value="formatter">代码格式化</TabsTrigger>
+          <TabsTrigger value="minifier">代码压缩</TabsTrigger>
         </TabsList>
 
         <TabsContent value="formatter" className="space-y-6 pt-4">
@@ -769,6 +960,135 @@ print(f"数字: {i}")`,
 
           <div className="text-center text-sm text-gray-600">
             <p>提示：这是一个简单的代码格式化工具，对于复杂的代码格式化，建议使用专业的IDE或更强大的工具。</p>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="minifier" className="space-y-6 pt-4">
+          <div className="grid gap-6 md:grid-cols-2">
+            {/* 输入区域 */}
+            <Card className="p-4 space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-1 gap-4">
+                <div className="flex justify-between items-center">
+                  <Label htmlFor="language-select">编程语言</Label>
+                  <div className="custom-select-wrapper">
+                    <select
+                      id="language-select"
+                      value={language}
+                      onChange={(e) => handleLanguageChange(e.target.value)}
+                      className="w-[140px] h-10 px-3 py-2 pr-8 text-sm bg-white cursor-pointer"
+                    >
+                      <option value="javascript">JavaScript</option>
+                      <option value="typescript">TypeScript</option>
+                      <option value="html">HTML</option>
+                      <option value="css">CSS</option>
+                      <option value="json">JSON</option>
+                      <option value="xml">XML</option>
+                    </select>
+                  </div>
+                </div>
+                
+                {/* 压缩选项 */}
+                <div className="space-y-2">
+                  <Label>压缩选项：</Label>
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      id="remove-comments"
+                      checked={minifyOptions.removeComments}
+                      onChange={(e) => updateMinifyOptions('removeComments', e.target.checked)}
+                      className="h-4 w-4 text-blue-600"
+                    />
+                    <label htmlFor="remove-comments" className="text-sm">移除注释</label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      id="remove-whitespace"
+                      checked={minifyOptions.removeWhitespace}
+                      onChange={(e) => updateMinifyOptions('removeWhitespace', e.target.checked)}
+                      className="h-4 w-4 text-blue-600"
+                    />
+                    <label htmlFor="remove-whitespace" className="text-sm">移除空白字符</label>
+                  </div>
+                  {language === 'css' && (
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        id="preserve-important"
+                        checked={minifyOptions.preserveImportant}
+                        onChange={(e) => updateMinifyOptions('preserveImportant', e.target.checked)}
+                        className="h-4 w-4 text-blue-600"
+                      />
+                      <label htmlFor="preserve-important" className="text-sm">保留 !important</label>
+                    </div>
+                  )}
+                </div>
+              </div>
+              <textarea
+                id="minify-code-input"
+                value={code}
+                onChange={(e) => setCode(e.target.value)}
+                className="min-h-[300px] font-mono text-sm resize-none w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder={`输入${language}代码...`}
+              />
+              <div className="flex gap-2">
+                <Button onClick={minifyCode} className="flex-1">压缩代码</Button>
+                <Button variant="secondary" onClick={clearCode} size="icon">
+                  <RotateCcw className="h-4 w-4" />
+                </Button>
+              </div>
+            </Card>
+
+            {/* 输出区域 */}
+            <Card className="p-4 space-y-4">
+              <div className="flex justify-between items-center flex-wrap gap-2">
+                <Label htmlFor="minify-code-output">压缩结果</Label>
+                <div className="flex gap-2">
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => copyToClipboard(minifiedCode || code)}
+                    className="flex items-center gap-1"
+                  >
+                    {copySuccess ? (
+                      <>
+                        <Check className="h-4 w-4" />
+                        <span>已复制</span>
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="h-4 w-4" />
+                        <span>复制</span>
+                      </>
+                    )}
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={downloadMinifiedCode}
+                    className="flex items-center gap-1"
+                  >
+                    <Download className="h-4 w-4" />
+                    <span>下载</span>
+                  </Button>
+                  {minifiedCode && code.length > 0 && (
+                    <span className="text-sm text-gray-600">
+                      压缩率: {((1 - minifiedCode.length / code.length) * 100).toFixed(1)}%
+                    </span>
+                  )}
+                </div>
+              </div>
+              <textarea
+                id="minify-code-output"
+                value={minifiedCode || code}
+                readOnly
+                className="min-h-[300px] font-mono text-sm resize-none w-full p-3 border border-gray-300 rounded-md bg-gray-50"
+              />
+            </Card>
+          </div>
+
+          <div className="text-center text-sm text-gray-600">
+            <p>提示：代码压缩会移除不必要的空白字符和注释，减小文件体积，适用于生产环境部署。</p>
           </div>
         </TabsContent>
       </Tabs>
