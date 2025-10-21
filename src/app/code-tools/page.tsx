@@ -31,6 +31,14 @@ console.log("这是一个示例");
   });
   const [copySuccess, setCopySuccess] = useState(false);
   const [currentTab, setCurrentTab] = useState('formatter');
+  const [transformedCode, setTransformedCode] = useState('');
+  const [transformOptions, setTransformOptions] = useState({
+    quoteType: 'single', // 'single' | 'double' | 'none'
+    indentType: 'space', // 'space' | 'tab' | 'none'
+    indentSize: 2,
+    namingStyle: 'camelCase', // 'camelCase' | 'snake_case' | 'none'
+    commentStyle: 'line' // 'line' | 'block' | 'none'
+  });
 
   // 语言示例代码
   const languageExamples = {
@@ -836,6 +844,271 @@ print(f"数字: {i}")`,
     setCode('');
     setFormattedCode('');
     setMinifiedCode('');
+    setTransformedCode('');
+  };
+
+  // 更新转化选项
+  const updateTransformOptions = (key: keyof typeof transformOptions, value: string | number) => {
+    setTransformOptions(prev => ({
+      ...prev,
+      [key]: value
+    }));
+  };
+
+  // 代码转化逻辑
+  const transformCode = () => {
+    let transformed = code;
+    
+    // 处理引号转换
+    if (transformOptions.quoteType !== 'none') {
+      transformed = transformQuotes(transformed);
+    }
+    
+    // 处理缩进转换
+    if (transformOptions.indentType !== 'none') {
+      transformed = transformIndentation(transformed);
+    }
+    
+    // 处理命名风格转换
+    if (transformOptions.namingStyle !== 'none') {
+      transformed = transformNamingStyle(transformed);
+    }
+    
+    // 处理注释风格转换
+    if (transformOptions.commentStyle !== 'none') {
+      transformed = transformCommentStyle(transformed);
+    }
+    
+    setTransformedCode(transformed);
+  };
+
+  // 引号转换
+  const transformQuotes = (code: string): string => {
+    // 避免在字符串内转换引号
+    // 简单实现，对于复杂的嵌套字符串可能不准确
+    let result = code;
+    
+    if (transformOptions.quoteType === 'single') {
+      // 转换双引号为单引号，但保留字符串内的转义引号
+      result = result.replace(/"(.*?)"/g, (match, content) => {
+        // 替换内容中的单引号为转义单引号
+        const escapedContent = content.replace(/'/g, "\\'");
+        return `'${escapedContent}'`;
+      });
+    } else if (transformOptions.quoteType === 'double') {
+      // 转换单引号为双引号，但保留字符串内的转义引号
+      result = result.replace(/'(.*?)'/g, (match, content) => {
+        // 替换内容中的双引号为转义双引号
+        const escapedContent = content.replace(/"/g, '\\"');
+        return `"${escapedContent}"`;
+      });
+    }
+    
+    return result;
+  };
+
+  // 缩进转换
+  const transformIndentation = (code: string): string => {
+    const lines = code.split('\n');
+    const newLines = lines.map(line => {
+      // 计算原始缩进级别
+      const originalIndent = (line.match(/^\s*/) || [''])[0];
+      const content = line.substring(originalIndent.length);
+      
+      // 生成新的缩进
+      let newIndent = '';
+      if (transformOptions.indentType === 'space') {
+        // 计算原始缩进对应的空格数
+        const spacesCount = originalIndent.replace(/\t/g, ' '.repeat(4)).length;
+        const newSpacesCount = Math.ceil(spacesCount / transformOptions.indentSize) * transformOptions.indentSize;
+        newIndent = ' '.repeat(newSpacesCount);
+      } else if (transformOptions.indentType === 'tab') {
+        // 计算原始缩进对应的tab数
+        const spacesCount = originalIndent.replace(/\t/g, ' '.repeat(4)).length;
+        const tabCount = Math.ceil(spacesCount / 4);
+        newIndent = '\t'.repeat(tabCount);
+      }
+      
+      return newIndent + content;
+    });
+    
+    return newLines.join('\n');
+  };
+
+  // 命名风格转换
+  const transformNamingStyle = (code: string): string => {
+    let result = code;
+    
+    // 分割代码为字符串和非字符串部分
+    const tokens = code.split(/(['"`])/);
+    
+    if (transformOptions.namingStyle === 'camelCase') {
+      // 转换下划线命名为驼峰命名
+      for (let i = 0; i < tokens.length; i += 2) {
+        // 只处理非字符串部分
+        let token = tokens[i];
+        
+        // 首先处理主要的下划线到驼峰的转换
+        // 使用更全面的正则表达式，确保处理所有下划线情况
+        token = token.replace(/([a-zA-Z0-9])_+([a-zA-Z])/g, (match, p1, p2) => {
+          return p1 + p2.toUpperCase();
+        });
+        
+        // 处理特殊情况：多个下划线后面跟着字母
+        token = token.replace(/_{2,}([a-zA-Z])/g, (match, p1) => {
+          return p1.toUpperCase();
+        });
+        
+        tokens[i] = token;
+      }
+      result = tokens.join('');
+    } else if (transformOptions.namingStyle === 'snake_case') {
+      // 转换驼峰命名为下划线命名
+      for (let i = 0; i < tokens.length; i += 2) {
+        // 只处理非字符串部分
+        let token = tokens[i];
+        
+        // 更全面的驼峰到下划线转换
+        // 1. 在小写字母/数字和大写字母之间添加下划线
+        token = token.replace(/([a-z0-9])([A-Z])/g, '$1_$2');
+        // 2. 在多个连续大写字母之间添加下划线（除非是首字母缩写）
+        token = token.replace(/([A-Z])([A-Z][a-z])/g, '$1_$2');
+        // 3. 转为小写
+        token = token.toLowerCase();
+        
+        tokens[i] = token;
+      }
+      result = tokens.join('');
+    }
+    
+    return result;
+  };
+
+  // 注释风格转换
+  const transformCommentStyle = (code: string): string => {
+    // 复杂实现，避免在字符串和正则表达式中转换
+    if (!(language === 'javascript' || language === 'typescript')) {
+      return code;
+    }
+    
+    let result = '';
+    let inString = false;
+    let inRegex = false;
+    let inBlockComment = false;
+    let inLineComment = false;
+    let stringChar = '';
+    let i = 0;
+    
+    while (i < code.length) {
+      // 处理字符串
+      if (!inBlockComment && !inLineComment && !inRegex && (code[i] === '\'' || code[i] === '"' || code[i] === '`')) {
+        if (!inString) {
+          inString = true;
+          stringChar = code[i];
+          result += code[i];
+        } else if (code[i] === stringChar && code[i-1] !== '\\') {
+          inString = false;
+          result += code[i];
+        } else {
+          result += code[i];
+        }
+        i++;
+        continue;
+      }
+      
+      // 处理正则表达式
+      if (!inString && !inBlockComment && !inLineComment && code[i] === '/' && code[i-1] !== '*' && !(/\w|\)|\]|\}|\)|\s/.test(code[i-1]))) {
+        inRegex = true;
+        result += code[i];
+        i++;
+        continue;
+      }
+      if (inRegex && code[i] === '/' && code[i-1] !== '\\') {
+        inRegex = false;
+        result += code[i];
+        i++;
+        // 跳过正则标志
+        while (i < code.length && /[gimuy]/.test(code[i])) {
+          result += code[i];
+          i++;
+        }
+        continue;
+      }
+      
+      // 处理注释
+      if (!inString && !inRegex && i < code.length - 1) {
+        // 块注释开始
+        if (code[i] === '/' && code[i+1] === '*') {
+          if (transformOptions.commentStyle === 'line') {
+            // 找到块注释结束
+            let endPos = code.indexOf('*/', i + 2);
+            if (endPos !== -1) {
+              const commentContent = code.substring(i + 2, endPos).trim();
+              result += `// ${commentContent}`;
+              i = endPos + 2;
+              continue;
+            }
+          }
+          inBlockComment = true;
+          result += code[i] + code[i+1];
+          i += 2;
+          continue;
+        }
+        // 行注释开始
+        if (code[i] === '/' && code[i+1] === '/') {
+          if (transformOptions.commentStyle === 'block') {
+            // 找到行注释结束
+            let endPos = code.indexOf('\n', i);
+            if (endPos === -1) endPos = code.length;
+            const commentContent = code.substring(i + 2, endPos).trim();
+            result += `/* ${commentContent} */`;
+            // 保留换行符
+            if (endPos < code.length) {
+              result += '\n';
+            }
+            i = endPos + 1;
+            continue;
+          }
+          inLineComment = true;
+          result += code[i] + code[i+1];
+          i += 2;
+          continue;
+        }
+        // 块注释结束
+        if (code[i] === '*' && code[i+1] === '/') {
+          inBlockComment = false;
+          result += code[i] + code[i+1];
+          i += 2;
+          continue;
+        }
+      }
+      // 行注释结束
+      if (inLineComment && code[i] === '\n') {
+        inLineComment = false;
+        result += code[i];
+        i++;
+        continue;
+      }
+      
+      // 普通字符
+      result += code[i];
+      i++;
+    }
+    
+    return result;
+  };
+
+  // 下载转化后的代码
+  const downloadTransformedCode = () => {
+    const blob = new Blob([transformedCode || code], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `transformed.${getFileExtension(language)}`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   };
 
   return (
@@ -849,9 +1122,10 @@ print(f"数字: {i}")`,
       </div>
 
       <Tabs defaultValue="formatter" className="w-full" onValueChange={handleTabChange}>
-        <TabsList className="grid w-full max-w-md mx-auto grid-cols-2 mb-4">
+        <TabsList className="grid w-full max-w-md mx-auto grid-cols-3 mb-4">
           <TabsTrigger value="formatter">代码格式化</TabsTrigger>
           <TabsTrigger value="minifier">代码压缩</TabsTrigger>
+          <TabsTrigger value="transformer">代码转化</TabsTrigger>
         </TabsList>
 
         <TabsContent value="formatter" className="space-y-6 pt-4">
@@ -873,7 +1147,7 @@ print(f"数字: {i}")`,
                       id="language-select"
                       value={language}
                       onChange={(e) => handleLanguageChange(e.target.value)}
-                      className="w-[140px] h-10 px-3 py-2 pr-8 text-sm bg-white cursor-pointer"
+                      className="w-[140px] h-10 px-3 py-2 pr-8 text-sm bg-white cursor-pointer custom-select"
                     >
                       <option value="javascript">JavaScript</option>
                       <option value="typescript">TypeScript</option>
@@ -892,7 +1166,7 @@ print(f"数字: {i}")`,
                       id="empty-line-mode-select"
                       value={emptyLineMode}
                       onChange={(e) => setEmptyLineMode(e.target.value as 'keepOne' | 'removeAll')}
-                      className="w-[140px] h-10 px-3 py-2 pr-8 text-sm bg-white cursor-pointer"
+                      className="w-[140px] h-10 px-3 py-2 pr-8 text-sm bg-white cursor-pointer custom-select"
                     >
                       <option value="keepOne">保留一行空格</option>
                       <option value="removeAll">移除所有空格行</option>
@@ -1089,6 +1363,205 @@ print(f"数字: {i}")`,
 
           <div className="text-center text-sm text-gray-600">
             <p>提示：代码压缩会移除不必要的空白字符和注释，减小文件体积，适用于生产环境部署。</p>
+          </div>
+        </TabsContent>
+        
+        <TabsContent value="transformer" className="space-y-6 pt-4">
+          <div className="grid gap-6 md:grid-cols-2">
+            {/* 输入区域 */}
+            <Card className="p-4 space-y-4">
+              <div className="grid grid-cols-1 gap-4">
+                <div className="flex justify-between items-center">
+                  <Label htmlFor="language-select">编程语言</Label>
+                  <div className="custom-select-wrapper">
+                    <select
+                      id="language-select"
+                      value={language}
+                      onChange={(e) => handleLanguageChange(e.target.value)}
+                      className="w-[140px] h-10 px-3 py-2 pr-8 text-sm bg-white cursor-pointer"
+                    >
+                      <option value="javascript">JavaScript</option>
+                      <option value="typescript">TypeScript</option>
+                      <option value="html">HTML</option>
+                      <option value="css">CSS</option>
+                      <option value="python">Python</option>
+                      <option value="json">JSON</option>
+                      <option value="xml">XML</option>
+                    </select>
+                  </div>
+                </div>
+                
+                {/* 转化选项 */}
+                <div className="space-y-4">
+                  <Label>转化选项：</Label>
+                  
+                  <div className="grid grid-cols-1 gap-4">
+                    <div>
+                      <div className="flex justify-between items-center mb-1">
+                        <label htmlFor="quote-type" className="text-sm">引号类型：</label>
+                        <div className="custom-select-wrapper">
+                          <select
+                            id="quote-type"
+                            value={transformOptions.quoteType}
+                            onChange={(e) => updateTransformOptions('quoteType', e.target.value)}
+                            className="w-[140px] h-10 px-3 py-2 pr-8 text-sm bg-white cursor-pointer custom-select"
+                          >
+                            <option value="none">不转换</option>
+                            <option value="single">单引号</option>
+                            <option value="double">双引号</option>
+                          </select>
+                        </div>
+                      </div>
+                      <p className="text-xs text-gray-500 ml-1">提示：将字符串引号统一转换为单引号或双引号</p>
+                    </div>
+                    
+                    <div>
+                      <div className="flex justify-between items-center mb-1">
+                        <label htmlFor="indent-type" className="text-sm">缩进类型：</label>
+                        <div className="custom-select-wrapper">
+                          <select
+                            id="indent-type"
+                            value={transformOptions.indentType}
+                            onChange={(e) => updateTransformOptions('indentType', e.target.value)}
+                            className="w-[140px] h-10 px-3 py-2 pr-8 text-sm bg-white cursor-pointer custom-select"
+                          >
+                            <option value="none">不转换</option>
+                            <option value="space">空格</option>
+                            <option value="tab">Tab</option>
+                          </select>
+                        </div>
+                      </div>
+                      <p className="text-xs text-gray-500 ml-1">提示：选择使用空格或Tab键进行代码缩进</p>
+                    </div>
+                    
+                    {transformOptions.indentType === 'space' && (
+                      <div>
+                        <div className="flex justify-between items-center mb-1">
+                          <label htmlFor="indent-size" className="text-sm">空格数：</label>
+                          <div className="custom-select-wrapper">
+                            <select
+                                id="indent-size"
+                                value={transformOptions.indentSize}
+                                onChange={(e) => updateTransformOptions('indentSize', parseInt(e.target.value))}
+                                className="w-[140px] h-10 px-3 py-2 pr-8 text-sm bg-white cursor-pointer custom-select"
+                              >
+                              <option value="2">2</option>
+                              <option value="4">4</option>
+                              <option value="8">8</option>
+                            </select>
+                          </div>
+                        </div>
+                        <p className="text-xs text-gray-500 ml-1">提示：设置每次缩进使用的空格数量</p>
+                      </div>
+                    )}
+                    
+                    <div>
+                      <div className="flex justify-between items-center mb-1">
+                        <label htmlFor="naming-style" className="text-sm">命名风格：</label>
+                        <div className="custom-select-wrapper">
+                          <select
+                            id="naming-style"
+                            value={transformOptions.namingStyle}
+                            onChange={(e) => updateTransformOptions('namingStyle', e.target.value)}
+                            className="w-[140px] h-10 px-3 py-2 pr-8 text-sm bg-white cursor-pointer custom-select"
+                          >
+                            <option value="none">不转换</option>
+                            <option value="camelCase">驼峰命名</option>
+                            <option value="snake_case">下划线命名</option>
+                          </select>
+                        </div>
+                      </div>
+                      <p className="text-xs text-gray-500 ml-1">提示：camelCase（驼峰命名）或snake_case（下划线命名）</p>
+                    </div>
+                    
+                    {(language === 'javascript' || language === 'typescript') && (
+                      <div>
+                        <div className="flex justify-between items-center mb-1">
+                          <label htmlFor="comment-style" className="text-sm">注释风格：</label>
+                          <div className="custom-select-wrapper">
+                            <select
+                                id="comment-style"
+                                value={transformOptions.commentStyle}
+                                onChange={(e) => updateTransformOptions('commentStyle', e.target.value)}
+                                className="w-[140px] h-10 px-3 py-2 pr-8 text-sm bg-white cursor-pointer custom-select"
+                              >
+                              <option value="none">不转换</option>
+                              <option value="line">单行注释</option>
+                              <option value="block">块注释</option>
+                            </select>
+                          </div>
+                        </div>
+                        <p className="text-xs text-gray-500 ml-1">提示：将注释统一转换为//单行注释或/*块注释*/</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+              <textarea
+                id="transform-code-input"
+                value={code}
+                onChange={(e) => setCode(e.target.value)}
+                className="min-h-[300px] font-mono text-sm resize-none w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder={`输入${language}代码...`}
+              />
+              <div className="flex gap-2">
+                <Button onClick={transformCode} className="flex-1">转化代码</Button>
+                <Button variant="secondary" onClick={clearCode} size="icon">
+                  <RotateCcw className="h-4 w-4" />
+                </Button>
+              </div>
+            </Card>
+
+            {/* 输出区域 */}
+            <Card className="p-4 space-y-4">
+              <div className="flex justify-between items-center flex-wrap gap-2">
+                <Label htmlFor="transform-code-output">转化结果</Label>
+                <div className="flex gap-2">
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => copyToClipboard(transformedCode || code)}
+                    className="flex items-center gap-1"
+                  >
+                    {copySuccess ? (
+                      <>
+                        <Check className="h-4 w-4" />
+                        <span>已复制</span>
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="h-4 w-4" />
+                        <span>复制</span>
+                      </>
+                    )}
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={downloadTransformedCode}
+                    className="flex items-center gap-1"
+                  >
+                    <Download className="h-4 w-4" />
+                    <span>下载</span>
+                  </Button>
+                  {transformedCode && code.length > 0 && (
+                    <span className="text-sm text-gray-600">
+                      转换成功
+                    </span>
+                  )}
+                </div>
+              </div>
+              <textarea
+                id="transform-code-output"
+                value={transformedCode || code}
+                readOnly
+                className="min-h-[300px] font-mono text-sm resize-none w-full p-3 border border-gray-300 rounded-md bg-gray-50"
+              />
+            </Card>
+          </div>
+
+          <div className="text-center text-sm text-gray-600">
+            <p>提示：代码转化工具可以帮助您调整代码风格，包括引号类型、缩进方式、命名风格等。</p>
           </div>
         </TabsContent>
       </Tabs>
