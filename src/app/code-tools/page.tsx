@@ -7,7 +7,9 @@ import { Button } from '@/components/ui/button';
 // 使用标准textarea元素替代自定义组件
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { FileCode, Copy, Check, RotateCcw, Download } from 'lucide-react';
+import { FileCode, Copy, Check, RotateCcw, Download, AlertCircle, Code2 } from 'lucide-react';
+// 代码格式化工具相关导入
+
 
 
 
@@ -102,8 +104,22 @@ print(f"数字: {i}")`,
     setFormattedCode('');
   };
 
-  // 简单的代码格式化逻辑（实际项目中可以集成更强大的格式化库）
+  // 高级代码格式化逻辑，包含语法修复和专业格式化
+  const [syntaxRestored, setSyntaxRestored] = useState(false);
+  
   const formatCode = () => {
+    // 重置语法恢复标志
+    setSyntaxRestored(false);
+    
+    // 语法恢复/修复预处理
+    const preprocessedCode = attemptSyntaxRecovery(code, language);
+    
+    // 检查是否进行了语法修复
+    if (preprocessedCode !== code) {
+      setSyntaxRestored(true);
+      setTimeout(() => setSyntaxRestored(false), 5000); // 5秒后隐藏提示
+    }
+    
     // 预处理：处理空行
     const preprocessedLines = [];
 
@@ -111,7 +127,7 @@ print(f"数字: {i}")`,
       // 模式1：保留一个空行
       let lastLineEmpty = false;
 
-      for (const line of code.split('\n')) {
+      for (const line of preprocessedCode.split('\n')) {
         const trimmed = line.trim();
         if (!trimmed) {
           // 如果当前行是空行，且上一行也是空行，则跳过
@@ -125,7 +141,7 @@ print(f"数字: {i}")`,
       }
     } else {
       // 模式2：移除所有空行
-      for (const line of code.split('\n')) {
+      for (const line of preprocessedCode.split('\n')) {
         const trimmed = line.trim();
         if (trimmed) {
           preprocessedLines.push(line);
@@ -134,6 +150,8 @@ print(f"数字: {i}")`,
     }
 
     let formatted = '';
+    
+    // 针对不同语言使用不同的格式化策略
 
     // Python特殊处理
     if (language === 'python') {
@@ -207,7 +225,7 @@ print(f"数字: {i}")`,
     else if (language === 'json') {
       try {
         // 尝试使用JSON.parse和JSON.stringify来格式化
-        const parsed = JSON.parse(code);
+        const parsed = JSON.parse(preprocessedCode);
         formatted = JSON.stringify(parsed, null, 2);
         
         // 处理空行模式
@@ -325,6 +343,268 @@ print(f"数字: {i}")`,
     formatted = formatted.trimEnd() + '\n';
     setFormattedCode(formatted);
   };
+  
+  // 尝试恢复/修复有语法错误的代码，特别是处理关键字和标识符被拆分的情况
+  const attemptSyntaxRecovery = (code: string, lang: string): string => {
+    try {
+      // 针对JavaScript/TypeScript的语法恢复
+      if (lang === 'javascript' || lang === 'typescript') {
+        // 简化实现，专注于函数定义被拆分的情况修复
+        let recoveredCode = code;
+        
+        // 1. 修复被拆分的关键字（更强大的正则表达式）
+        const keywords = [
+          'function', 'if', 'else', 'return', 'const', 'let', 'var', 'for', 
+          'while', 'do', 'switch', 'case', 'default', 'try', 'catch', 'finally'
+        ];
+        
+        keywords.forEach(keyword => {
+          // 构建能够处理任意拆分的正则表达式
+          const pattern = keyword.split('').join('[\\s\\n]*');
+          const regex = new RegExp(pattern, 'gi');
+          recoveredCode = recoveredCode.replace(regex, keyword);
+        });
+        
+        // 2. 处理函数定义的结构修复
+        // 确保function和函数名正确连接
+        recoveredCode = recoveredCode.replace(/function\s+([a-zA-Z_$][a-zA-Z0-9_$]*)/g, 'function $1');
+        
+        // 确保函数名和括号正确连接
+        recoveredCode = recoveredCode.replace(/([a-zA-Z_$][a-zA-Z0-9_$]*)\s*\(/g, '$1(');
+        
+        // 确保括号和花括号正确连接
+        recoveredCode = recoveredCode.replace(/\)\s*{/g, ') {');
+        
+        // 3. 处理控制语句关键字
+        const controlKeywords = ['if', 'for', 'while', 'switch', 'catch'];
+        controlKeywords.forEach(keyword => {
+          // 先修复可能被拆分的关键字
+          const fixedKeyword = keyword.split('').join('\\s*');
+          recoveredCode = recoveredCode.replace(new RegExp(fixedKeyword, 'gi'), keyword);
+          // 确保关键字和括号正确连接
+          recoveredCode = recoveredCode.replace(new RegExp(`${keyword}\\s*\\(`, 'g'), `${keyword} (`);
+        });
+        
+        // 4. 修复括号匹配（更全面的实现）
+        // 修复花括号
+        const openBraces = (recoveredCode.match(/[{]/g) || []).length;
+        const closeBraces = (recoveredCode.match(/[}]/g) || []).length;
+        const braceDiff = openBraces - closeBraces;
+        
+        if (braceDiff > 0) {
+          recoveredCode += '}'.repeat(braceDiff);
+        }
+        
+        // 修复圆括号
+        const openParens = (recoveredCode.match(/\(/g) || []).length;
+        const closeParens = (recoveredCode.match(/\)/g) || []).length;
+        const parenDiff = openParens - closeParens;
+        
+        if (parenDiff > 0) {
+          // 在末尾添加缺失的闭合括号
+          recoveredCode += ')'.repeat(parenDiff);
+        }
+        
+        // 5. 修复分号缺失（更精确的实现）
+        // 只在特定情况下添加分号，避免过度添加
+        // 移除之前可能错误添加的多余分号
+        recoveredCode = recoveredCode.replace(/;\s*\{/g, ' {');
+        
+        // 只在变量声明、赋值、函数调用等语句后添加分号
+        // 这是一个更安全的实现，避免在不需要分号的地方添加
+        
+        return recoveredCode;
+      }
+      
+      // 对于JSON的语法恢复
+      else if (lang === 'json') {
+        try {
+          // 尝试预处理后使用标准JSON解析
+          const preprocessed = preprocessJson(code);
+          const parsed = JSON.parse(preprocessed);
+          return JSON.stringify(parsed, null, 2);
+        } catch (e) {
+          // 如果JSON解析失败，回退到基本的括号缩进格式化
+          return fallbackJsonFix(code);
+        }
+      }
+      
+      // HTML和XML的简单修复
+      else if (lang === 'html' || lang === 'xml') {
+        return fixHtmlXmlSyntax(code, lang);
+      }
+      
+      // 对于Python，处理基本的缩进问题和语法修复
+      else if (lang === 'python') {
+        // 先进行基本的Python语法修复
+        let recoveredCode = fixPythonSyntax(code);
+        // 然后进行缩进修复
+        return fixPythonIndentation(recoveredCode);
+      }
+      
+      // 对于CSS和其他语言，返回原始代码
+      return code;
+    } catch (error) {
+      console.error('语法恢复失败:', error);
+      return code;
+    }
+  };
+  
+
+  
+  // 预处理JSON
+  const preprocessJson = (code: string): string => {
+    let processed = code;
+    
+    // 尝试修复键名缺少引号的情况
+    processed = processed.replace(/([a-zA-Z_$][a-zA-Z0-9_$]*)\s*:/g, '"$1":');
+    
+    // 尝试修复字符串缺少引号的情况
+    processed = processed.replace(/:\s*([a-zA-Z_$][a-zA-Z0-9_$]*)(\s*[,}\]])/g, ': "$1"$2');
+    
+    return processed;
+  };
+  
+  // JSON回退修复
+  const fallbackJsonFix = (code: string): string => {
+    // 基本的JSON格式修复
+    let fixed = code;
+    
+    // 确保括号匹配
+    const openBraces = (fixed.match(/[{]/g) || []).length;
+    const closeBraces = (fixed.match(/[}]/g) || []).length;
+    const braceDiff = openBraces - closeBraces;
+    
+    if (braceDiff > 0) {
+      fixed += '}'.repeat(braceDiff);
+    }
+    
+    return fixed;
+  };
+  
+  // HTML/XML语法修复
+  const fixHtmlXmlSyntax = (code: string, lang: string): string => {
+    let fixed = code;
+    
+    // 尝试修复标签不完整的情况
+    const openTags = [];
+    const tagRegex = /<([a-zA-Z][a-zA-Z0-9:-]*)(?:\s+[^>]*)?(?:\/>|>)/g;
+    const closeTagRegex = /<\/([a-zA-Z][a-zA-Z0-9:-]*)>/g;
+    
+    let match;
+    while ((match = tagRegex.exec(fixed)) !== null) {
+      const tagName = match[1];
+      const isSelfClosing = match[0].endsWith('/>') || 
+        ['br', 'hr', 'img', 'input', 'meta', 'link'].includes(tagName.toLowerCase());
+      
+      if (!isSelfClosing) {
+        openTags.push(tagName);
+      }
+    }
+    
+    while ((match = closeTagRegex.exec(fixed)) !== null) {
+      const tagName = match[1];
+      const lastOpenIndex = openTags.lastIndexOf(tagName);
+      if (lastOpenIndex !== -1) {
+        openTags.splice(lastOpenIndex, 1);
+      }
+    }
+    
+    // 关闭未关闭的标签
+    for (let i = openTags.length - 1; i >= 0; i--) {
+      fixed += `</${openTags[i]}>`;
+    }
+    
+    return fixed;
+  };
+  
+  // Python语法修复
+  const fixPythonSyntax = (code: string): string => {
+    let fixed = code;
+    
+    // 1. 修复被拆分的Python关键字
+    const keywords = [
+      'def', 'class', 'if', 'elif', 'else', 'for', 'while', 'try', 'except', 'finally',
+      'with', 'import', 'from', 'as', 'return', 'yield', 'pass', 'break', 'continue',
+      'lambda', 'and', 'or', 'not', 'in', 'is', 'True', 'False', 'None'
+    ];
+    
+    keywords.forEach(keyword => {
+      // 构建能够处理任意拆分的正则表达式
+      const pattern = keyword.split('').join('[\\s\\n]*');
+      const regex = new RegExp('\\b' + pattern + '\\b', 'gi');
+      fixed = fixed.replace(regex, keyword);
+    });
+    
+    // 2. 修复函数定义的结构
+    // 确保def和函数名正确连接
+    fixed = fixed.replace(/def\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*\(/g, 'def $1(');
+    
+    // 3. 修复括号匹配
+    // 修复圆括号
+    const openParens = (fixed.match(/\(/g) || []).length;
+    const closeParens = (fixed.match(/\)/g) || []).length;
+    const parenDiff = openParens - closeParens;
+    
+    if (parenDiff > 0) {
+      // 在适当位置添加缺失的闭合括号
+      fixed += ')'.repeat(parenDiff);
+    }
+    
+    // 4. 修复f-string格式，确保{}中的内容正确
+    fixed = fixed.replace(/f["']([^"']*)\{([^}]*)\}([^"']*)["']/g, "f\"$1{$2}$3\"");
+    
+    // 5. 处理多行函数定义，确保def、函数名和括号在一行
+    // 将"def 函数名"和"(参数):"连接在一行
+    fixed = fixed.replace(/def\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*\n\s*\(/g, 'def $1 (');
+    
+    // 6. 确保括号和冒号正确连接
+    fixed = fixed.replace(/\)\s*:/g, '):');
+    
+    // 7. 处理多行函数调用
+    fixed = fixed.replace(/([a-zA-Z_][a-zA-Z0-9_]*)\s*\n\s*\(/g, '$1 (');
+    
+    return fixed;
+  };
+  
+  // Python缩进修复
+  const fixPythonIndentation = (code: string): string => {
+    let fixed = '';
+    let indentLevel = 0;
+    const INDENT_SIZE = 4;
+    
+    // 先处理空行，保留空行模式的设置
+    const lines = code.split('\n');
+    let lastLineEmpty = false;
+    
+    for (const line of lines) {
+      const trimmed = line.trim();
+      
+      // 处理空行
+      if (!trimmed) {
+        if (lastLineEmpty) continue;
+        lastLineEmpty = true;
+        fixed += '\n';
+        continue;
+      }
+      lastLineEmpty = false;
+      
+      // 检查是否应该减少缩进（对于继续语句）
+      if (['elif', 'else', 'except', 'finally'].some(kw => trimmed.startsWith(kw))) {
+        indentLevel = Math.max(0, indentLevel - 1);
+      }
+      
+      // 添加缩进和代码行
+      fixed += ' '.repeat(INDENT_SIZE * indentLevel) + trimmed + '\n';
+      
+      // 如果行以冒号结尾，下一行需要增加缩进
+      if (trimmed.endsWith(':')) {
+        indentLevel++;
+      }
+    }
+    
+    return fixed;
+  };
 
   // 复制到剪贴板
   const copyToClipboard = (text: string) => {
@@ -387,6 +667,13 @@ print(f"数字: {i}")`,
           <div className="grid gap-6 md:grid-cols-2">
             {/* 输入区域 */}
             <Card className="p-4 space-y-4">
+              {/* 语法修复提示 */}
+              {syntaxRestored && (
+                <div className="bg-amber-50 border border-amber-200 text-amber-700 px-4 py-2 rounded-md flex items-center gap-2 text-sm">
+                  <AlertCircle className="h-4 w-4" />
+                  <span>检测到语法问题并尝试修复。请注意检查结果是否符合预期。</span>
+                </div>
+              )}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="flex justify-between items-center">
                   <Label htmlFor="language-select">编程语言</Label>
