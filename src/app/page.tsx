@@ -74,43 +74,57 @@ export default function Home() {
 
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
           {/* 图片压缩工具卡片 */}
-          <Card className="relative overflow-hidden group transition-all duration-300 hover:shadow-lg">
-            <div className="p-6 space-y-4">
+          <Card className="relative min-h-[300px] flex flex-col transition-all duration-300 hover:shadow-lg">
+            <div className="p-6 flex-grow flex flex-col space-y-4">
               <div className="rounded-full bg-blue-100 p-3 w-fit">
                 <Image className="h-6 w-6 text-blue-600" />
               </div>
               <h3 className="text-xl font-semibold">图片压缩工具</h3>
-              <p className="text-muted-foreground">
+              <p className="text-muted-foreground flex-grow">
                 轻松压缩JPG、PNG图片，保持画质的同时减小文件体积
               </p>
-              <Button variant="default" className="w-full" onClick={handleImageCompressor}>
-                立即使用
-              </Button>
+              <div className="mt-auto pt-4">
+                <Button variant="default" className="w-full" onClick={handleImageCompressor}>
+                  立即使用
+                </Button>
+              </div>
             </div>
           </Card>
 
           {/* 3D模型预览器卡片 */}
-          <Card className="p-6 transition-all duration-300 hover:shadow-lg">
-            <Globe className="h-12 w-12 text-purple-600 mb-4" />
-            <h3 className="text-xl font-semibold mb-2">3D模型预览器</h3>
-            <p className="text-muted-foreground mb-4">
-              在线预览各种格式的3D模型，支持旋转、缩放等交互操作
-            </p>
-            <Button className="w-full" onClick={handleModelViewer}>
-              预览模型
-            </Button>
+          <Card className="relative min-h-[300px] flex flex-col transition-all duration-300 hover:shadow-lg">
+            <div className="p-6 flex-grow flex flex-col space-y-4">
+              <div className="rounded-full bg-purple-100 p-3 w-fit">
+                <Globe className="h-6 w-6 text-purple-600" />
+              </div>
+              <h3 className="text-xl font-semibold">3D模型预览器</h3>
+              <p className="text-muted-foreground flex-grow">
+                在线预览各种格式的3D模型，支持旋转、缩放等交互操作
+              </p>
+              <div className="mt-auto pt-4">
+                <Button className="w-full" onClick={handleModelViewer}>
+                  预览模型
+                </Button>
+              </div>
+            </div>
           </Card>
 
           {/* 代码工具卡片 */}
-          <Card className="p-6 transition-all duration-300 hover:shadow-lg">
-            <FileCode className="h-12 w-12 text-green-600 mb-4" />
-            <h3 className="text-xl font-semibold mb-2">代码工具</h3>
-            <p className="text-muted-foreground mb-4">
-              代码格式化工具，支持多种编程语言
-            </p>
-            <Button className="w-full" onClick={handleCodeTools}>
-              立即使用
-            </Button>
+          <Card className="relative min-h-[300px] flex flex-col transition-all duration-300 hover:shadow-lg">
+            <div className="p-6 flex-grow flex flex-col space-y-4">
+              <div className="rounded-full bg-green-100 p-3 w-fit">
+                <FileCode className="h-6 w-6 text-green-600" />
+              </div>
+              <h3 className="text-xl font-semibold">代码工具</h3>
+              <p className="text-muted-foreground flex-grow">
+                代码格式化工具，支持多种编程语言
+              </p>
+              <div className="mt-auto pt-4">
+                <Button className="w-full" onClick={handleCodeTools}>
+                  立即使用
+                </Button>
+              </div>
+            </div>
           </Card>
         </div>
       </section>
