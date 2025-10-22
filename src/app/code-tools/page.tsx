@@ -341,27 +341,44 @@ print(f"数字: {i}")`,
     if (language === 'python') {
       let indentLevel = 0;
       const INDENT_SIZE = 4; // Python标准4空格缩进
+      let emptyLineCount = 0;
 
       for (const line of preprocessedLines) {
         const trimmed = line.trim();
+        
+        // 处理空行
         if (!trimmed) {
+          emptyLineCount++;
           // 如果是空行模式为'keepOne'，则添加空行
           if (emptyLineMode === 'keepOne') {
             formatted += '\n';
           }
+          // 遇到空行可能表示函数或代码块结束，重置缩进检查
+          continue;
+        }
+        
+        emptyLineCount = 0;
+
+        // 特殊处理 if __name__ == "__main__": 确保它在全局作用域
+        if (trimmed.startsWith('if __name__ == "__main__":')) {
+          // 强制将main语句放在全局作用域（缩进级别为0）
+          indentLevel = 0;
+          formatted += trimmed + '\n';
+          // main语句后的代码需要缩进
+          indentLevel = 1;
           continue;
         }
 
         // 检查是否是需要减少缩进的行（如elif, else, except, finally等）
         const dedentKeywords = /^(elif|else|except|finally):/;
         if (dedentKeywords.test(trimmed)) {
-          indentLevel = Math.max(0, indentLevel - 1);
+          indentLevel = Math.max(1, indentLevel - 1);
         }
 
         // 添加缩进和代码行
         formatted += ' '.repeat(INDENT_SIZE * indentLevel) + trimmed + '\n';
 
-        // 如果行以冒号结尾，下一行需要增加缩进
+        // 如果行以冒号结尾，且不是main语句，下一行需要增加缩进
         if (trimmed.endsWith(':')) {
           indentLevel++;
         }
