@@ -3,7 +3,7 @@
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { Image, Globe, FileCode, Monitor, Lock } from 'lucide-react';
+import { Image, Globe, FileCode, Monitor, Lock, Code, BookOpen } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { DevelopmentInProgress } from '@/components/ui/DevelopmentInProgress';
 import { useDevelopmentAlert } from '@/lib/useDevelopmentAlert';
@@ -32,6 +32,11 @@ export default function Home() {
 
   const handleCodeTools = () => {
     router.push('/code-tools');
+  };
+
+  // 导航到markdown编辑器页面
+  const handleMarkdownEditor = () => {
+    router.push('/markdown-editor');
   };
 
   const handleFreeUse = () => {
@@ -126,6 +131,24 @@ export default function Home() {
               </div>
             </div>
           </Card>
+
+          {/* Markdown编辑器卡片 */}
+          <Card className="relative min-h-[300px] flex flex-col transition-all duration-300 hover:shadow-lg">
+            <div className="p-6 flex-grow flex flex-col space-y-4">
+              <div className="rounded-full bg-yellow-100 p-3 w-fit">
+                <Code className="h-6 w-6 text-yellow-600" />
+              </div>
+              <h3 className="text-xl font-semibold">Markdown编辑器</h3>
+              <p className="text-muted-foreground flex-grow">
+                在线编辑和预览Markdown文档，支持实时渲染和导出功能
+              </p>
+              <div className="mt-auto pt-4">
+                <Button className="w-full" onClick={handleMarkdownEditor}>
+                  开始编辑
+                </Button>
+              </div>
+            </div>
+          </Card>
         </div>
       </section>
 
@@ -175,6 +198,8 @@ export default function Home() {
           立即开始免费使用
         </Button>
       </section>
+
+
 
       {/* 开发中提示组件 */}
       <DevelopmentInProgress

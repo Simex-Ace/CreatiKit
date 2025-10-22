@@ -4,6 +4,7 @@ import './globals.css';
 import { Header } from '@/components/header';
 import { Footer } from '@/components/footer';
 import { ThemeProvider } from '@/components/ui/theme-provider';
+import { PageTransition } from '@/components/ui/PageTransition';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -28,7 +29,9 @@ export default function RootLayout({
           <div className="flex flex-col min-h-screen">
             <Header />
             <main className="flex-1 container mx-auto px-4 py-8">
-              {children}
+              <PageTransition>
+                {children}
+              </PageTransition>
             </main>
             <Footer />
           </div>
