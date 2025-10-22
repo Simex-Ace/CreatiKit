@@ -457,7 +457,7 @@ const ThreeJSModelViewer = () => {
       </CardHeader>
       <CardContent>
         <div className="mb-4">
-          <p className="text-sm text-gray-500 mb-2">支持格式: glTF, GLB, OBJ (推荐使用glTF/GLB)</p>
+          <p className="text-sm text-gray-500 dark:text-white mb-2">支持格式: glTF, GLB, OBJ (推荐使用glTF/GLB)</p>
           
           <div 
             ref={containerRef} 
@@ -471,7 +471,7 @@ const ThreeJSModelViewer = () => {
             {isLoading && (
               <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-10">
                 <div className="bg-white p-4 rounded-lg">
-                  <p>正在加载模型...</p>
+                  <p className="text-gray-900">正在加载模型...</p>
                 </div>
               </div>
             )}
@@ -479,9 +479,9 @@ const ThreeJSModelViewer = () => {
             {/* 错误消息 */}
             {error && (
               <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-10" onClick={clearError}>
-                <div className="bg-red-50 p-4 rounded-lg border border-red-200">
-                  <p className="text-red-600">{error}</p>
-                  <p className="text-xs text-gray-500 mt-1">点击任意位置关闭</p>
+                <div className="bg-red-50 dark:bg-white p-4 rounded-lg border border-red-200 dark:border-red-300">
+                  <p className="text-red-600 dark:text-red-700">{error}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-900 mt-1">点击任意位置关闭</p>
                 </div>
               </div>
             )}
@@ -493,7 +493,7 @@ const ThreeJSModelViewer = () => {
               type="file" 
               accept=".gltf,.glb,.obj" 
               onChange={handleFileUpload}
-              className="flex-1 p-2 border rounded"
+              className="flex-1 p-2 border rounded text-gray-900 dark:text-white dark:bg-gray-800"
               id="model-upload"
             />
             <label htmlFor="model-upload">
@@ -504,22 +504,22 @@ const ThreeJSModelViewer = () => {
           </div>
           
           {/* 上传提示 */}
-          <p className="text-xs text-gray-400 mt-2">
+          <p className="text-xs text-gray-400 dark:text-white mt-2">
             或直接将文件拖放到3D视图区域
           </p>
           
           {/* 模型信息 */}
           {modelName && (
-            <div className="mt-4 p-2 bg-gray-50 rounded">
-              <p className="text-sm font-medium">当前模型: {modelName}</p>
+            <div className="mt-4 p-2 bg-gray-50 dark:bg-white rounded">
+              <p className="text-sm font-medium dark:text-gray-900">当前模型: {modelName}</p>
             </div>
           )}
         </div>
         
         {/* 控制器说明 */}
-        <div className="mt-6 bg-gray-50 p-4 rounded-lg">
-          <h3 className="text-sm font-bold mb-2">控制器说明:</h3>
-          <ul className="text-xs text-gray-600 space-y-1">
+        <div className="mt-6 bg-gray-50 dark:bg-white p-4 rounded-lg">
+          <h3 className="text-sm font-bold mb-2 dark:text-gray-900">控制器说明:</h3>
+          <ul className="text-xs text-gray-600 dark:text-gray-900 space-y-1">
             <li>• 鼠标左键: 旋转视角</li>
             <li>• 鼠标右键: 平移视图</li>
             <li>• 鼠标滚轮: 缩放视图</li>
@@ -528,13 +528,13 @@ const ThreeJSModelViewer = () => {
         </div>
       </CardContent>
       <CardFooter className="flex justify-between">
-        <Button variant="default" onClick={() => router.back()}>
-          返回
-        </Button>
-        <Button variant="default" onClick={handleDownloadModel}>
-          下载模型
-        </Button>
-      </CardFooter>
+          <Button variant="default" onClick={() => router.back()}>
+            返回
+          </Button>
+          <Button variant="default" onClick={handleDownloadModel}>
+            下载模型
+          </Button>
+        </CardFooter>
       
       {/* 开发中提示 */}
       <DevelopmentInProgress 

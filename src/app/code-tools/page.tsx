@@ -1161,11 +1161,11 @@ print(f"数字: {i}")`,
                   <Label htmlFor="language-select">编程语言</Label>
                   <div className="custom-select-wrapper">
                     <select
-                      id="language-select"
-                      value={language}
-                      onChange={(e) => handleLanguageChange(e.target.value)}
-                      className="w-[140px] h-10 px-3 py-2 pr-8 text-sm bg-white cursor-pointer custom-select"
-                    >
+                  id="language-select"
+                  value={language}
+                  onChange={(e) => handleLanguageChange(e.target.value)}
+                  className="w-[140px] h-10 px-3 py-2 pr-8 text-sm bg-white text-gray-900 dark:bg-white dark:text-gray-900 cursor-pointer custom-select"
+                >
                       <option value="javascript">JavaScript</option>
                       <option value="typescript">TypeScript</option>
                       <option value="html">HTML</option>
@@ -1180,11 +1180,11 @@ print(f"数字: {i}")`,
                   <Label htmlFor="empty-line-mode-select">空行处理</Label>
                   <div className="custom-select-wrapper">
                     <select
-                      id="empty-line-mode-select"
-                      value={emptyLineMode}
-                      onChange={(e) => setEmptyLineMode(e.target.value as 'keepOne' | 'removeAll')}
-                      className="w-[140px] h-10 px-3 py-2 pr-8 text-sm bg-white cursor-pointer custom-select"
-                    >
+                  id="empty-line-mode-select"
+                  value={emptyLineMode}
+                  onChange={(e) => setEmptyLineMode(e.target.value as 'keepOne' | 'removeAll')}
+                  className="w-[140px] h-10 px-3 py-2 pr-8 text-sm bg-white text-gray-900 dark:bg-white dark:text-gray-900 cursor-pointer custom-select"
+                >
                       <option value="keepOne">保留一行空格</option>
                       <option value="removeAll">移除所有空格行</option>
                     </select>
@@ -1195,7 +1195,7 @@ print(f"数字: {i}")`,
                 id="code-input"
                 value={code}
                 onChange={(e) => setCode(e.target.value)}
-                className="min-h-[300px] font-mono text-sm resize-none w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="min-h-[300px] font-mono text-sm resize-none w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-900 dark:bg-white dark:text-gray-900"
                 placeholder={`输入${language}代码...`}
               />
               <div className="flex gap-2">
@@ -1244,7 +1244,7 @@ print(f"数字: {i}")`,
                 id="code-output"
                 value={formattedCode || code}
                 readOnly
-                className="min-h-[300px] font-mono text-sm resize-none w-full p-3 border border-gray-300 rounded-md bg-gray-50"
+                className="min-h-[300px] font-mono text-sm resize-none w-full p-3 border border-gray-300 rounded-md bg-white text-gray-900 dark:bg-white dark:text-gray-900"
               />
             </Card>
           </div>
@@ -1263,11 +1263,11 @@ print(f"数字: {i}")`,
                   <Label htmlFor="language-select">编程语言</Label>
                   <div className="custom-select-wrapper">
                     <select
-                      id="language-select"
-                      value={language}
-                      onChange={(e) => handleLanguageChange(e.target.value)}
-                      className="w-[140px] h-10 px-3 py-2 pr-8 text-sm bg-white cursor-pointer"
-                    >
+                  id="language-select"
+                  value={language}
+                  onChange={(e) => handleLanguageChange(e.target.value)}
+                  className="w-[140px] h-10 px-3 py-2 pr-8 text-sm bg-white text-gray-900 dark:bg-white dark:text-gray-900 cursor-pointer"
+                >
                       <option value="javascript">JavaScript</option>
                       <option value="typescript">TypeScript</option>
                       <option value="html">HTML</option>
@@ -1319,7 +1319,7 @@ print(f"数字: {i}")`,
                 id="minify-code-input"
                 value={code}
                 onChange={(e) => setCode(e.target.value)}
-                className="min-h-[300px] font-mono text-sm resize-none w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="min-h-[300px] font-mono text-sm resize-none w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-900 dark:bg-white dark:text-gray-900"
                 placeholder={`输入${language}代码...`}
               />
               <div className="flex gap-2">
@@ -1373,7 +1373,7 @@ print(f"数字: {i}")`,
                 id="minify-code-output"
                 value={minifiedCode || code}
                 readOnly
-                className="min-h-[300px] font-mono text-sm resize-none w-full p-3 border border-gray-300 rounded-md bg-gray-50"
+                className="min-h-[300px] font-mono text-sm resize-none w-full p-3 border border-gray-300 rounded-md bg-white text-gray-900 dark:bg-white dark:text-gray-900"
               />
             </Card>
           </div>
@@ -1392,11 +1392,11 @@ print(f"数字: {i}")`,
                   <Label htmlFor="language-select">编程语言</Label>
                   <div className="custom-select-wrapper">
                     <select
-                      id="language-select"
-                      value={language}
-                      onChange={(e) => handleLanguageChange(e.target.value)}
-                      className="w-[140px] h-10 px-3 py-2 pr-8 text-sm bg-white cursor-pointer"
-                    >
+                  id="language-select"
+                  value={language}
+                  onChange={(e) => handleLanguageChange(e.target.value)}
+                  className="w-[140px] h-10 px-3 py-2 pr-8 text-sm bg-white text-gray-900 dark:bg-white dark:text-gray-900 cursor-pointer"
+                >
                       <option value="javascript">JavaScript</option>
                       <option value="typescript">TypeScript</option>
                       <option value="html">HTML</option>
@@ -1418,11 +1418,11 @@ print(f"数字: {i}")`,
                         <label htmlFor="quote-type" className="text-sm">引号类型：</label>
                         <div className="custom-select-wrapper">
                           <select
-                            id="quote-type"
-                            value={transformOptions.quoteType}
-                            onChange={(e) => updateTransformOptions('quoteType', e.target.value)}
-                            className="w-[140px] h-10 px-3 py-2 pr-8 text-sm bg-white cursor-pointer custom-select"
-                          >
+                  id="quote-type"
+                  value={transformOptions.quoteType}
+                  onChange={(e) => updateTransformOptions('quoteType', e.target.value)}
+                  className="w-[140px] h-10 px-3 py-2 pr-8 text-sm bg-white text-gray-900 dark:bg-white dark:text-gray-900 cursor-pointer custom-select"
+                >
                             <option value="none">不转换</option>
                             <option value="single">单引号</option>
                             <option value="double">双引号</option>
@@ -1437,11 +1437,11 @@ print(f"数字: {i}")`,
                         <label htmlFor="indent-type" className="text-sm">缩进类型：</label>
                         <div className="custom-select-wrapper">
                           <select
-                            id="indent-type"
-                            value={transformOptions.indentType}
-                            onChange={(e) => updateTransformOptions('indentType', e.target.value)}
-                            className="w-[140px] h-10 px-3 py-2 pr-8 text-sm bg-white cursor-pointer custom-select"
-                          >
+                  id="indent-type"
+                  value={transformOptions.indentType}
+                  onChange={(e) => updateTransformOptions('indentType', e.target.value)}
+                  className="w-[140px] h-10 px-3 py-2 pr-8 text-sm bg-white text-gray-900 dark:bg-white dark:text-gray-900 cursor-pointer custom-select"
+                >
                             <option value="none">不转换</option>
                             <option value="space">空格</option>
                             <option value="tab">Tab</option>
@@ -1477,11 +1477,11 @@ print(f"数字: {i}")`,
                         <label htmlFor="naming-style" className="text-sm">命名风格：</label>
                         <div className="custom-select-wrapper">
                           <select
-                            id="naming-style"
-                            value={transformOptions.namingStyle}
-                            onChange={(e) => updateTransformOptions('namingStyle', e.target.value)}
-                            className="w-[140px] h-10 px-3 py-2 pr-8 text-sm bg-white cursor-pointer custom-select"
-                          >
+                  id="naming-style"
+                  value={transformOptions.namingStyle}
+                  onChange={(e) => updateTransformOptions('namingStyle', e.target.value)}
+                  className="w-[140px] h-10 px-3 py-2 pr-8 text-sm bg-white text-gray-900 dark:bg-white dark:text-gray-900 cursor-pointer custom-select"
+                >
                             <option value="none">不转换</option>
                             <option value="camelCase">驼峰命名</option>
                             <option value="snake_case">下划线命名</option>
@@ -1497,11 +1497,11 @@ print(f"数字: {i}")`,
                           <label htmlFor="comment-style" className="text-sm">注释风格：</label>
                           <div className="custom-select-wrapper">
                             <select
-                                id="comment-style"
-                                value={transformOptions.commentStyle}
-                                onChange={(e) => updateTransformOptions('commentStyle', e.target.value)}
-                                className="w-[140px] h-10 px-3 py-2 pr-8 text-sm bg-white cursor-pointer custom-select"
-                              >
+                  id="comment-style"
+                  value={transformOptions.commentStyle}
+                  onChange={(e) => updateTransformOptions('commentStyle', e.target.value)}
+                  className="w-[140px] h-10 px-3 py-2 pr-8 text-sm bg-white text-gray-900 dark:bg-white dark:text-gray-900 cursor-pointer custom-select"
+                >
                               <option value="none">不转换</option>
                               <option value="line">单行注释</option>
                               <option value="block">块注释</option>
@@ -1518,7 +1518,7 @@ print(f"数字: {i}")`,
                 id="transform-code-input"
                 value={code}
                 onChange={(e) => setCode(e.target.value)}
-                className="min-h-[300px] font-mono text-sm resize-none w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="min-h-[300px] font-mono text-sm resize-none w-full p-3 border border-gray-300 dark:border-gray-700 bg-white text-gray-900 dark:bg-white dark:text-gray-900 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 placeholder={`输入${language}代码...`}
               />
               <div className="flex gap-2">
@@ -1572,7 +1572,7 @@ print(f"数字: {i}")`,
                 id="transform-code-output"
                 value={transformedCode || code}
                 readOnly
-                className="min-h-[300px] font-mono text-sm resize-none w-full p-3 border border-gray-300 rounded-md bg-gray-50"
+                className="min-h-[300px] font-mono text-sm resize-none w-full p-3 border border-gray-300 dark:border-gray-700 bg-white text-gray-900 dark:bg-white dark:text-gray-900 rounded-md"
               />
             </Card>
           </div>

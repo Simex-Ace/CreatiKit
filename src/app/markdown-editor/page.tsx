@@ -100,24 +100,35 @@ export default function MarkdownEditor() {
     const parsedHtml = marked.parse(markdownContent);
     
     // 添加样式 - 使用简单字符串连接避免嵌套模板字符串问题
-    const cssStyles = 
+    const cssStyles =
       'body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; line-height: 1.6; color: #333; } ' +
+      '@media (prefers-color-scheme: dark) { body { color: #e2e8f0; } } ' +
       'h1, h2, h3, h4, h5, h6 { color: #1a202c; margin-top: 1.5em; margin-bottom: 0.5em; font-weight: 600; } ' +
+      '@media (prefers-color-scheme: dark) { h1, h2, h3, h4, h5, h6 { color: #f7fafc; } } ' +
       'h1 { font-size: 2em; border-bottom: 1px solid #e2e8f0; padding-bottom: 0.3em; } ' +
+      '@media (prefers-color-scheme: dark) { h1 { border-bottom-color: #4a5568; } } ' +
       'h2 { font-size: 1.5em; border-bottom: 1px solid #e2e8f0; padding-bottom: 0.3em; } ' +
+      '@media (prefers-color-scheme: dark) { h2 { border-bottom-color: #4a5568; } } ' +
       'h3 { font-size: 1.25em; } ' +
       'p { margin-bottom: 1em; } ' +
       'a { color: #3182ce; text-decoration: none; } ' +
+      '@media (prefers-color-scheme: dark) { a { color: #63b3ed; } } ' +
       'a:hover { text-decoration: underline; } ' +
       'img { max-width: 100%; height: auto; } ' +
       'hr { border: 0; border-top: 1px solid #e2e8f0; margin: 1.5em 0; } ' +
+      '@media (prefers-color-scheme: dark) { hr { border-top-color: #4a5568; } } ' +
       'blockquote { border-left: 4px solid #e2e8f0; padding-left: 1em; margin-left: 0; color: #718096; } ' +
-      'pre { background: #f7fafc; padding: 16px; border-radius: 6px; overflow-x: auto; margin-bottom: 1em; } ' +
-      'code { font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace; background: #f7fafc; padding: 2px 4px; border-radius: 3px; } ' +
-      'pre code { background: none; padding: 0; } ' +
+      '@media (prefers-color-scheme: dark) { blockquote { border-left-color: #4a5568; color: #a0aec0; } } ' +
+      'pre { background: white; padding: 16px; border-radius: 6px; overflow-x: auto; margin-bottom: 1em; border: 1px solid #e2e8f0; } ' +
+      '@media (prefers-color-scheme: dark) { pre { background: white; border-color: #e2e8f0; } } ' +
+      'code { font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace; background: #f7fafc; padding: 2px 4px; border-radius: 3px; color: #d69e2e; } ' +
+      '@media (prefers-color-scheme: dark) { code { background: #f7fafc; color: #d69e2e; } } ' +
+      'pre code { background: none; padding: 0; color: inherit; } ' +
       'table { border-collapse: collapse; width: 100%; margin-bottom: 1em; } ' +
       'th, td { padding: 0.5em; border: 1px solid #e2e8f0; text-align: left; } ' +
+      '@media (prefers-color-scheme: dark) { th, td { border-color: #4a5568; } } ' +
       'th { background-color: #f7fafc; font-weight: 600; } ' +
+      '@media (prefers-color-scheme: dark) { th { background-color: #2d3748; } } ' +
       'ul { list-style-type: disc; padding-left: 2em; margin-bottom: 1em; } ' +
       'ol { list-style-type: decimal; padding-left: 2em; margin-bottom: 1em; } ' +
       'li { margin-bottom: 0.5em; } ' +
@@ -239,7 +250,7 @@ export default function MarkdownEditor() {
             <textarea
               value={markdownContent}
               onChange={(e) => setMarkdownContent(e.target.value)}
-              className="w-full h-[600px] p-6 text-gray-800 font-mono focus:outline-none resize-none"
+              className="w-full h-[600px] p-6 bg-white dark:bg-white text-gray-800 dark:text-gray-800 font-mono focus:outline-none resize-none"
               placeholder="在此输入Markdown内容..."
             />
           )}
@@ -256,7 +267,7 @@ export default function MarkdownEditor() {
               <textarea
                 value={markdownContent}
                 onChange={(e) => setMarkdownContent(e.target.value)}
-                className="w-1/2 p-6 text-gray-800 font-mono focus:outline-none resize-none border-r"
+                className="w-1/2 p-6 bg-white dark:bg-white text-gray-800 dark:text-gray-800 font-mono focus:outline-none resize-none border-r dark:border-gray-300"
                 placeholder="在此输入Markdown内容..."
               />
               <div 
@@ -274,7 +285,7 @@ export default function MarkdownEditor() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <h3 className="text-lg font-semibold mb-3 text-gray-700">✨ 文本格式化</h3>
-                <pre className="bg-gray-100 p-4 rounded-md overflow-x-auto text-sm mb-4">
+                <pre className="bg-white border border-gray-200 p-4 rounded-md overflow-x-auto text-sm mb-4">
 {`**粗体文本** 或 __粗体文本__
 *斜体文本* 或 _斜体文本_
 ***粗斜体文本*** 或 ___粗斜体文本___
@@ -285,7 +296,7 @@ export default function MarkdownEditor() {
               
               <div>
                 <h3 className="text-lg font-semibold mb-3 text-gray-700">📋 列表</h3>
-                <pre className="bg-gray-100 p-4 rounded-md overflow-x-auto text-sm mb-4">
+                <pre className="bg-white border border-gray-200 p-4 rounded-md overflow-x-auto text-sm mb-4">
 {`# 无序列表
 - 项目1
 - 项目2
@@ -302,7 +313,7 @@ export default function MarkdownEditor() {
               
               <div>
                 <h3 className="text-lg font-semibold mb-3 text-gray-700">🔗 链接和图片</h3>
-                <pre className="bg-gray-100 p-4 rounded-md overflow-x-auto text-sm mb-4">
+                <pre className="bg-white border border-gray-200 p-4 rounded-md overflow-x-auto text-sm mb-4">
 {`# 链接
 [链接文本](https://example.com)
 
@@ -316,7 +327,7 @@ export default function MarkdownEditor() {
               
               <div>
                 <h3 className="text-lg font-semibold mb-3 text-gray-700">💻 代码和表格</h3>
-                <pre className="bg-gray-100 p-4 rounded-md overflow-x-auto text-sm mb-4">
+                <pre className="bg-white border border-gray-200 p-4 rounded-md overflow-x-auto text-sm mb-4">
 {`# 代码块
 \`\`\`javascript
 function example() {
@@ -333,7 +344,7 @@ function example() {
               
               <div className="md:col-span-2">
                 <h3 className="text-lg font-semibold mb-3 text-gray-700">🎯 其他功能</h3>
-                <pre className="bg-gray-100 p-4 rounded-md overflow-x-auto text-sm">
+                <pre className="bg-white border border-gray-200 p-4 rounded-md overflow-x-auto text-sm">
 {`# 引用
 > 这是一段引用
 >> 嵌套引用
