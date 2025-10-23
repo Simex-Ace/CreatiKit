@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Eye, AlertCircle } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Eye, AlertCircle, Smartphone } from 'lucide-react';
 
 interface EyedropperProps {
   onColorPick: (color: string) => void;
@@ -67,11 +67,30 @@ export function Eyedropper({ onColorPick }: EyedropperProps) {
   const [isActive, setIsActive] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [hasEyeDropperAPI, setHasEyeDropperAPI] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+  const [colorInputValue, setColorInputValue] = useState('#3B82F6');
 
-  // 检查浏览器是否支持EyeDropper API
+  // 检测是否为移动设备
   useEffect(() => {
+    const checkMobile = () => {
+      const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      setIsMobile(isMobileDevice);
+    };
+    
+    checkMobile();
     setHasEyeDropperAPI('EyeDropper' in window);
+    
+    // 监听窗口大小变化，更新移动设备检测
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
   }, []);
+
+  // 处理颜色输入变化
+  const handleColorInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const color = e.target.value;
+    setColorInputValue(color);
+    onColorPick(color);
+  };
 
   // 使用原生EyeDropper API
   const useNativeEyeDropper = async () => {
@@ -95,7 +114,7 @@ export function Eyedropper({ onColorPick }: EyedropperProps) {
     }
   };
 
-  // 使用回退方案（仅在支持屏幕共享时）
+  // 使用回退方案（仅在支持屏幕共享且非移动设备时）
   const useFallbackEyeDropper = async () => {
     try {
       setIsActive(true);
@@ -156,9 +175,9 @@ export function Eyedropper({ onColorPick }: EyedropperProps) {
       
       // 清理函数
       const cleanup = () => {
-        document.body.removeChild(message);
-        document.body.removeChild(cursor);
-        document.body.removeChild(cursor2);
+        if (message.parentNode) document.body.removeChild(message);
+        if (cursor.parentNode) document.body.removeChild(cursor);
+        if (cursor2.parentNode) document.body.removeChild(cursor2);
         window.removeEventListener('mousemove', updateCursor);
         window.removeEventListener('click', handleClick, true);
         window.removeEventListener('keydown', handleEsc);
@@ -179,8 +198,12 @@ export function Eyedropper({ onColorPick }: EyedropperProps) {
   const startEyeDropper = () => {
     if (hasEyeDropperAPI) {
       useNativeEyeDropper();
-    } else {
+    } else if (!isMobile) {
+      // 仅在非移动设备上使用回退方案
       useFallbackEyeDropper();
+    } else {
+      // 移动设备显示特殊错误提示
+      setError('移动端不支持屏幕取色，请使用颜色选择器代替');
     }
   };
 
@@ -196,6 +219,33 @@ export function Eyedropper({ onColorPick }: EyedropperProps) {
         {isActive ? '取色中...' : '屏幕取色'}
       </Button>
       
+      {/* 移动设备显示原生颜色选择器 */}
+      {isMobile && (
+        <div className="pt-2">
+          <div className="text-sm text-gray-500 dark:text-gray-400 mb-1">
+            <Smartphone size={14} className="inline-block mr-1" />
+            移动设备颜色选择
+          </div>
+          <div className="flex items-center gap-2">
+            <input
+              type="color"
+              value={colorInputValue}
+              onChange={handleColorInputChange}
+              className="w-10 h-10 border-0 rounded cursor-pointer"
+              title="选择颜色"
+            />
+            <input
+              type="text"
+              value={colorInputValue}
+              onChange={(e) => setColorInputValue(e.target.value)}
+              className="flex-1 px-3 py-1 border rounded text-sm font-mono"
+              placeholder="#000000"
+              maxLength={7}
+            />
+          </div>
+        </div>
+      )}
+      
       {error && (
         <Alert variant="destructive" className="text-sm">
           <AlertCircle className="h-4 w-4" />
@@ -203,7 +253,7 @@ export function Eyedropper({ onColorPick }: EyedropperProps) {
         </Alert>
       )}
       
-      {!hasEyeDropperAPI && !error && (
+      {!hasEyeDropperAPI && !isMobile && !error && (
         <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
           提示：您的浏览器不支持原生取色器，将使用屏幕共享功能作为回退方案
         </div>
