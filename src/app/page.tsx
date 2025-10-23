@@ -43,6 +43,10 @@ export default function Home() {
     router.push('/color-palette');
   };
 
+  const handleTextAnalyzer = () => {
+    router.push('/text-analyzer');
+  };
+
   const handleFreeUse = () => {
     // 跳转到功能区域
     window.scrollTo({ top: 500, behavior: 'smooth' });
@@ -167,6 +171,24 @@ export default function Home() {
               <div className="mt-auto pt-4">
                 <Button className="w-full" onClick={handleColorPalette}>
                   开始调色
+                </Button>
+              </div>
+            </div>
+          </Card>
+
+          {/* 文本分析工具卡片 */}
+          <Card className="relative min-h-[300px] flex flex-col transition-all duration-300 hover:shadow-lg">
+            <div className="p-6 flex-grow flex flex-col space-y-4">
+              <div className="rounded-full bg-indigo-100 p-3 w-fit">
+                <BookOpen className="h-6 w-6 text-indigo-600" />
+              </div>
+              <h3 className="text-xl font-semibold">SEO分析与文本优化</h3>
+              <p className="text-muted-foreground flex-grow">
+                专业SEO分析工具，提供关键词密度检测、相关关键词建议、文本热力图和智能优化功能
+              </p>
+              <div className="mt-auto pt-4">
+                <Button className="w-full" onClick={handleTextAnalyzer}>
+                  开始分析
                 </Button>
               </div>
             </div>
