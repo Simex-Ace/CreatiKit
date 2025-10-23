@@ -42,6 +42,9 @@ export function Header() {
             <Link href="/model-viewer" className="text-sm font-medium transition-colors hover:text-primary">
               3D预览
             </Link>
+            <Link href="/color-palette" className="text-sm font-medium transition-colors hover:text-primary">
+              调色板
+            </Link>
           </nav>
         </div>
         <div className="flex items-center space-x-4">
