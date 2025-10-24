@@ -3,7 +3,7 @@
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { Image, Globe, FileCode, Monitor, Lock, Code, BookOpen, Palette } from 'lucide-react';
+import { Image, Globe, FileCode, Monitor, Lock, Code, BookOpen, Palette, Smile } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { DevelopmentInProgress } from '@/components/ui/DevelopmentInProgress';
 import { useDevelopmentAlert } from '@/lib/useDevelopmentAlert';
@@ -45,6 +45,10 @@ export default function Home() {
 
   const handleTextAnalyzer = () => {
     router.push('/text-analyzer');
+  };
+
+  const handleEmojiCollection = () => {
+    router.push('/emoji-collection');
   };
 
   const handleFreeUse = () => {
@@ -189,6 +193,24 @@ export default function Home() {
               <div className="mt-auto pt-4">
                 <Button className="w-full" onClick={handleTextAnalyzer}>
                   开始分析
+                </Button>
+              </div>
+            </div>
+          </Card>
+
+          {/* Emoji大全卡片 */}
+          <Card className="relative min-h-[300px] flex flex-col transition-all duration-300 hover:shadow-lg">
+            <div className="p-6 flex-grow flex flex-col space-y-4">
+              <div className="rounded-full bg-pink-100 p-3 w-fit">
+                <Smile className="h-6 w-6 text-pink-600" />
+              </div>
+              <h3 className="text-xl font-semibold">Emoji大全</h3>
+              <p className="text-muted-foreground flex-grow">
+                浏览、搜索和一键复制各种表情符号，支持收藏夹和最近使用功能，让沟通更加生动有趣
+              </p>
+              <div className="mt-auto pt-4">
+                <Button className="w-full" onClick={handleEmojiCollection}>
+                  开始使用
                 </Button>
               </div>
             </div>
