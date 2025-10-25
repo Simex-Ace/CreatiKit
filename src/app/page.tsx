@@ -3,7 +3,7 @@
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { Image, Globe, FileCode, Monitor, Lock, Code, BookOpen, Palette, Smile } from 'lucide-react';
+import { Image, Globe, FileCode, Monitor, Lock, Code, BookOpen, Palette, Smile, QrCode } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { DevelopmentInProgress } from '@/components/ui/DevelopmentInProgress';
 import { useDevelopmentAlert } from '@/lib/useDevelopmentAlert';
@@ -49,6 +49,10 @@ export default function Home() {
 
   const handleEmojiCollection = () => {
     router.push('/emoji-collection');
+  };
+
+  const handleQrCodeGenerator = () => {
+    router.push('/qr-code-generator');
   };
 
   const handleFreeUse = () => {
@@ -193,6 +197,24 @@ export default function Home() {
               <div className="mt-auto pt-4">
                 <Button className="w-full" onClick={handleTextAnalyzer}>
                   开始分析
+                </Button>
+              </div>
+            </div>
+          </Card>
+          
+          {/* 二维码生成器卡片 */}
+          <Card className="relative min-h-[300px] flex flex-col transition-all duration-300 hover:shadow-lg">
+            <div className="p-6 flex-grow flex flex-col space-y-4">
+              <div className="rounded-full bg-teal-100 p-3 w-fit">
+                <QrCode className="h-6 w-6 text-teal-600" />
+              </div>
+              <h3 className="text-xl font-semibold">二维码生成器</h3>
+              <p className="text-muted-foreground flex-grow">
+                快速生成各类二维码，支持多种内容类型、样式定制和文件格式导出
+              </p>
+              <div className="mt-auto pt-4">
+                <Button className="w-full" onClick={handleQrCodeGenerator}>
+                  生成二维码
                 </Button>
               </div>
             </div>
