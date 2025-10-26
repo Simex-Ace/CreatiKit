@@ -7,7 +7,7 @@ import { MetadataRoute } from 'next';
 export default function robots(): MetadataRoute.Robots {
   // 获取站点的基础 URL
   const baseUrl = process.env.NODE_ENV === 'production' 
-    ? 'https://creatikit.io' 
+    ? 'https://creatikit.asia' 
     : 'http://localhost:3000';
 
   return {
