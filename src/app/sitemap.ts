@@ -25,7 +25,7 @@ const routes: RouteItem[] = [
 export default function sitemap(): MetadataRoute.Sitemap {
   // 获取站点的基础 URL，生产环境中会自动使用实际域名
   const baseUrl = process.env.NODE_ENV === 'production' 
-    ? 'https://creatikit.io' 
+    ? 'https://creatikit.asia' 
     : 'http://localhost:3000';
 
   // 将路由项转换为Next.js站点地图格式
