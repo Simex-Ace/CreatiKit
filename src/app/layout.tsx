@@ -12,7 +12,9 @@ export const metadata: Metadata = {
   title: 'CreatiKit.io - 创意工具箱',
   description: '提供图片智能压缩、3D模型预览等创意工具的在线平台',
   icons: {
-    icon: '/favicon.ico',
+    icon: '/favicon.svg',
+    shortcut: '/favicon.svg',
+    apple: '/favicon.svg',
   },
 };
 
