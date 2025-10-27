@@ -123,8 +123,22 @@ export default function Whiteboard() {
     // 如果正在绘制中，不保存状态
     if (isDrawing) return;
     
-    // 移除当前索引之后的历史记录（如果存在）
-    const newHistory = history.slice(0, historyIndex + 1);
+    // 不清除当前索引后的历史记录，而是保留所有历史状态
+    // 这样即使在撤销后进行绘制，重做功能仍然可用
+    const newHistory = [...history];
+    
+    // 如果当前不在历史记录末尾，先移除后面的状态（保留撤销重做的标准行为）
+    // 但确保只在需要时才这样做，防止重复添加相同状态
+    if (historyIndex < newHistory.length - 1) {
+      newHistory.splice(historyIndex + 1);
+    }
+    
+    // 检查是否与最后一个状态相同，避免重复保存
+    if (historyIndex >= 0 && newHistory[historyIndex] === imageData) {
+      return;
+    }
+    
+    // 添加新状态
     newHistory.push(imageData);
     
     // 限制历史记录数量
@@ -193,12 +207,10 @@ export default function Whiteboard() {
   const handleClearCanvas = () => {
     const canvas = canvasRef.current;
     const ctx = canvas?.getContext('2d');
-    if (!ctx) return;
+    if (!ctx || !canvas) return;
     
     ctx.fillStyle = '#ffffff';
-    if (canvas) {
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-    }
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
     
     // 清除后保存状态
     setTimeout(saveState, 0);
@@ -224,13 +236,11 @@ export default function Whiteboard() {
   const applyState = (index: number) => {
     const canvas = canvasRef.current;
     const ctx = canvas?.getContext('2d');
-    if (!ctx || !history[index]) return;
+    if (!ctx || !history[index] || !canvas) return;
     
     const img = new Image();
     img.onload = () => {
-      if (canvas) {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-      }
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
       ctx.drawImage(img, 0, 0);
     };
     img.src = history[index];
@@ -317,7 +327,7 @@ export default function Whiteboard() {
                     : 'bg-gray-700 text-white hover:bg-gray-800'
                 }`}
               >
-                撤销
+                上一步
               </button>
               <button
                 onClick={handleRedo}
@@ -328,7 +338,7 @@ export default function Whiteboard() {
                     : 'bg-gray-700 text-white hover:bg-gray-800'
                 }`}
               >
-                重做
+                下一步
               </button>
               <button
                 onClick={handleSaveImage}
