@@ -55,6 +55,10 @@ export default function Home() {
     router.push('/qr-code-generator');
   };
 
+  const handlePixelArtGenerator = () => {
+    router.push('/pixel-art-generator');
+  };
+
   const handleFreeUse = () => {
     // 跳转到功能区域
     window.scrollTo({ top: 500, behavior: 'smooth' });
@@ -233,6 +237,24 @@ export default function Home() {
               <div className="mt-auto pt-4">
                 <Button className="w-full" onClick={handleEmojiCollection}>
                   开始使用
+                </Button>
+              </div>
+            </div>
+          </Card>
+
+          {/* 像素艺术生成器卡片 */}
+          <Card className="relative min-h-[300px] flex flex-col transition-all duration-300 hover:shadow-lg">
+            <div className="p-6 flex-grow flex flex-col space-y-4">
+              <div className="rounded-full bg-orange-100 p-3 w-fit">
+                <Monitor className="h-6 w-6 text-orange-600" />
+              </div>
+              <h3 className="text-xl font-semibold">像素艺术生成器</h3>
+              <p className="text-muted-foreground flex-grow">
+                上传图片并转换成像素风格艺术，支持自定义像素大小、颜色数量和调色板选择
+              </p>
+              <div className="mt-auto pt-4">
+                <Button className="w-full" onClick={handlePixelArtGenerator}>
+                  生成像素艺术
                 </Button>
               </div>
             </div>
