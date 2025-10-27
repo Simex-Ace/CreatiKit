@@ -59,6 +59,14 @@ export default function Home() {
     router.push('/pixel-art-generator');
   };
 
+  const handleHashCalculator = () => {
+    router.push('/hash-calculator');
+  };
+
+  const handleTimestampConverter = () => {
+    router.push('/timestamp-converter');
+  };
+
   const handleFreeUse = () => {
     // 跳转到功能区域
     window.scrollTo({ top: 500, behavior: 'smooth' });
@@ -255,6 +263,42 @@ export default function Home() {
               <div className="mt-auto pt-4">
                 <Button className="w-full" onClick={handlePixelArtGenerator}>
                   生成像素艺术
+                </Button>
+              </div>
+            </div>
+          </Card>
+
+          {/* 哈希/散列值计算器卡片 */}
+          <Card className="relative min-h-[300px] flex flex-col transition-all duration-300 hover:shadow-lg">
+            <div className="p-6 flex-grow flex flex-col space-y-4">
+              <div className="rounded-full bg-cyan-100 p-3 w-fit">
+                <Lock className="h-6 w-6 text-cyan-600" />
+              </div>
+              <h3 className="text-xl font-semibold">哈希/散列值计算器</h3>
+              <p className="text-muted-foreground flex-grow">
+                计算文本或文件的MD5、SHA-1、SHA-256、SHA-512等多种哈希值，支持自定义算法选择
+              </p>
+              <div className="mt-auto pt-4">
+                <Button className="w-full" onClick={handleHashCalculator}>
+                  计算哈希值
+                </Button>
+              </div>
+            </div>
+          </Card>
+
+          {/* Unix 时间戳转换器卡片 */}
+          <Card className="relative min-h-[300px] flex flex-col transition-all duration-300 hover:shadow-lg">
+            <div className="p-6 flex-grow flex flex-col space-y-4">
+              <div className="rounded-full bg-orange-100 p-3 w-fit">
+                <Monitor className="h-6 w-6 text-orange-600" />
+              </div>
+              <h3 className="text-xl font-semibold">Unix 时间戳转换器</h3>
+              <p className="text-muted-foreground flex-grow">
+                在标准日期时间和Unix时间戳之间进行转换，显示相对时间
+              </p>
+              <div className="mt-auto pt-4">
+                <Button className="w-full" onClick={handleTimestampConverter}>
+                  转换时间戳
                 </Button>
               </div>
             </div>
