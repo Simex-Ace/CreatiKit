@@ -3,7 +3,7 @@
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { Image, Globe, FileCode, Monitor, Lock, Code, BookOpen, Palette, Smile, QrCode } from 'lucide-react';
+import { Image, Globe, FileCode, Monitor, Lock, Code, BookOpen, Palette, Smile, QrCode, PencilRuler } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { DevelopmentInProgress } from '@/components/ui/DevelopmentInProgress';
 import { useDevelopmentAlert } from '@/lib/useDevelopmentAlert';
@@ -65,6 +65,10 @@ export default function Home() {
 
   const handleTimestampConverter = () => {
     router.push('/timestamp-converter');
+  };
+
+  const handleWhiteboard = () => {
+    router.push('/whiteboard');
   };
 
   const handleFreeUse = () => {
@@ -299,6 +303,24 @@ export default function Home() {
               <div className="mt-auto pt-4">
                 <Button className="w-full" onClick={handleTimestampConverter}>
                   转换时间戳
+                </Button>
+              </div>
+            </div>
+          </Card>
+
+          {/* 在线白板工具卡片 */}
+          <Card className="relative min-h-[300px] flex flex-col transition-all duration-300 hover:shadow-lg">
+            <div className="p-6 flex-grow flex flex-col space-y-4">
+              <div className="rounded-full bg-blue-100 p-3 w-fit">
+                <PencilRuler className="h-6 w-6 text-blue-600" />
+              </div>
+              <h3 className="text-xl font-semibold">在线白板</h3>
+              <p className="text-muted-foreground flex-grow">
+                提供一个无限大的画布，支持画笔、橡皮擦、文本输入和形状绘制等基本功能
+              </p>
+              <div className="mt-auto pt-4">
+                <Button className="w-full" onClick={handleWhiteboard}>
+                  开始创作
                 </Button>
               </div>
             </div>

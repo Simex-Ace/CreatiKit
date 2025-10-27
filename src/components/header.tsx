@@ -72,6 +72,9 @@ export function Header() {
             <Link href="/model-viewer" className="block py-2 text-sm font-medium transition-colors hover:text-primary">
               3D预览
             </Link>
+            <Link href="/whiteboard" className="block py-2 text-sm font-medium transition-colors hover:text-primary">
+              在线白板
+            </Link>
             <div className="pt-2 flex flex-col space-y-2">
               <Button className="w-full" onClick={handleLogin}>登录</Button>
               <Button variant="secondary" className="w-full" onClick={handleRegister}>
