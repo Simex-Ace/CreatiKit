@@ -3,7 +3,7 @@
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { Image, Globe, FileCode, Monitor, Lock, Code, BookOpen, Palette, Smile, QrCode, PencilRuler } from 'lucide-react';
+import { Image, Globe, FileCode, Monitor, Lock, Code, BookOpen, Palette, Smile, QrCode, PencilRuler, RotateCw } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { DevelopmentInProgress } from '@/components/ui/DevelopmentInProgress';
 import { useDevelopmentAlert } from '@/lib/useDevelopmentAlert';
@@ -69,6 +69,10 @@ export default function Home() {
 
   const handleWhiteboard = () => {
     router.push('/whiteboard');
+  };
+
+  const handleGifTool = () => {
+    router.push('/gif-tool');
   };
 
   const handleFreeUse = () => {
@@ -321,6 +325,24 @@ export default function Home() {
               <div className="mt-auto pt-4">
                 <Button className="w-full" onClick={handleWhiteboard}>
                   开始创作
+                </Button>
+              </div>
+            </div>
+          </Card>
+
+          {/* GIF分解/合成器卡片 */}
+          <Card className="relative min-h-[300px] flex flex-col transition-all duration-300 hover:shadow-lg">
+            <div className="p-6 flex-grow flex flex-col space-y-4">
+              <div className="rounded-full bg-green-100 p-3 w-fit">
+                <RotateCw className="h-6 w-6 text-green-600" />
+              </div>
+              <h3 className="text-xl font-semibold">GIF分解/合成器</h3>
+              <p className="text-muted-foreground flex-grow">
+                将GIF动图分解为单帧静态图片，或将多张图片合成为动态GIF，支持帧率调节
+              </p>
+              <div className="mt-auto pt-4">
+                <Button className="w-full" onClick={handleGifTool}>
+                  开始使用
                 </Button>
               </div>
             </div>
