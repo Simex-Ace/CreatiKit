@@ -3,7 +3,7 @@
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { Image, Globe, FileCode, Monitor, Lock, Code, BookOpen, Palette, Smile, QrCode, PencilRuler, RotateCw } from 'lucide-react';
+import { Image, Globe, FileCode, Monitor, Lock, Code, BookOpen, Palette, Smile, QrCode, PencilRuler, RotateCw, CloudSun } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { DevelopmentInProgress } from '@/components/ui/DevelopmentInProgress';
 import { useDevelopmentAlert } from '@/lib/useDevelopmentAlert';
@@ -73,6 +73,10 @@ export default function Home() {
 
   const handleGifTool = () => {
     router.push('/gif-tool');
+  };
+
+  const handleWeatherTool = () => {
+    router.push('/weather-tool');
   };
 
   const handleFreeUse = () => {
@@ -347,6 +351,24 @@ export default function Home() {
               </div>
             </div>
           </Card>
+
+            {/* 天气预报工具卡片 */}
+            <Card className="relative min-h-[300px] flex flex-col transition-all duration-300 hover:shadow-lg">
+              <div className="p-6 flex-grow flex flex-col space-y-4">
+                <div className="rounded-full bg-sky-100 p-3 w-fit">
+                  <CloudSun className="h-6 w-6 text-sky-600" />
+                </div>
+                <h3 className="text-xl font-semibold">天气预报工具</h3>
+                <p className="text-muted-foreground flex-grow">
+                  实时获取当前位置天气，查看未来3天预报和空气质量，支持城市搜索功能
+                </p>
+                <div className="mt-auto pt-4">
+                  <Button className="w-full" onClick={handleWeatherTool}>
+                    查看天气
+                  </Button>
+                </div>
+              </div>
+            </Card>
         </div>
       </section>
 
