@@ -39,10 +39,12 @@ export default function WeatherToolPage() {
     setMapLoaded(false);
     
     const loadMap = () => {
-      if (window.AMap && mapContainerRef.current) {
+      // 使用类型断言避免TypeScript错误
+      const win = window as any;
+      if (win.AMap && mapContainerRef.current) {
         try {
           // 初始化地图
-          const map = new window.AMap.Map(mapContainerRef.current, {
+          const map = new win.AMap.Map(mapContainerRef.current, {
             zoom: 12,
             center: [longitude, latitude],
             resizeEnable: true,
@@ -50,7 +52,7 @@ export default function WeatherToolPage() {
           });
 
           // 添加标记
-          const marker = new window.AMap.Marker({
+          const marker = new win.AMap.Marker({
             position: [longitude, latitude],
             title: selectedCity?.name || '当前位置'
           });
@@ -84,7 +86,7 @@ export default function WeatherToolPage() {
     };
 
     // 检查地图是否已加载
-    if (window.AMap) {
+    if ((window as any).AMap) {
       loadMap();
     } else {
       console.log('开始加载高德地图SDK');
