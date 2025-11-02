@@ -1,7 +1,21 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 
-// 音符频率映射表
+// 扩展的音符频率映射表 (3个八度)
 export const NOTE_FREQUENCIES: Record<string, number> = {
+  // C3 八度
+  'C3': 130.81,
+  'C#3': 138.59,
+  'D3': 146.83,
+  'D#3': 155.56,
+  'E3': 164.81,
+  'F3': 174.61,
+  'F#3': 185.00,
+  'G3': 196.00,
+  'G#3': 207.65,
+  'A3': 220.00,
+  'A#3': 233.08,
+  'B3': 246.94,
+  // C4 八度
   'C4': 261.63,
   'C#4': 277.18,
   'D4': 293.66,
@@ -14,7 +28,20 @@ export const NOTE_FREQUENCIES: Record<string, number> = {
   'A4': 440.00,
   'A#4': 466.16,
   'B4': 493.88,
-  'C5': 523.25
+  // C5 八度
+  'C5': 523.25,
+  'C#5': 554.37,
+  'D5': 587.33,
+  'D#5': 622.25,
+  'E5': 659.25,
+  'F5': 698.46,
+  'F#5': 739.99,
+  'G5': 783.99,
+  'G#5': 830.61,
+  'A5': 880.00,
+  'A#5': 932.33,
+  'B5': 987.77,
+  'C6': 1046.50
 };
 
 // 键盘映射到音符
@@ -31,184 +58,244 @@ export const KEY_TO_NOTE: Record<string, string> = {
   'h': 'A4',
   'u': 'A#4',
   'j': 'B4',
-  'k': 'C5'
+  'k': 'C5',
+  'o': 'C#5',
+  'l': 'D5',
+  'p': 'D#5',
+  ';': 'E5'
 };
+
+// ADSR音量包络配置
+interface ADSRConfig {
+  attack: number; // 上升时间（秒）
+  decay: number;  // 衰减时间（秒）
+  sustain: number; // 延音音量级别 (0-1)
+  release: number; // 释放时间（秒）
+}
+
+// 音频事件接口
+export interface AudioEvent {
+  note: string;
+  startTime: number;
+  duration: number;
+}
 
 interface UsePianoSoundReturn {
   playNote: (note: string) => Promise<void>;
-  stopNote: () => void;
-  isReady: boolean;
+  stopNote: (note: string) => void;
   initializeAudio: () => Promise<boolean>;
+  isReady: boolean;
+  isLoading: boolean;
+  setSustain: (sustain: boolean) => void;
+  sustain: boolean;
+  getCurrentTime: () => number;
 }
 
 export function usePianoSound(): UsePianoSoundReturn {
   const [isReady, setIsReady] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [sustain, setSustain] = useState(false);
+  
   const audioContextRef = useRef<AudioContext | null>(null);
-  const oscillatorRef = useRef<OscillatorNode | null>(null);
-  const gainNodeRef = useRef<GainNode | null>(null);
+  const audioBuffersRef = useRef<Map<string, AudioBuffer>>(new Map());
+  const activeSourcesRef = useRef<Map<string, { source: AudioBufferSourceNode; gainNode: GainNode }>>(new Map());
+  const sustainPedalReleasedTimeRef = useRef<number | null>(null);
+  
+  // ADSR配置
+  const adsrConfig: ADSRConfig = {
+    attack: 0.01,
+    decay: 0.1,
+    sustain: 0.7,
+    release: 0.3
+  };
 
-  // 清理函数 - 组件卸载时释放资源
-  useEffect(() => {
-    return () => {
-      if (oscillatorRef.current) {
-        try {
-          oscillatorRef.current.stop();
-        } catch (e) {
-          // 忽略错误
+  // 预加载音频采样
+  const loadAudioSamples = useCallback(async () => {
+    if (!audioContextRef.current) return;
+    
+    setIsLoading(true);
+    const context = audioContextRef.current;
+    const notes = Object.keys(NOTE_FREQUENCIES);
+    
+    try {
+      // 直接跳过音频文件加载，所有音符都将使用振荡器作为音频源
+      console.log('Using oscillator fallback for all notes as audio samples are not available');
+      // 不需要为audioBuffersRef设置任何值，这样playNote中的振荡器回退机制将始终被触发
+    } catch (error) {
+      console.error('Error in audio samples setup:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  // 初始化音频系统
+  const initializeAudio = useCallback(async (): Promise<boolean> => {
+    try {
+      if (!audioContextRef.current) {
+        audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+      }
+      
+      if (audioContextRef.current.state === 'suspended') {
+        await audioContextRef.current.resume();
+      }
+      
+      await loadAudioSamples();
+      
+      setIsReady(audioContextRef.current.state === 'running');
+      return audioContextRef.current.state === 'running';
+    } catch (error) {
+      console.error('Audio initialization failed:', error);
+      setIsReady(false);
+      return false;
+    }
+  }, [loadAudioSamples]);
+
+  // 实现ADSR音量包络
+  const applyADSR = useCallback((gainNode: GainNode, now: number) => {
+    const { attack, decay, sustain } = adsrConfig;
+    
+    gainNode.gain.setValueAtTime(0, now);
+    gainNode.gain.linearRampToValueAtTime(1.0, now + attack);
+    gainNode.gain.linearRampToValueAtTime(sustain, now + attack + decay);
+  }, [adsrConfig]);
+
+  // 播放音符
+  const playNote = useCallback(async (note: string): Promise<void> => {
+    try {
+      if (!audioContextRef.current) {
+        await initializeAudio();
+        if (!audioContextRef.current) {
+          throw new Error('Audio context not initialized');
         }
       }
+      
+      if (audioContextRef.current.state === 'suspended') {
+        await audioContextRef.current.resume();
+      }
+      
+      const context = audioContextRef.current;
+      const now = context.currentTime;
+      
+      // 先停止正在播放的相同音符（避免调用stopNote造成循环依赖）
+      const activeSource = activeSourcesRef.current.get(note);
+      if (activeSource) {
+        try {
+          activeSource.source.stop();
+        } catch (e) {}
+        activeSourcesRef.current.delete(note);
+      }
+      
+      // 直接使用振荡器作为音频源，不再尝试使用AudioBufferSourceNode
+      const oscillator = context.createOscillator();
+      const gainNode = context.createGain();
+      
+      oscillator.frequency.setValueAtTime(NOTE_FREQUENCIES[note] || 440, now);
+      oscillator.type = 'triangle'; // 使用triangle波形获得更接近钢琴的音色
+      
+      applyADSR(gainNode, now);
+      
+      oscillator.connect(gainNode);
+      gainNode.connect(context.destination);
+      
+      oscillator.start();
+      
+      // 将振荡器视为 AudioBufferSourceNode 存入 Map，运行时类型兼容即可
+      activeSourcesRef.current.set(note, { source: oscillator as unknown as AudioBufferSourceNode, gainNode });
+      
+      // 设置5秒后停止，防止内存泄漏
+      oscillator.stop(now + 5);
+      
+    } catch (error) {
+      console.error('Failed to play note:', note, error);
+    }
+  }, [initializeAudio, applyADSR])
+
+  // 停止音符
+  const stopNote = useCallback((note: string) => {
+    try {
+      const activeSource = activeSourcesRef.current.get(note);
+      if (activeSource) {
+        const { source, gainNode } = activeSource;
+        const context = audioContextRef.current;
+        
+        if (context) {
+          const now = context.currentTime;
+          
+          if (sustain) {
+            if (!sustainPedalReleasedTimeRef.current) {
+              return;
+            }
+            const releaseTime = sustainPedalReleasedTimeRef.current;
+            const releaseDuration = Math.min(adsrConfig.release, now - releaseTime);
+            
+            gainNode.gain.setValueAtTime(gainNode.gain.value, releaseTime);
+            gainNode.gain.linearRampToValueAtTime(0, releaseTime + releaseDuration);
+            
+            setTimeout(() => {
+              try {
+                source.stop();
+              } catch (e) {}
+              activeSourcesRef.current.delete(note);
+            }, releaseDuration * 1000);
+          } else {
+            gainNode.gain.setValueAtTime(gainNode.gain.value, now);
+            gainNode.gain.linearRampToValueAtTime(0, now + adsrConfig.release);
+            
+            setTimeout(() => {
+              try {
+                source.stop();
+              } catch (e) {}
+              activeSourcesRef.current.delete(note);
+            }, adsrConfig.release * 1000);
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error stopping note:', note, error);
+    }
+  }, [sustain, adsrConfig]);
+
+  // 处理延音踏板状态变化
+  useEffect(() => {
+    if (!sustain && sustainPedalReleasedTimeRef.current === null) {
+      sustainPedalReleasedTimeRef.current = audioContextRef.current?.currentTime || 0;
+      
+      activeSourcesRef.current.forEach((_, note) => {
+        stopNote(note);
+      });
+    } else if (sustain) {
+      sustainPedalReleasedTimeRef.current = null;
+    }
+  }, [sustain, stopNote]);
+
+  // 获取当前时间
+  const getCurrentTime = useCallback((): number => {
+    return audioContextRef.current?.currentTime || 0;
+  }, []);
+
+  // 清理函数
+  useEffect(() => {
+    return () => {
+      activeSourcesRef.current.forEach(({ source }) => {
+        try {
+          source.stop();
+        } catch (e) {}
+      });
+      
       if (audioContextRef.current) {
         audioContextRef.current.close();
       }
     };
   }, []);
 
-  // 简化版初始化 - 直接创建音频上下文
-  const initializeAudio = useCallback(async (): Promise<boolean> => {
-    try {
-      console.log('======= 最简单的音频初始化 =======');
-      
-      // 创建音频上下文
-      if (!audioContextRef.current) {
-        audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
-        console.log('创建AudioContext成功:', audioContextRef.current.state);
-      }
-      
-      // 立即尝试恢复
-      if (audioContextRef.current.state === 'suspended') {
-        console.log('尝试恢复音频上下文...');
-        await audioContextRef.current.resume();
-        console.log('恢复后状态:', audioContextRef.current.state);
-      }
-      
-      // 播放测试音
-      if (audioContextRef.current.state === 'running') {
-        console.log('播放初始化测试音...');
-        const testOsc = audioContextRef.current.createOscillator();
-        const testGain = audioContextRef.current.createGain();
-        testOsc.type = 'square';
-        testOsc.frequency.value = 440;
-        testGain.gain.value = 1.0;
-        testOsc.connect(testGain);
-        testGain.connect(audioContextRef.current.destination);
-        testOsc.start();
-        testOsc.stop(audioContextRef.current.currentTime + 0.2);
-        console.log('测试音已播放');
-      }
-      
-      setIsReady(audioContextRef.current.state === 'running');
-      return audioContextRef.current.state === 'running';
-    } catch (error) {
-      console.error('初始化失败:', error);
-      setIsReady(false);
-      return false;
-    }
-  }, []);
-
-  // 最简单的音符播放函数
-  const playNote = useCallback(async (note: string): Promise<void> => {
-    try {
-      console.log('======================================================');
-      console.log('直接播放音符:', note);
-      
-      // 确保音频上下文已创建
-      if (!audioContextRef.current) {
-        console.log('创建新的AudioContext...');
-        audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
-        console.log('创建完成，API类型:', audioContextRef.current.constructor.name);
-      }
-      
-      // 确保音频上下文已运行
-      if (audioContextRef.current.state === 'suspended') {
-        console.log('恢复音频上下文...');
-        await audioContextRef.current.resume();
-        console.log('恢复后状态:', audioContextRef.current.state);
-      }
-      
-      console.log('音频状态:', audioContextRef.current.state);
-      
-      // 获取频率
-      const frequency = NOTE_FREQUENCIES[note];
-      if (!frequency) {
-        console.error('无效音符:', note);
-        return;
-      }
-      
-      // 停止当前音符
-      if (oscillatorRef.current) {
-          try {
-            console.log('停止之前的振荡器');
-            oscillatorRef.current.stop();
-          } catch (e) {
-            console.log('振荡器停止时出错:', e instanceof Error ? e.message : String(e));
-          }
-          oscillatorRef.current = null;
-        }
-      
-      // 创建新的音频节点
-      console.log('创建新的音频节点，频率:', frequency);
-      const oscillator = audioContextRef.current.createOscillator();
-      const gainNode = audioContextRef.current.createGain();
-      
-      // 设置为方波，最大音量
-      oscillator.type = 'square'; // 使用方波，比正弦波更容易听到
-      oscillator.frequency.value = frequency;
-      gainNode.gain.value = 1.0; // 最大音量
-      
-      // 添加音量渐变，确保不会有爆音
-      gainNode.gain.setValueAtTime(0, audioContextRef.current.currentTime);
-      gainNode.gain.linearRampToValueAtTime(1.0, audioContextRef.current.currentTime + 0.01);
-      
-      // 连接并播放
-      console.log('连接音频节点...');
-      oscillator.connect(gainNode);
-      gainNode.connect(audioContextRef.current.destination);
-      
-      console.log('启动振荡器...');
-      oscillator.start();
-      
-      // 设置2秒后自动停止
-      oscillator.stop(audioContextRef.current.currentTime + 2.0);
-      
-      // 存储引用
-      oscillatorRef.current = oscillator;
-      gainNodeRef.current = gainNode;
-      
-      console.log('音符播放设置完成，频率:', frequency, 'Hz');
-      console.log('======================================================');
-      
-      // 添加视觉反馈 - 闪烁浏览器标签
-      if (document.visibilityState === 'visible') {
-        const originalTitle = document.title;
-        document.title = '🔊 ' + note + ' 播放中...';
-        setTimeout(() => {
-          document.title = originalTitle;
-        }, 300);
-      }
-      
-    } catch (error) {
-      console.error('播放音符失败:', error instanceof Error ? error.message : String(error));
-    }
-  }, []);
-
-  // 停止音符
-  const stopNote = useCallback(() => {
-    try {
-      if (oscillatorRef.current) {
-        console.log('停止音符');
-        oscillatorRef.current.stop();
-        oscillatorRef.current = null;
-        gainNodeRef.current = null;
-      }
-    } catch (error) {
-      console.error('停止音符失败:', error);
-    }
-  }, []);
-
   return {
     playNote,
     stopNote,
+    initializeAudio,
     isReady,
-    initializeAudio
+    isLoading,
+    setSustain,
+    sustain,
+    getCurrentTime
   };
 }
