@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>超级简单的音频测试</title>
+</head>
+<body>
+    <h1>超级简单的音频测试</h1>
+    <button onclick="playTone()">播放声音</button>
+    
+    <script>
+        // 超级简单的音频播放函数
+        function playTone() {
+            try {
+                // 创建音频上下文
+                var AudioContext = window.AudioContext || window.webkitAudioContext;
+                var context = new AudioContext();
+                
+                // 创建振荡器
+                var oscillator = context.createOscillator();
+                
+                // 设置方波和频率
+                oscillator.type = 'square';
+                oscillator.frequency.value = 440; // A4
+                
+                // 连接到输出
+                oscillator.connect(context.destination);
+                
+                // 播放200ms
+                oscillator.start();
+                oscillator.stop(context.currentTime + 0.2);
+                
+                console.log('尝试播放声音');
+            } catch (e) {
+                console.error('音频错误:', e);
+            }
+        }
+    </script>
+</body>
+</html>

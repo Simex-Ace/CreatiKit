@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Audio Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        #status {
+            font-size: 18px;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>音频测试页面</h1>
+    <div class="controls">
+        <button id="init">初始化音频</button>
+        <button id="play-a4">播放A4 (440Hz)</button>
+        <button id="play-c4">播放C4 (261.63Hz)</button>
+    </div>
+    <div id="status">请点击"初始化音频"按钮开始测试</div>
+
+    <script>
+        let audioContext;
+        const status = document.getElementById('status');
+
+        // 初始化音频上下文
+        document.getElementById('init').addEventListener('click', async () => {
+            try {
+                status.textContent = '正在初始化音频上下文...';
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                status.textContent = `音频上下文已初始化，状态: ${audioContext.state}`;
+                
+                // 尝试恢复暂停状态
+                if (audioContext.state === 'suspended') {
+                    await audioContext.resume();
+                    status.textContent = `音频上下文已恢复，状态: ${audioContext.state}`;
+                }
+            } catch (error) {
+                status.textContent = `初始化失败: ${error.message}`;
+                console.error('初始化错误:', error);
+            }
+        });
+
+        // 播放指定频率的音调
+        function playTone(frequency, duration = 0.5) {
+            if (!audioContext) {
+                status.textContent = '请先初始化音频上下文';
+                return;
+            }
+
+            try {
+                // 检查音频上下文状态
+                if (audioContext.state === 'suspended') {
+                    audioContext.resume();
+                }
+
+                status.textContent = `正在播放 ${frequency}Hz 的音调`;
+                
+                // 创建振荡器和增益节点
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                
+                // 设置为方波，更容易听到
+                oscillator.type = 'square';
+                oscillator.frequency.value = frequency;
+                
+                // 设置最大音量
+                gainNode.gain.value = 1.0;
+                
+                // 连接节点
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                
+                // 播放音调
+                oscillator.start();
+                oscillator.stop(audioContext.currentTime + duration);
+                
+                // 播放后更新状态
+                setTimeout(() => {
+                    status.textContent = `已播放 ${frequency}Hz 的音调`;
+                }, duration * 1000);
+            } catch (error) {
+                status.textContent = `播放失败: ${error.message}`;
+                console.error('播放错误:', error);
+            }
+        }
+
+        // 播放A4
+        document.getElementById('play-a4').addEventListener('click', () => {
+            playTone(440);
+        });
+
+        // 播放C4
+        document.getElementById('play-c4').addEventListener('click', () => {
+            playTone(261.63);
+        });
+
+        console.log('音频测试页面已加载');
+    </script>
+</body>
+</html>

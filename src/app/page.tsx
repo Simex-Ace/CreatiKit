@@ -83,6 +83,10 @@ export default function Home() {
     router.push('/data-to-chart');
   };
 
+  const handlePiano = () => {
+    router.push('/piano');
+  };
+
   const handleFreeUse = () => {
     // 跳转到功能区域
     window.scrollTo({ top: 500, behavior: 'smooth' });
@@ -387,6 +391,28 @@ export default function Home() {
                 <div className="mt-auto pt-4">
                   <Button className="w-full" onClick={handleDataToChart}>
                     开始可视化
+                  </Button>
+                </div>
+              </div>
+            </Card>
+
+            {/* 在线电子钢琴卡片 */}
+            <Card className="relative min-h-[300px] flex flex-col transition-all duration-300 hover:shadow-lg">
+              <div className="p-6 flex-grow flex flex-col space-y-4">
+                <div className="rounded-full bg-blue-100 p-3 w-fit">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="3" y="11" width="18" height="10" rx="2" />
+                    <circle cx="12" cy="18" r="3" />
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                  </svg>
+                </div>
+                <h3 className="text-xl font-semibold">在线电子钢琴</h3>
+                <p className="text-muted-foreground flex-grow">
+                  使用电脑键盘或鼠标弹奏钢琴，体验真实的钢琴音色，支持一个完整八度的音符
+                </p>
+                <div className="mt-auto pt-4">
+                  <Button className="w-full" onClick={handlePiano}>
+                    开始演奏
                   </Button>
                 </div>
               </div>
