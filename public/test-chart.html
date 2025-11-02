@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ECharts测试</title>
+    <!-- 引入ECharts -->
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <style>
+        #chart-container {
+            width: 800px;
+            height: 400px;
+            margin: 0 auto;
+            border: 1px solid #ccc;
+        }
+    </style>
+</head>
+<body>
+    <h1 style="text-align: center;">ECharts 基础测试</h1>
+    <div id="chart-container"></div>
+
+    <script>
+        // 确保DOM加载完成
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('开始初始化ECharts');
+            
+            // 获取容器
+            var container = document.getElementById('chart-container');
+            console.log('容器元素:', container);
+            
+            // 初始化ECharts实例
+            var myChart = echarts.init(container);
+            console.log('ECharts实例创建成功:', myChart);
+            
+            // 设置图表配置项
+            var option = {
+                title: {
+                    text: '测试图表',
+                    left: 'center'
+                },
+                tooltip: {},
+                xAxis: {
+                    data: ['A', 'B', 'C', 'D', 'E']
+                },
+                yAxis: {},
+                series: [{
+                    name: '数据',
+                    type: 'bar',
+                    data: [100, 200, 150, 80, 70]
+                }]
+            };
+            
+            // 应用配置项
+            myChart.setOption(option);
+            console.log('图表配置已应用');
+            
+            // 窗口大小变化时调整图表
+            window.addEventListener('resize', function() {
+                myChart.resize();
+            });
+        });
+    </script>
+</body>
+</html>

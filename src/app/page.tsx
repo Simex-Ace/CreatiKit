@@ -3,7 +3,7 @@
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { Image, Globe, FileCode, Monitor, Lock, Code, BookOpen, Palette, Smile, QrCode, PencilRuler, RotateCw, CloudSun } from 'lucide-react';
+import { Image, Globe, FileCode, Monitor, Lock, Code, BookOpen, Palette, Smile, QrCode, PencilRuler, RotateCw, CloudSun, BarChart2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { DevelopmentInProgress } from '@/components/ui/DevelopmentInProgress';
 import { useDevelopmentAlert } from '@/lib/useDevelopmentAlert';
@@ -77,6 +77,10 @@ export default function Home() {
 
   const handleWeatherTool = () => {
     router.push('/weather-tool');
+  };
+
+  const handleDataToChart = () => {
+    router.push('/data-to-chart');
   };
 
   const handleFreeUse = () => {
@@ -365,6 +369,24 @@ export default function Home() {
                 <div className="mt-auto pt-4">
                   <Button className="w-full" onClick={handleWeatherTool}>
                     查看天气
+                  </Button>
+                </div>
+              </div>
+            </Card>
+
+            {/* 数据转图表工具卡片 */}
+            <Card className="relative min-h-[300px] flex flex-col transition-all duration-300 hover:shadow-lg">
+              <div className="p-6 flex-grow flex flex-col space-y-4">
+                <div className="rounded-full bg-purple-100 p-3 w-fit">
+                  <BarChart2 className="h-6 w-6 text-purple-600" />
+                </div>
+                <h3 className="text-xl font-semibold">数据转图表</h3>
+                <p className="text-muted-foreground flex-grow">
+                  输入CSV或JSON数据，通过简单配置将数据映射到图表轴，生成并导出柱状图、折线图或饼图
+                </p>
+                <div className="mt-auto pt-4">
+                  <Button className="w-full" onClick={handleDataToChart}>
+                    开始可视化
                   </Button>
                 </div>
               </div>
