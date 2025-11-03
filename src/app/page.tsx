@@ -3,7 +3,7 @@
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { Image, Globe, FileCode, Monitor, Lock, Code, BookOpen, Palette, Smile, QrCode, PencilRuler, RotateCw, CloudSun, BarChart2 } from 'lucide-react';
+import { Image, Globe, FileCode, Monitor, Lock, Code, BookOpen, Palette, Smile, QrCode, PencilRuler, RotateCw, CloudSun, BarChart2, FlaskConical } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { DevelopmentInProgress } from '@/components/ui/DevelopmentInProgress';
 import { useDevelopmentAlert } from '@/lib/useDevelopmentAlert';
@@ -85,6 +85,10 @@ export default function Home() {
 
   const handlePiano = () => {
     router.push('/piano');
+  };
+
+  const handlePhysicsLab = () => {
+    router.push('/physics-lab');
   };
 
   const handleFreeUse = () => {
@@ -413,6 +417,24 @@ export default function Home() {
                 <div className="mt-auto pt-4">
                   <Button className="w-full" onClick={handlePiano}>
                     开始演奏
+                  </Button>
+                </div>
+              </div>
+            </Card>
+            
+            {/* 交互式2D物理实验室卡片 */}
+            <Card className="relative min-h-[300px] flex flex-col transition-all duration-300 hover:shadow-lg">
+              <div className="p-6 flex-grow flex flex-col space-y-4">
+                <div className="rounded-full bg-amber-100 p-3 w-fit">
+                  <FlaskConical className="h-6 w-6 text-amber-600" />
+                </div>
+                <h3 className="text-xl font-semibold">交互式2D物理实验室</h3>
+                <p className="text-muted-foreground flex-grow">
+                  模拟初中力学实验的虚拟实验室，自由创造、交互和观察符合物理规律的物体运动
+                </p>
+                <div className="mt-auto pt-4">
+                  <Button className="w-full" onClick={handlePhysicsLab}>
+                    开始实验
                   </Button>
                 </div>
               </div>
