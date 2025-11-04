@@ -2,6 +2,23 @@
 
 import React, { useEffect, useRef, useCallback, useState } from 'react';
 
+// 设备类型特性定义
+interface EquipmentProperties {
+  canHeat: boolean;           // 是否可以加热
+  canReact: boolean;          // 是否可以进行化学反应
+  canHoldSolids: boolean;     // 是否可以装固体
+  canHoldLiquids: boolean;    // 是否可以装液体
+  name: string;               // 设备名称
+  description: string;        // 设备描述
+}
+
+// 物质状态枚举
+enum MatterState {
+  SOLID = 'solid',
+  LIQUID = 'liquid',
+  GAS = 'gas'
+}
+
 // 定义化学物品接口
 interface ChemicalItem {
   id: string;
@@ -40,13 +57,14 @@ interface ChemicalReaction {
   specialNote?: string;
 }
 
-// 定义溶液接口
+// 定义物质接口
 interface Solution {
   name: string;
   type: string;
   color: string;
   amount: number;
   isSolid?: boolean;
+  description?: string;
 }
 
 // 定义化学反应数据库
@@ -295,6 +313,15 @@ const chemicalReactions: ChemicalReaction[] = [
     conditions: 'mix',
     colorChange: '#0000FF', // 蓝色沉淀（修正为准确的蓝色）
     precipitate: true
+  },
+  {
+    reactants: ['AgNO3', 'NaOH'],
+    products: ['Ag2O', 'NaNO3', 'H2O'],
+    equation: '2AgNO₃ + 2NaOH → Ag₂O↓ + 2NaNO₃ + H₂O',
+    conditions: 'mix',
+    colorChange: '#8B4513', // 棕褐色沉淀
+    precipitate: true,
+    specialNote: '首先生成白色的氢氧化银(AgOH)，但迅速分解为棕褐色的氧化银(Ag₂O)'
   }
 ];
 
@@ -366,20 +393,24 @@ const predefinedTasks: ExperimentTask[] = [
   }
 ];
 
-// 定义预设溶液
+// 定义预设物质
 const predefinedSolutions: Solution[] = [
-  { name: '硫酸铜', type: 'CuSO4', color: '#00FFFF', amount: 80 },
-  { name: '氢氧化钠', type: 'NaOH', color: '#FFFFFF', amount: 80 },
-  { name: '盐酸', type: 'HCl', color: '#FFFFFF', amount: 80 },
-  { name: '硫酸', type: 'H2SO4', color: '#FFFFFF', amount: 80 },
-  { name: '高锰酸钾', type: 'KMnO4', color: '#9400D3', amount: 60 },
-  { name: '过氧化氢', type: 'H2O2', color: '#FFFFFF', amount: 80 },
-  { name: '碳酸钙', type: 'CaCO3', color: '#FFFFFF', amount: 30, isSolid: true },
-  { name: '铁粉', type: 'Fe', color: '#708090', amount: 30, isSolid: true },
-  { name: '氯化钠', type: 'NaCl', color: '#FFFFFF', amount: 40, isSolid: true },
-  { name: '硝酸银', type: 'AgNO3', color: '#FFFFFF', amount: 70 },
-  { name: '锌粒', type: 'Zn', color: '#C0C0C0', amount: 30, isSolid: true },
-  { name: '水', type: 'H2O', color: '#FFFFFF', amount: 100 }
+  // 液体
+  { name: '硫酸铜溶液', type: 'CuSO4', color: '#00FFFF', amount: 80, description: '蓝色溶液' },
+  { name: '氢氧化钠溶液', type: 'NaOH', color: '#FFFFFF', amount: 80, description: '无色溶液' },
+  { name: '盐酸溶液', type: 'HCl', color: '#FFFFFF', amount: 80, description: '无色溶液，有刺激性气味' },
+  { name: '硫酸溶液', type: 'H2SO4', color: '#FFFFFF', amount: 80, description: '无色油状液体' },
+  { name: '高锰酸钾溶液', type: 'KMnO4', color: '#9400D3', amount: 60, description: '紫色溶液' },
+  { name: '过氧化氢溶液', type: 'H2O2', color: '#FFFFFF', amount: 80, description: '无色溶液' },
+  { name: '硝酸银溶液', type: 'AgNO3', color: '#FFFFFF', amount: 70, description: '无色溶液' },
+  { name: '水', type: 'H2O', color: '#FFFFFF', amount: 100, description: '无色液体' },
+  // 固体
+  { name: '碳酸钙固体', type: 'CaCO3', color: '#FFFFFF', amount: 30, isSolid: true, description: '白色固体' },
+  { name: '铁粉', type: 'Fe', color: '#708090', amount: 30, isSolid: true, description: '黑色粉末' },
+  { name: '氯化钠固体', type: 'NaCl', color: '#FFFFFF', amount: 40, isSolid: true, description: '白色晶体' },
+  { name: '锌粒', type: 'Zn', color: '#C0C0C0', amount: 30, isSolid: true, description: '银白色金属颗粒' },
+  { name: '高锰酸钾固体', type: 'KMnO4(固)', color: '#9400D3', amount: 30, isSolid: true, description: '暗紫色晶体' },
+  { name: '氧化铜固体', type: 'CuO', color: '#8B4513', amount: 30, isSolid: true, description: '黑色粉末' }
 ];
 
 const ChemistryLab: React.FC = () => {
@@ -409,6 +440,74 @@ const ChemistryLab: React.FC = () => {
   const lastTimeRef = useRef<number>(0);
   const dropsRef = useRef<{x: number, y: number, size: number, color: string, speed: number}[]>([]);
   const bubblesRef = useRef<{x: number, y: number, size: number, speed: number}[]>([]);
+
+  // 设备属性定义
+  const equipmentProperties: Record<ChemicalItem['type'], EquipmentProperties> = {
+    beaker: {
+      canHeat: true,
+      canReact: true,
+      canHoldSolids: true,
+      canHoldLiquids: true,
+      name: '烧杯',
+      description: '可加热和进行反应的通用容器，适合固体和液体'
+    },
+    testTube: {
+      canHeat: true,
+      canReact: true,
+      canHoldSolids: true,
+      canHoldLiquids: true,
+      name: '试管',
+      description: '小容量反应容器，适合加热和小规模反应'
+    },
+    flask: {
+      canHeat: true,
+      canReact: true,
+      canHoldSolids: false,
+      canHoldLiquids: true,
+      name: '圆底烧瓶',
+      description: '适合加热液体和蒸馏操作'
+    },
+    buret: {
+      canHeat: false,
+      canReact: false,
+      canHoldSolids: false,
+      canHoldLiquids: true,
+      name: '滴定管',
+      description: '精确量取和滴加液体的仪器，不可加热和反应'
+    },
+    erlenmeyer: {
+      canHeat: true,
+      canReact: true,
+      canHoldSolids: true,
+      canHoldLiquids: true,
+      name: '锥形瓶',
+      description: '适合反应和滴定操作，可加热'
+    },
+    crucible: {
+      canHeat: true,
+      canReact: true,
+      canHoldSolids: true,
+      canHoldLiquids: false,
+      name: '坩埚',
+      description: '专用于加热固体的容器，不适合液体'
+    },
+    watchGlass: {
+      canHeat: false,
+      canReact: false,
+      canHoldSolids: true,
+      canHoldLiquids: false,
+      name: '表面皿',
+      description: '用于放置少量固体，不可加热和反应'
+    },
+    graduatedCylinder: {
+      canHeat: false,
+      canReact: false,
+      canHoldSolids: false,
+      canHoldLiquids: true,
+      name: '量杯',
+      description: '用于量取液体体积，不可加热和反应'
+    }
+  };
 
   // 设备尺寸定义
   const equipmentSizes = {
@@ -441,7 +540,7 @@ const ChemistryLab: React.FC = () => {
     const x = item.x;
     const y = item.y;
 
-    // 绘制烧杯轮廓
+    // 绘制烧杯轮廓（移除了手柄）
     ctx.strokeStyle = item.isSelected ? '#FF4500' : '#FFFFFF';
     ctx.lineWidth = item.isSelected ? 3 : 2;
     ctx.beginPath();
@@ -450,12 +549,6 @@ const ChemistryLab: React.FC = () => {
     ctx.lineTo(x + width / 2 - 10, y);
     ctx.lineTo(x + width / 2, y - height);
     ctx.closePath();
-    ctx.stroke();
-
-    // 绘制烧杯把手
-    ctx.beginPath();
-    ctx.moveTo(x + width / 2, y - height + 20);
-    ctx.bezierCurveTo(x + width / 2 + 20, y - height + 20, x + width / 2 + 20, y - 20, x + width / 2, y - 20);
     ctx.stroke();
 
     // 绘制液体 - 修复为从底部开始填充
@@ -525,13 +618,16 @@ const ChemistryLab: React.FC = () => {
     const x = item.x;
     const y = item.y;
 
-    // 绘制试管轮廓
+    // 绘制试管轮廓 - 修改底部为完整椭圆
     ctx.strokeStyle = item.isSelected ? '#FF4500' : '#FFFFFF';
     ctx.lineWidth = item.isSelected ? 3 : 2;
     ctx.beginPath();
+    // 上部直线
     ctx.moveTo(x - width / 2, y - height);
-    ctx.lineTo(x - width / 2, y - 10);
-    ctx.arc(x, y - 10, width / 2, Math.PI, 0);
+    ctx.lineTo(x - width / 2, y - 20);
+    // 底部椭圆
+    ctx.ellipse(x, y - 20, width / 2, width / 3, 0, Math.PI, 0);
+    // 右侧直线
     ctx.lineTo(x + width / 2, y - height);
     ctx.closePath();
     ctx.stroke();
@@ -542,10 +638,15 @@ const ChemistryLab: React.FC = () => {
       const liquidHeight = (height - 20) * liquidHeightPercentage;
       ctx.fillStyle = item.liquidColor;
       ctx.beginPath();
-      ctx.moveTo(x - width / 2 + 2, y - 10 - liquidHeight + 10);
-      ctx.lineTo(x - width / 2 + 2, y);
-      ctx.arc(x, y, width / 2 - 2, Math.PI, 0);
-      ctx.lineTo(x + width / 2 - 2, y - 10 - liquidHeight + 10);
+      // 液体顶部
+      ctx.moveTo(x - width / 2 + 2, y - 20 - liquidHeight + 20);
+      ctx.lineTo(x + width / 2 - 2, y - 20 - liquidHeight + 20);
+      // 右侧直线
+      ctx.lineTo(x + width / 2 - 2, y - 20);
+      // 底部椭圆
+      ctx.ellipse(x, y - 20, width / 2 - 2, width / 3 - 2, 0, Math.PI, 0);
+      // 左侧直线
+      ctx.lineTo(x - width / 2 + 2, y - 20);
       ctx.closePath();
       ctx.fill();
 
@@ -553,10 +654,11 @@ const ChemistryLab: React.FC = () => {
       if (item.hasPrecipitate) {
         ctx.fillStyle = '#0000AA';
         ctx.beginPath();
-        ctx.moveTo(x - width / 2 + 3, y - 15);
-        ctx.lineTo(x - width / 2 + 3, y - liquidHeight / 2);
-        ctx.arc(x, y, width / 2 - 3, Math.PI, 0);
-        ctx.lineTo(x + width / 2 - 3, y - 15);
+        ctx.moveTo(x - width / 2 + 3, y - 20 - liquidHeight / 4);
+        ctx.lineTo(x + width / 2 - 3, y - 20 - liquidHeight / 4);
+        ctx.lineTo(x + width / 2 - 3, y - 20);
+        ctx.ellipse(x, y - 20, width / 2 - 3, width / 3 - 3, 0, Math.PI, 0);
+        ctx.lineTo(x - width / 2 + 3, y - 20);
         ctx.closePath();
         ctx.fill();
       }
@@ -597,53 +699,75 @@ const ChemistryLab: React.FC = () => {
     }
   }, []);
 
-  // 绘制锥形瓶
+  // 绘制锥形瓶 - 上部分使用圆底烧瓶设计，底部改为三角形
   const drawErlenmeyer = useCallback((ctx: CanvasRenderingContext2D, item: ChemicalItem) => {
     const { width, height } = equipmentSizes.erlenmeyer;
     const x = item.x;
     const y = item.y;
-
-    // 绘制锥形瓶轮廓
+    
+    // 绘制锥形瓶轮廓 - 简化为小正梯形+瓶颈设计
     ctx.strokeStyle = item.isSelected ? '#FF4500' : '#FFFFFF';
     ctx.lineWidth = item.isSelected ? 3 : 2;
     ctx.beginPath();
-    ctx.moveTo(x - width / 4, y - height);
-    ctx.lineTo(x - width / 2, y - 20);
-    ctx.lineTo(x - width / 2 + 10, y);
-    ctx.lineTo(x + width / 2 - 10, y);
-    ctx.lineTo(x + width / 2, y - 20);
-    ctx.lineTo(x + width / 4, y - height);
-    ctx.closePath();
+    
+    // 瓶颈（保持细试管状）
+    const neckWidth = width / 10;
+    const neckHeight = height * 0.3;
+    const neckBottomY = y - height * 0.7;
+    
+    // 绘制瓶颈
+    ctx.moveTo(x - neckWidth, y - height);
+    ctx.lineTo(x - neckWidth, neckBottomY);
+    ctx.lineTo(x + neckWidth, neckBottomY);
+    ctx.lineTo(x + neckWidth, y - height);
+    
+    // 小正梯形瓶身（避免溢出）
+    const bodyHeight = height * 0.7;
+    const topWidth = width * 0.4; // 梯形顶部宽度
+    const bottomWidth = width * 0.6; // 梯形底部宽度
+    
+    // 从瓶颈到梯形顶部
+    ctx.moveTo(x - neckWidth, neckBottomY);
+    ctx.lineTo(x - topWidth / 2, neckBottomY);
+    // 梯形左侧边
+    ctx.lineTo(x - bottomWidth / 2, y);
+    // 梯形底部
+    ctx.lineTo(x + bottomWidth / 2, y);
+    // 梯形右侧边
+    ctx.lineTo(x + topWidth / 2, neckBottomY);
+    // 从梯形顶部回到瓶颈
+    ctx.lineTo(x + neckWidth, neckBottomY);
+    
     ctx.stroke();
-
-    // 绘制液体 - 修复为从底部开始填充
+    
+    // 绘制液体 - 使用简单的矩形填充，确保平整且不溢出
     if (item.liquidAmount > 0) {
+      const maxLiquidHeight = bodyHeight * 0.9; // 最大液体高度
       const liquidHeightPercentage = item.liquidAmount / 100;
+      const liquidHeight = Math.min(liquidHeightPercentage * maxLiquidHeight, maxLiquidHeight);
+      const liquidTopY = y - liquidHeight;
+      
       ctx.fillStyle = item.liquidColor;
       ctx.beginPath();
       
-      // 计算底部和侧面的液体位置
-      const bottomWidth = width - 20;
-      const bottomLeftX = x - bottomWidth / 2;
-      const bottomRightX = x + bottomWidth / 2;
-      const liquidHeightFromBottom = height * liquidHeightPercentage;
-      
-      // 底部直线
-      ctx.moveTo(bottomLeftX, y - liquidHeightFromBottom);
-      ctx.lineTo(bottomRightX, y - liquidHeightFromBottom);
-      
-      // 右侧曲线
-      ctx.quadraticCurveTo(x + width / 2, y - 20, x + width / 4, y - height + 20 * liquidHeightPercentage);
-      
-      // 左侧曲线
-      ctx.quadraticCurveTo(x - width / 2, y - 20, bottomLeftX, y - liquidHeightFromBottom);
-      
-      ctx.closePath();
-      ctx.fill();
+      // 简单的矩形填充，宽度根据梯形形状动态调整
+      if (liquidTopY >= neckBottomY) {
+        // 液体只在梯形部分
+        const liquidWidth = bottomWidth - ((bottomWidth - topWidth) * 
+          Math.max(0, (y - liquidTopY) / bodyHeight));
+        const halfWidth = liquidWidth / 2;
+        
+        ctx.fillRect(x - halfWidth + 2, liquidTopY, liquidWidth - 4, liquidHeight);
+      } else {
+        // 液体进入瓶颈部分
+        // 梯形部分
+        ctx.fillRect(x - topWidth / 2 + 2, neckBottomY, topWidth - 4, neckBottomY - liquidTopY);
+        // 瓶颈部分
+        ctx.fillRect(x - neckWidth + 2, liquidTopY, neckWidth * 2 - 4, neckHeight);
+      }
     }
 
-    // 显示液体类型标签
-    if (item.liquidAmount > 0) {
+      // 显示液体类型标签
       ctx.fillStyle = '#FFFFFF';
       ctx.font = '12px Arial';
       ctx.textAlign = 'center';
@@ -666,7 +790,6 @@ const ChemistryLab: React.FC = () => {
         }
         ctx.fillText(displayEquation, x, y - height + 15);
       }
-    }
   }, []);
 
   // 绘制滴定管
@@ -875,42 +998,88 @@ const ChemistryLab: React.FC = () => {
     }
   }, []);
 
-  // 绘制圆底烧瓶
+  // 绘制圆底烧瓶 - 改为之前的锥形瓶设计
   const drawFlask = useCallback((ctx: CanvasRenderingContext2D, item: ChemicalItem) => {
     const { width, height } = equipmentSizes.flask;
     const x = item.x;
     const y = item.y;
 
-    // 绘制烧瓶轮廓
+    // 绘制圆底烧瓶轮廓 - 使用之前的锥形瓶设计
     ctx.strokeStyle = item.isSelected ? '#FF4500' : '#FFFFFF';
     ctx.lineWidth = item.isSelected ? 3 : 2;
     ctx.beginPath();
-    // 瓶颈
-    ctx.moveTo(x - width / 8, y - height);
-    ctx.lineTo(x - width / 8, y - height * 0.6);
-    ctx.lineTo(x + width / 8, y - height * 0.6);
-    ctx.lineTo(x + width / 8, y - height);
-    // 瓶颈与瓶身连接处
-    ctx.moveTo(x - width / 8, y - height * 0.6);
-    // 瓶身 - 更准确的圆底烧瓶形状
-    ctx.ellipse(x, y, width / 2, height * 0.4, 0, Math.PI, 0);
+    // 瓶颈 - 稍微扩大
+    ctx.moveTo(x - width / 5, y - height);
+    ctx.lineTo(x - width / 5, y - height * 0.6);
+    // 曲线连接到瓶底
+    ctx.quadraticCurveTo(x - width / 2, y - height * 0.3, x - width / 2 + 10, y);
+    // 底部直线
+    ctx.lineTo(x + width / 2 - 10, y);
+    // 另一侧曲线连接
+    ctx.quadraticCurveTo(x + width / 2, y - height * 0.3, x + width / 5, y - height * 0.6);
+    // 右侧瓶颈
+    ctx.lineTo(x + width / 5, y - height);
+    ctx.closePath();
     ctx.stroke();
 
     // 绘制液体 - 修复为从底部开始填充
     if (item.liquidAmount > 0) {
-      const maxLiquidHeight = height * 0.4;
       const liquidHeightPercentage = item.liquidAmount / 100;
-      const liquidHeight = Math.max(0, Math.min(liquidHeightPercentage * maxLiquidHeight, maxLiquidHeight));
-      
+      const liquidHeight = height * liquidHeightPercentage;
       ctx.fillStyle = item.liquidColor;
       ctx.beginPath();
-      // 从底部向上填充的椭圆
-      const ellipseHeight = liquidHeight;
-      const ellipseCenterY = y - (maxLiquidHeight - ellipseHeight);
       
-      ctx.ellipse(x, ellipseCenterY, width / 2, ellipseHeight, 0, 0, Math.PI * 2);
+      // 计算液体位置 - 确保从底部开始填充
+      const liquidBottomY = y;
+      const liquidTopY = y - liquidHeight;
+      
+      // 底部直线
+      const bottomWidth = width - 20;
+      const bottomLeftX = x - bottomWidth / 2;
+      const bottomRightX = x + bottomWidth / 2;
+      ctx.moveTo(bottomLeftX, liquidBottomY);
+      ctx.lineTo(bottomRightX, liquidBottomY);
+      
+      // 右侧曲线 - 根据液体高度调整曲线形状
+      if (liquidHeight > height * 0.4) {
+        // 当液体较高时
+        ctx.quadraticCurveTo(x + width / 2, y - height * 0.3, x + width / 5, Math.max(y - height * 0.6, liquidTopY));
+        // 如果液体超出瓶颈
+        if (liquidTopY < y - height * 0.6) {
+          ctx.lineTo(x + width / 5, liquidTopY);
+        }
+      } else {
+        // 当液体较低时
+        const rightControlX = x + width / 2 * (liquidHeight / (height * 0.4));
+        ctx.quadraticCurveTo(rightControlX, y - liquidHeight / 2, x + width / 5 * (liquidHeight / (height * 0.4)), liquidTopY);
+      }
+      
+      // 顶部直线
+      if (liquidTopY >= y - height * 0.6) {
+        ctx.lineTo(x - width / 5 * (liquidHeight / (height * 0.4)), liquidTopY);
+      } else {
+        // 如果液体超出瓶颈
+        ctx.lineTo(x - width / 5, liquidTopY);
+      }
+      
+      // 左侧曲线
+      if (liquidHeight > height * 0.4) {
+        // 当液体较高时
+        ctx.quadraticCurveTo(x - width / 2, y - height * 0.3, bottomLeftX, liquidBottomY);
+      } else {
+        // 当液体较低时
+        const leftControlX = x - width / 2 * (liquidHeight / (height * 0.4));
+        ctx.quadraticCurveTo(leftControlX, y - liquidHeight / 2, bottomLeftX, liquidBottomY);
+      }
+      
       ctx.closePath();
       ctx.fill();
+
+      // 显示液体类型标签
+      ctx.fillStyle = '#FFFFFF';
+      ctx.font = '12px Arial';
+      ctx.textAlign = 'center';
+      ctx.fillText(item.liquidType, x, y - height - 10);
 
       // 显示反应式（如果有）
       const reaction = chemicalReactions.find(r => 
@@ -929,14 +1098,6 @@ const ChemistryLab: React.FC = () => {
         }
         ctx.fillText(displayEquation, x, y - height + 15);
       }
-    }
-
-    // 显示液体类型标签
-    if (item.liquidAmount > 0) {
-      ctx.fillStyle = '#FFFFFF';
-      ctx.font = '12px Arial';
-      ctx.textAlign = 'center';
-      ctx.fillText(item.liquidType, x, y - height - 10);
     }
   }, []);
 
@@ -1071,6 +1232,23 @@ const ChemistryLab: React.FC = () => {
           );
           
           if (reaction) {
+            // 获取两个设备的属性
+            const props1 = equipmentProperties[item1.type];
+            const props2 = equipmentProperties[item2.type];
+            
+            // 检查两个设备是否都可以反应
+            if (!props1.canReact || !props2.canReact) {
+              // 显示错误提示
+              setToast({
+                message: '这些设备不能用于化学反应！',
+                visible: true
+              });
+              setTimeout(() => {
+                setToast(prev => ({ ...prev, visible: false }));
+              }, 3000);
+              return;
+            }
+            
             // 更新第一个设备的液体
             const newItem1 = {
               ...item1,
@@ -1148,8 +1326,26 @@ const ChemistryLab: React.FC = () => {
           Math.pow(item.x - heatingPosition.x, 2) + Math.pow(item.y - heatingPosition.y, 2)
         );
         
-        // 如果设备在加热源上方
+        // 获取设备属性
+        const props = equipmentProperties[item.type];
+        
+        // 如果设备在加热源上方且有物质
         if (distance < 50 && item.liquidAmount > 0) {
+          // 检查设备是否可以加热
+          if (!props.canHeat) {
+            // 显示错误提示
+            if (!item.isHeated) {
+              setToast({
+                message: `${props.name}不能直接加热！`,
+                visible: true
+              });
+              setTimeout(() => {
+                setToast(prev => ({ ...prev, visible: false }));
+              }, 3000);
+            }
+            return;
+          }
+          
           // 标记为加热状态
           if (!item.isHeated) {
             setItems(prevItems => prevItems.map(i => 
@@ -1157,32 +1353,42 @@ const ChemistryLab: React.FC = () => {
             ));
           }
           
-          // 查找匹配的加热反应
-          const reaction = chemicalReactions.find(r => 
-            r.conditions === 'heat' && 
-            r.reactants.some(reactant => item.liquidType.includes(reactant))
-          );
-          
-          if (reaction && temperature > 80) { // 需要达到一定温度
-            const newItem = {
-              ...item,
-              liquidType: reaction.products.join(', '),
-              liquidColor: reaction.colorChange || '#FFFFFF',
-              hasPrecipitate: reaction.precipitate
-            };
+          // 只有可反应的设备才会发生反应
+          if (props.canReact) {
+            // 查找匹配的加热反应
+            const reaction = chemicalReactions.find(r => 
+              r.conditions === 'heat' && 
+              r.reactants.some(reactant => item.liquidType.includes(reactant))
+            );
             
-            // 添加反应到历史记录
-            setReactionHistory(prev => [
-              { equation: reaction.equation, timestamp: new Date() },
-              ...prev.slice(0, 9)
-            ]);
-            
-            setItems(prevItems => prevItems.map(i => 
-              i.id === item.id ? newItem : i
-            ));
-            
-            // 检查任务进度
-            checkTaskProgress(newItem);
+            if (reaction && temperature > 80) { // 需要达到一定温度
+              // 计算减少的液体量，气体产生的反应减少更多
+              let reduceAmount = 20; // 默认减少量
+              if (reaction.gasProduction) {
+                reduceAmount = 30; // 有气体产生时减少更多
+              }
+              
+              const newItem = {
+                ...item,
+                liquidType: reaction.products.join(', '),
+                liquidColor: reaction.colorChange || '#FFFFFF',
+                hasPrecipitate: reaction.precipitate,
+                liquidAmount: Math.max(0, item.liquidAmount - reduceAmount)
+              };
+              
+              // 添加反应到历史记录
+              setReactionHistory(prev => [
+                { equation: reaction.equation, timestamp: new Date() },
+                ...prev.slice(0, 9)
+              ]);
+              
+              setItems(prevItems => prevItems.map(i => 
+                i.id === item.id ? newItem : i
+              ));
+              
+              // 检查任务进度
+              checkTaskProgress(newItem);
+            }
           }
         } else if (item.isHeated) {
           // 如果不在加热源上，取消加热状态
@@ -1320,6 +1526,18 @@ const ChemistryLab: React.FC = () => {
     animationFrameRef.current = requestAnimationFrame(render);
   }, [items, drawHeatingSource, drawBeaker, drawTestTube, drawFlask, drawBuret, drawErlenmeyer, drawCrucible, drawWatchGlass, drawGraduatedCylinder, drawDrops, drawBubbles, checkReactions, reactionHistory]);
 
+  // 复制提示状态
+  const [showCopiedNotification, setShowCopiedNotification] = useState(false);
+
+  // 复制反应方程式
+  const copyEquation = (equation: string) => {
+    navigator.clipboard.writeText(equation);
+    setShowCopiedNotification(true);
+    setTimeout(() => {
+      setShowCopiedNotification(false);
+    }, 2000);
+  };
+
   // 鼠标事件处理
   const handleMouseDown = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
     try {
@@ -1444,6 +1662,10 @@ const ChemistryLab: React.FC = () => {
     
     setItems(prev => [...prev, newItem]);
     setSelectedItemId(newItem.id);
+    
+    // 显示设备说明
+    const props = equipmentProperties[type];
+    showToast(`${props.name}: ${props.description}`);
   }, []);
 
   // 显示toast提示
@@ -1472,10 +1694,34 @@ const ChemistryLab: React.FC = () => {
            return [];
          }
          
-         // 先找到选中的设备，检查类型是否允许添加溶液
+         // 先找到选中的设备
          const selectedItem = prevItems.find(item => item && item.id === selectedItemId);
-         if (selectedItem && ['watchGlass', 'scale'].includes(selectedItem.type)) {
-           showToast('此设备类型不支持添加溶液！');
+         if (!selectedItem) {
+           showToast('设备不存在！');
+           setShowSolutionPanel(false);
+           return prevItems;
+         }
+         
+         // 获取设备属性
+         const props = equipmentProperties[selectedItem.type];
+         
+         // 检查设备是否可以容纳该状态的物质
+         if (solution.isSolid && !props.canHoldSolids) {
+           showToast(`${props.name}不适合盛放固体物质！`);
+           setShowSolutionPanel(false);
+           return prevItems;
+         }
+         
+         if (!solution.isSolid && !props.canHoldLiquids) {
+           showToast(`${props.name}不适合盛放液体物质！`);
+           setShowSolutionPanel(false);
+           return prevItems;
+         }
+         
+         // 检查设备中是否已有不同状态的物质
+         const currentIsSolid = prevItems.find(item => item.id === selectedItemId)?.liquidType.includes('固体') || false;
+         if (selectedItem.liquidAmount > 0 && currentIsSolid !== !!solution.isSolid) {
+           showToast('不同状态的物质不能直接混合！请先清空设备');
            setShowSolutionPanel(false);
            return prevItems;
          }
@@ -1505,16 +1751,34 @@ const ChemistryLab: React.FC = () => {
            }
            return item;
          }).filter(item => item.id !== 'invalid'); // 过滤掉无效项
-       });
+      });
       
       setShowSolutionPanel(false);
     } catch (error) {
-      console.error('添加溶液时发生错误:', error);
+      console.error('添加物质时发生错误:', error);
       setShowSolutionPanel(false);
+      showToast('添加物质失败，请重试');
     }
   }, [selectedItemId, showToast]);
 
-  // 清空实验台
+  // 清空单个容器内的物质
+  const clearContainer = useCallback((equipmentId: string) => {
+    setItems(prev => prev.map(item => 
+      item.id === equipmentId 
+        ? { ...item, liquidType: '', liquidAmount: 0, liquidColor: '#FFFFFF', hasPrecipitate: false } 
+        : item
+    ));
+    showToast('容器已清空！');
+  }, [showToast]);
+
+  // 移除整个容器
+  const removeContainer = useCallback((equipmentId: string) => {
+    setItems(prev => prev.filter(item => item.id !== equipmentId));
+    setSelectedItemId(null);
+    showToast('容器已移除！');
+  }, [showToast]);
+
+  // 清空整个实验台
   const clearLab = useCallback(() => {
     setItems([]);
     setSelectedItemId(null);
@@ -1602,22 +1866,42 @@ const ChemistryLab: React.FC = () => {
                 const selectedItem = items.find(item => item.id === selectedItemId);
                 if (!selectedItem) return <p>设备不存在</p>;
                 
+                const props = equipmentProperties[selectedItem.type];
+                const isSolidContent = selectedItem.liquidType.includes('固体');
+                
                 return (
                   <div>
-                    <p>类型: {selectedItem.type}</p>
-                    <p>溶液: {selectedItem.liquidType || '空'}</p>
-                    <p>体积: {selectedItem.liquidAmount}%</p>
+                    <p>名称: {props.name}</p>
+                    <p>物质: {selectedItem.liquidType || '空'}</p>
+                    <p>状态: {isSolidContent ? '固体' : '液体'}</p>
+                    <p>数量: {selectedItem.liquidAmount}%</p>
                     {selectedItem.isHeated && (
                       <p className="text-red-400">正在加热</p>
                     )}
                     {selectedItem.hasPrecipitate && (
                       <p className="text-blue-400">有沉淀</p>
                     )}
+                    <div className="mt-2 text-xs text-gray-400">
+                      <p>可加热: {props.canHeat ? '是' : '否'}</p>
+                      <p>可反应: {props.canReact ? '是' : '否'}</p>
+                    </div>
                     <button 
                       onClick={() => setShowSolutionPanel(true)}
                       className="mt-2 bg-cyan-600 hover:bg-cyan-700 px-3 py-1 rounded text-sm"
                     >
-                      添加溶液
+                      添加物质
+                    </button>
+                    <button 
+                      onClick={() => clearContainer(selectedItem.id)}
+                      className="mt-2 bg-red-600 hover:bg-red-700 px-3 py-1 rounded text-sm ml-2"
+                    >
+                      清空容器
+                    </button>
+                    <button 
+                      onClick={() => removeContainer(selectedItem.id)}
+                      className="mt-2 bg-purple-600 hover:bg-purple-700 px-3 py-1 rounded text-sm ml-2"
+                    >
+                      移除容器
                     </button>
                   </div>
                 );
@@ -1632,7 +1916,16 @@ const ChemistryLab: React.FC = () => {
               {reactionHistory.length > 0 ? (
                 reactionHistory.map((reaction, index) => (
                   <div key={index} className="mb-2 text-sm border-b border-gray-700 pb-1">
-                    <p>{reaction.equation}</p>
+                    <div className="flex items-center justify-between">
+                      <p>{reaction.equation}</p>
+                      <button 
+                        onClick={() => copyEquation(reaction.equation)}
+                        className="p-1 text-cyan-400 hover:text-cyan-300 focus:outline-none"
+                        title="复制反应方程式"
+                      >
+                        📋
+                      </button>
+                    </div>
                     <p className="text-xs text-gray-400">
                       {reaction.timestamp.toLocaleTimeString()}
                     </p>
@@ -1645,6 +1938,13 @@ const ChemistryLab: React.FC = () => {
           </div>
         </div>
         
+        {/* 复制成功提示 */}
+        {showCopiedNotification && (
+          <div className="fixed top-4 right-4 bg-green-600 text-white px-4 py-2 rounded-lg shadow-lg z-50 transition-opacity duration-300">
+            已复制到剪贴板
+          </div>
+        )}
+
         {/* 设备面板 */}
         {showElementPanel && (
           <div className="w-64 bg-gray-800 rounded-lg p-4">
@@ -1743,36 +2043,62 @@ const ChemistryLab: React.FC = () => {
         )}
       </div>
       
-      {/* 溶液选择面板 */}
+      {/* 物质选择面板 */}
       {showSolutionPanel && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-gray-800 rounded-lg p-6 w-96">
-            <h2 className="text-xl font-bold mb-4 text-cyan-400">选择溶液</h2>
-            <div className="grid grid-cols-3 gap-2 max-h-80 overflow-y-auto">
-              {predefinedSolutions.map((solution, index) => (
+        <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50">
+          <div className="bg-gray-800 p-6 rounded-lg max-w-2xl w-full max-h-[80vh] overflow-y-auto">
+            <h2 className="text-xl font-bold mb-4 text-cyan-400">选择物质</h2>
+            
+            {/* 固体物质 */}
+            <h3 className="text-lg font-semibold mb-2 text-yellow-400">固体物质</h3>
+            <div className="grid grid-cols-4 gap-2 mb-6">
+              {predefinedSolutions.filter(s => s.isSolid).map((solution, index) => (
                 <button
                   key={index}
                   onClick={() => addSolution(solution)}
-                  className="bg-gray-700 hover:bg-gray-600 p-3 rounded flex flex-col items-center justify-center"
+                  className="bg-gray-700 hover:bg-gray-600 p-2 rounded flex flex-col items-center"
                 >
-                  <div 
-                    className="w-10 h-10 rounded-full mb-1 flex items-center justify-center"
-                    style={{
-                      backgroundColor: solution.color,
-                      border: solution.isSolid ? '2px dashed #FFFFFF' : 'none'
-                    }}
+                  <div
+                    className="w-12 h-12 rounded-md border border-gray-500 mb-1 flex items-center justify-center"
+                    style={{ backgroundColor: solution.color }}
                   >
-                    {solution.isSolid && <span className="text-black">固</span>}
+                    <span className="text-gray-300">⚫</span>
                   </div>
-                  <span className="text-xs text-center">{solution.name}</span>
+                  <span className="text-xs font-medium">{solution.name || solution.type}</span>
+                  <span className="text-xs text-yellow-400">固体</span>
+                  {solution.description && (
+                    <span className="text-xs text-gray-500 line-clamp-2 text-center">{solution.description}</span>
+                  )}
                 </button>
               ))}
             </div>
-            <button 
+            
+            {/* 液体物质 */}
+            <h3 className="text-lg font-semibold mb-2 text-blue-400">液体物质</h3>
+            <div className="grid grid-cols-4 gap-2">
+              {predefinedSolutions.filter(s => !s.isSolid).map((solution, index) => (
+                <button
+                  key={index}
+                  onClick={() => addSolution(solution)}
+                  className="bg-gray-700 hover:bg-gray-600 p-2 rounded flex flex-col items-center"
+                >
+                  <div
+                    className="w-12 h-12 rounded-full mb-1 border border-gray-500"
+                    style={{ backgroundColor: solution.color }}
+                  />
+                  <span className="text-xs font-medium">{solution.name || solution.type}</span>
+                  <span className="text-xs text-blue-400">液体</span>
+                  {solution.description && (
+                    <span className="text-xs text-gray-500 line-clamp-2 text-center">{solution.description}</span>
+                  )}
+                </button>
+              ))}
+            </div>
+            <button
               onClick={() => setShowSolutionPanel(false)}
-              className="mt-4 w-full bg-gray-600 hover:bg-gray-500 p-2 rounded"
+              className="mt-6 w-full bg-red-600 hover:bg-red-700 py-2 rounded"
             >
-              取消
+              关闭
             </button>
           </div>
         </div>
@@ -1780,7 +2106,8 @@ const ChemistryLab: React.FC = () => {
       
       {/* 提示信息 */}
       <div className="mt-4 text-sm text-gray-400">
-        <p>操作提示: 点击设备可选中并拖动，将不同溶液混合可观察化学反应。点击加热源可开启/关闭加热。</p>
+        <p>操作提示: 不同设备有不同的功能限制。烧杯、试管、圆底烧瓶、锥形瓶可加热和反应；坩埚适合固体加热；滴定管、量杯主要用于量取；表面皿可放置固体观察。</p>
+        <p className="mt-1">固体和液体物质需要使用适合的设备。尝试使用不兼容的设备时会显示错误提示。</p>
       </div>
       
       {/* Toast提示 */}
