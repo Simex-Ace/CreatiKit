@@ -91,6 +91,10 @@ export default function Home() {
     router.push('/physics-lab');
   };
 
+  const handleChemistryLab = () => {
+    router.push('/chemistry-lab');
+  };
+
   const handleFreeUse = () => {
     // 跳转到功能区域
     window.scrollTo({ top: 500, behavior: 'smooth' });
@@ -130,6 +134,27 @@ export default function Home() {
         </div>
 
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {/* 交互式2D化学实验室卡片 */}
+          <Card className="relative min-h-[300px] flex flex-col transition-all duration-300 hover:shadow-lg border-2 border-cyan-400 transform hover:-translate-y-1">
+            <div className="absolute -top-3 -right-3 bg-cyan-500 text-white text-xs font-bold px-3 py-1 rounded-full">
+              新品
+            </div>
+            <div className="p-6 flex-grow flex flex-col space-y-4">
+              <div className="rounded-full bg-cyan-100 p-3 w-fit">
+                <FlaskConical className="h-6 w-6 text-cyan-600" />
+              </div>
+              <h3 className="text-xl font-bold text-cyan-700">交互式2D化学实验室</h3>
+              <p className="text-muted-foreground flex-grow">
+                安全直观地学习和观察初中化学的核心反应现象，拖拽仪器、混合试剂进行虚拟实验
+              </p>
+              <div className="mt-auto pt-4">
+                <Button className="w-full bg-cyan-600 hover:bg-cyan-700 text-white font-bold" onClick={handleChemistryLab}>
+                  开始实验
+                </Button>
+              </div>
+            </div>
+          </Card>
+
           {/* 图片压缩工具卡片 */}
           <Card className="relative min-h-[300px] flex flex-col transition-all duration-300 hover:shadow-lg">
             <div className="p-6 flex-grow flex flex-col space-y-4">
