@@ -15,6 +15,11 @@ export interface TerrainEffect {
   hungerRateMultiplier: number;
   canSpawnFood: boolean;
   canSpawnOrganism: boolean;
+  // 新增地形效果属性
+  breedingChanceMultiplier?: number; // 繁殖概率倍数
+  healthRegenerationRate?: number;    // 健康恢复率（饥饿减少的减缓）
+  foodDetectionRangeMultiplier?: number; // 食物检测范围倍数
+  colorTint?: string;                 // 地形对生物的颜色影响
 }
 
 // 生态系统配置接口

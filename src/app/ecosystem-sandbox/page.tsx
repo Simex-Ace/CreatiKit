@@ -195,6 +195,10 @@ const EcosystemSandbox = () => {
 
     // 初始化渲染器
     rendererRef.current = new EcosystemRenderer(ctx, rect.width * devicePixelRatio, rect.height * devicePixelRatio, devicePixelRatio);
+      // 设置生态系统管理器引用，用于获取地形效果
+      if (ecosystemManagerRef.current) {
+        rendererRef.current.setEcosystemManager(ecosystemManagerRef.current);
+      }
     
     // 初始化生态系统管理器
     ecosystemManagerRef.current = new EcosystemManager(

@@ -183,6 +183,15 @@ export const createOrganism = (
         hungerDecrease *= this.hungerRateMultiplier;
       }
       
+      // 应用地形的健康恢复效果
+      if (ecosystemManager && this.currentTerrainType) {
+        const terrainEffect = ecosystemManager.getTerrainEffect(this.currentTerrainType);
+        if (terrainEffect.healthRegenerationRate) {
+          // 健康恢复减缓饥饿减少
+          hungerDecrease = Math.max(0, hungerDecrease - terrainEffect.healthRegenerationRate);
+        }
+      }
+      
       this.hunger = Math.max(0, this.hunger - hungerDecrease);
       
       const isStarving = this.hunger < 10;
@@ -224,7 +233,18 @@ export const createOrganism = (
           const dx = nearestFood.x - this.x;
           const dy = nearestFood.y - this.y;
           const distance = Math.sqrt(dx * dx + dy * dy);
-          const detectionRange = this.size * 10;
+          
+          // 基础检测范围
+          let detectionRange = this.size * 10;
+          
+          // 应用地形对食物检测范围的影响
+          if (ecosystemManager && this.currentTerrainType) {
+            const terrainEffect = ecosystemManager.getTerrainEffect(this.currentTerrainType);
+            if (terrainEffect.foodDetectionRangeMultiplier) {
+              detectionRange *= terrainEffect.foodDetectionRangeMultiplier;
+            }
+          }
+          
           const targetDirection = Math.atan2(dy, dx);
         const angleDiff = ((targetDirection - this.direction) + Math.PI * 2) % (Math.PI * 2);
         const baseTurnAmount = 0.1;

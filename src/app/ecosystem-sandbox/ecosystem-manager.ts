@@ -48,35 +48,55 @@ export class EcosystemManager {
       speedMultiplier: 0.3,
       hungerRateMultiplier: 2.0,
       canSpawnFood: false,
-      canSpawnOrganism: false
+      canSpawnOrganism: false,
+      breedingChanceMultiplier: 0.1,    // 极低的繁殖概率
+      healthRegenerationRate: 0,        // 无健康恢复
+      foodDetectionRangeMultiplier: 0.8, // 食物检测范围减小
+      colorTint: 'rgba(0, 0, 100, 0.2)' // 轻微蓝色调
     });
     
     this.terrainEffects.set('beach', {
       speedMultiplier: 1.1,
       hungerRateMultiplier: 1.2,
       canSpawnFood: true,
-      canSpawnOrganism: true
+      canSpawnOrganism: true,
+      breedingChanceMultiplier: 1.2,    // 略高的繁殖概率
+      healthRegenerationRate: 0.005,    // 轻微健康恢复
+      foodDetectionRangeMultiplier: 1.1, // 轻微食物检测范围增加
+      colorTint: 'rgba(255, 222, 173, 0.2)' // 沙滩色调
     });
     
     this.terrainEffects.set('forest', {
       speedMultiplier: 0.8,
       hungerRateMultiplier: 0.9,
       canSpawnFood: true,
-      canSpawnOrganism: true
+      canSpawnOrganism: true,
+      breedingChanceMultiplier: 1.5,    // 高繁殖概率（适合繁殖）
+      healthRegenerationRate: 0.01,     // 中等健康恢复
+      foodDetectionRangeMultiplier: 1.3, // 高食物检测范围（资源丰富）
+      colorTint: 'rgba(0, 100, 0, 0.2)' // 绿色调
     });
     
     this.terrainEffects.set('mountain', {
       speedMultiplier: 0.5,
       hungerRateMultiplier: 1.5,
       canSpawnFood: false,
-      canSpawnOrganism: true
+      canSpawnOrganism: true,
+      breedingChanceMultiplier: 0.9,    // 稍低的繁殖概率
+      healthRegenerationRate: 0.015,    // 高健康恢复（山地生物适应能力强）
+      foodDetectionRangeMultiplier: 0.7, // 低食物检测范围（资源稀少）
+      colorTint: 'rgba(169, 169, 169, 0.2)' // 灰色调
     });
     
     this.terrainEffects.set('plains', {
       speedMultiplier: 1.3,
       hungerRateMultiplier: 1.0,
       canSpawnFood: true,
-      canSpawnOrganism: true
+      canSpawnOrganism: true,
+      breedingChanceMultiplier: 1.3,    // 较高的繁殖概率
+      healthRegenerationRate: 0.008,    // 轻微健康恢复
+      foodDetectionRangeMultiplier: 1.2, // 中等食物检测范围
+      colorTint: 'rgba(144, 238, 144, 0.2)' // 草原绿色调
     });
   }
   
@@ -109,17 +129,17 @@ export class EcosystemManager {
         const cellX = x * cellSize;
         const cellY = y * cellSize;
         
-        // 五种地形类型的阈值分配
+        // 五种地形类型的阈值分配 - 调整比例让平原更多，森林更容易生成
         let terrainType: TerrainType;
-        if (noise < 0.25) {  // 海洋
+        if (noise < 0.20) {  // 海洋（缩小范围）
           terrainType = 'ocean';
-        } else if (noise < 0.32) {  // 沙滩
+        } else if (noise < 0.28) {  // 沙滩（略微缩小）
           terrainType = 'beach';
-        } else if (noise < 0.55) {  // 平原
+        } else if (noise < 0.60) {  // 平原（显著扩大）
           terrainType = 'plains';
-        } else if (noise < 0.75) {  // 森林
+        } else if (noise < 0.85) {  // 森林（扩大范围）
           terrainType = 'forest';
-        } else {  // 山脉
+        } else {  // 山脉（略微缩小）
           terrainType = 'mountain';
         }
         
@@ -306,8 +326,8 @@ export class EcosystemManager {
       }
     }
     
-    // 确保至少有一定比例的平原转换为森林
-    const forestConversionRate = 0.3; // 30%的平原转换为森林
+    // 提高森林转换率，确保森林足够多
+    const forestConversionRate = 0.4; // 40%的平原转换为森林
     const forestCount = Math.floor(plainAreas.length * forestConversionRate);
     
     // 随机选择平原区域转换为森林
@@ -316,8 +336,8 @@ export class EcosystemManager {
       if (i < shuffledAreas.length) {
         const {x, y} = shuffledAreas[i];
         
-        // 创建小型森林区域
-        const forestSize = 2 + Math.floor(Math.random() * 3);
+        // 创建更大的森林区域
+        const forestSize = 3 + Math.floor(Math.random() * 4);
         for (let dy = -forestSize; dy <= forestSize; dy++) {
           for (let dx = -forestSize; dx <= forestSize; dx++) {
             const nx = x + dx;
@@ -328,8 +348,75 @@ export class EcosystemManager {
             if (nx >= 0 && nx < widthCells && ny >= 0 && ny < heightCells && 
                 distance <= forestSize && 
                 this.terrainGrid[ny][nx].type === 'plains') {
-              // 中心更容易形成森林
-              if (Math.random() > distance / (forestSize + 2)) {
+              // 提高森林生成概率，让更多区域变成森林
+              if (Math.random() > distance / (forestSize + 1.5)) {
+                this.terrainGrid[ny][nx].type = 'forest';
+              }
+            }
+          }
+        }
+      }
+    }
+    
+    // 确保地图上至少有几处大型森林区域
+    this.createLargeForestAreas();
+  }
+  
+  // 创建大型森林区域
+  private createLargeForestAreas() {
+    const heightCells = this.terrainGrid.length;
+    const widthCells = this.terrainGrid[0].length;
+    
+    // 找出大面积的平原区域作为大型森林的候选位置
+    const largePlainAreas: {x: number, y: number}[] = [];
+    
+    // 扫描地图，找到潜在的大型平原区域中心
+    for (let y = 10; y < heightCells - 10; y++) {
+      for (let x = 10; x < widthCells - 10; x++) {
+        if (this.terrainGrid[y][x].type === 'plains') {
+          // 检查周围是否有足够大的平原区域
+          let plainCount = 0;
+          for (let dy = -5; dy <= 5; dy++) {
+            for (let dx = -5; dx <= 5; dx++) {
+              const nx = x + dx;
+              const ny = y + dy;
+              if (nx >= 0 && nx < widthCells && ny >= 0 && ny < heightCells && 
+                  this.terrainGrid[ny][nx].type === 'plains') {
+                plainCount++;
+              }
+            }
+          }
+          
+          // 如果有足够大的平原区域，加入候选列表
+          if (plainCount > 50) {
+            largePlainAreas.push({x, y});
+          }
+        }
+      }
+    }
+    
+    // 确保至少创建2-3个大型森林区域
+    const largeForestCount = Math.min(3, Math.max(2, Math.floor(largePlainAreas.length / 3)));
+    
+    // 从候选位置中随机选择并创建大型森林
+    const shuffledLargeAreas = largePlainAreas.sort(() => 0.5 - Math.random());
+    for (let i = 0; i < largeForestCount; i++) {
+      if (i < shuffledLargeAreas.length) {
+        const {x, y} = shuffledLargeAreas[i];
+        
+        // 创建非常大的森林区域
+        const largeForestSize = 6 + Math.floor(Math.random() * 4);
+        for (let dy = -largeForestSize; dy <= largeForestSize; dy++) {
+          for (let dx = -largeForestSize; dx <= largeForestSize; dx++) {
+            const nx = x + dx;
+            const ny = y + dy;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            
+            if (nx >= 0 && nx < widthCells && ny >= 0 && ny < heightCells && 
+                distance <= largeForestSize && 
+                this.terrainGrid[ny][nx].type === 'plains') {
+              // 高概率转换为森林
+              if (Math.random() > distance / (largeForestSize + 1)) {
                 this.terrainGrid[ny][nx].type = 'forest';
               }
             }
@@ -888,12 +975,23 @@ export class EcosystemManager {
         // 繁殖系统 - 改进版：需要双方都确认繁殖状态
         if (!organism.isBreeding && organism.hunger > 80 && organism.age > 100) {
           // 有概率进入繁殖准备状态
-        if (Math.random() < 0.005) { // 降低触发概率
-          organism.isBreeding = true;
-          organism.breedingTime = now;
-          organism.breedingProgress = 0;
-          organism.speed = this.config.speed * 0.3; // 设置为正常速度的30%，而不是完全停止
-        }
+          // 获取地形繁殖概率倍数
+          let breedingChanceMultiplier = 1;
+          if (organism.currentTerrainType) {
+            const terrainEffect = this.getTerrainEffect(organism.currentTerrainType);
+            if (terrainEffect.breedingChanceMultiplier) {
+              breedingChanceMultiplier = terrainEffect.breedingChanceMultiplier;
+            }
+          }
+          
+          // 应用地形影响的繁殖概率
+          const baseBreedingChance = 0.005;
+          if (Math.random() < baseBreedingChance * breedingChanceMultiplier) { // 降低触发概率
+            organism.isBreeding = true;
+            organism.breedingTime = now;
+            organism.breedingProgress = 0;
+            organism.speed = this.config.speed * 0.3; // 设置为正常速度的30%，而不是完全停止
+          }
         }
 
         // 检查繁殖进度和伙伴匹配

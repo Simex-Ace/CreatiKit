@@ -1,18 +1,20 @@
 import { Organism, Food, Stats, TerrainGrid, TerrainType } from './types';
+import { EcosystemManager } from './ecosystem-manager';
 
 export class EcosystemRenderer {
   private ctx: CanvasRenderingContext2D;
   private canvasWidth: number;
   private canvasHeight: number;
   private devicePixelRatio: number;
+  private ecosystemManager: EcosystemManager | null = null;
   
-  // 地形类型对应的颜色映射 - 使用高对比度颜色
+  // 地形类型对应的颜色映射 - 使用正确的绿色系
   private terrainColors: Record<string, string> = {
-    ocean: '#0000ff',       // 海洋蓝色（更鲜艳）
-    beach: '#f5deb3',       // 沙滩米色（更浅更真实）
-    plains: '#00ff00',      // 平原绿色（更亮）
-    forest: '#8b4513',      // 森林棕色（对比明显）
-    mountain: '#808080'     // 山脉灰色（更自然）
+    ocean: '#0000ff',       // 海洋蓝色
+    beach: '#f5deb3',       // 沙滩米色
+    plains: '#aaffaa',      // 真正的浅绿色
+    forest: '#006400',      // 森林深绿色
+    mountain: '#8b4513'     // 山脉褐色
   };
 
   constructor(ctx: CanvasRenderingContext2D, canvasWidth: number, canvasHeight: number, devicePixelRatio: number) {
@@ -23,6 +25,11 @@ export class EcosystemRenderer {
     
     // 设置缩放以支持Hi-DPI显示
     this.ctx.scale(devicePixelRatio, devicePixelRatio);
+  }
+  
+  // 设置生态系统管理器引用
+  setEcosystemManager(manager: EcosystemManager) {
+    this.ecosystemManager = manager;
   }
 
   // 更新Canvas尺寸
@@ -103,6 +110,15 @@ export class EcosystemRenderer {
       displayColor = `rgba(255, ${green}, ${green}, 0.9)`;
     }
     
+    // 应用地形颜色影响
+    if (!organism.isBreeding && organism.currentTerrainType && this.ecosystemManager) {
+      const terrainEffect = this.ecosystemManager.getTerrainEffect(organism.currentTerrainType);
+      if (terrainEffect?.colorTint) {
+        // 保存原始颜色，稍后应用色调
+        this.ctx.save();
+      }
+    }
+    
     // 繁殖中的额外发光效果
     if (organism.isBreeding) {
       // 绘制内部发光
@@ -125,6 +141,18 @@ export class EcosystemRenderer {
     this.ctx.arc(organism.x, organism.y, organism.size, 0, Math.PI * 2);
     this.ctx.fillStyle = displayColor;
     this.ctx.fill();
+    
+    // 应用地形色调叠加效果
+    if (!organism.isBreeding && organism.currentTerrainType && this.ecosystemManager) {
+      const terrainEffect = this.ecosystemManager.getTerrainEffect(organism.currentTerrainType);
+      if (terrainEffect?.colorTint) {
+        this.ctx.beginPath();
+        this.ctx.arc(organism.x, organism.y, organism.size, 0, Math.PI * 2);
+        this.ctx.fillStyle = terrainEffect.colorTint;
+        this.ctx.fill();
+        this.ctx.restore(); // 恢复保存的上下文
+      }
+    }
     
     // 添加类型标记
     if (organism.type === 'predator') {

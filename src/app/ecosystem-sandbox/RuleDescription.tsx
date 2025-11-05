@@ -78,6 +78,55 @@ export const RuleDescription = () => {
               </div>
             </div>
             
+            {/* 新增地形效果说明 */}
+            <div className="flex items-start">
+              <span className="text-2xl mr-2">🌊</span>
+              <div>
+                <strong className="font-medium">海洋</strong>
+                <p className="text-slate-600">移动速度减慢（30%），饥饿消耗加快（200%），极低的繁殖概率（10%），无健康恢复，食物检测范围减小（80%）。生物会带有轻微蓝色调。</p>
+              </div>
+            </div>
+            
+            <div className="flex items-start">
+              <span className="text-2xl mr-2">🏖️</span>
+              <div>
+                <strong className="font-medium">沙滩</strong>
+                <p className="text-slate-600">移动速度略快（110%），饥饿消耗略快（120%），略高的繁殖概率（120%），轻微健康恢复。食物检测范围轻微增加（110%）。生物会带有沙滩色调。</p>
+              </div>
+            </div>
+            
+            <div className="flex items-start">
+              <span className="text-2xl mr-2">🌲</span>
+              <div>
+                <strong className="font-medium">森林</strong>
+                <p className="text-slate-600">移动速度略慢（80%），饥饿消耗减缓（90%），高繁殖概率（150%），中等健康恢复。食物检测范围大幅增加（130%）。生物会带有绿色调。</p>
+              </div>
+            </div>
+            
+            <div className="flex items-start">
+              <span className="text-2xl mr-2">⛰️</span>
+              <div>
+                <strong className="font-medium">山地</strong>
+                <p className="text-slate-600">移动速度减慢（50%），饥饿消耗加快（150%），稍低的繁殖概率（90%），高健康恢复。食物检测范围减小（70%）。生物会带有灰色调。</p>
+              </div>
+            </div>
+            
+            <div className="flex items-start">
+              <span className="text-2xl mr-2">🌾</span>
+              <div>
+                <strong className="font-medium">平原</strong>
+                <p className="text-slate-600">移动速度最快（130%），饥饿消耗正常，较高的繁殖概率（130%），轻微健康恢复。食物检测范围增加（120%）。生物会带有草原绿色调。</p>
+              </div>
+            </div>
+            
+            <div className="flex items-start">
+              <span className="text-2xl mr-2">🏞️</span>
+              <div>
+                <strong className="font-medium">地形适应性</strong>
+                <p className="text-slate-600">不同地形会影响生物的移动速度、饥饿消耗、繁殖概率、健康恢复和食物检测能力。生物会根据所在地形显示相应的颜色变化。</p>
+              </div>
+            </div>
+            
             <div className="flex items-start md:col-span-2">
               <span className="text-2xl mr-2">🎮</span>
               <div>
