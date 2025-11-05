@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 
 // 导入类型和工具
-import { SandboxConfig, Stats } from './types';
+import { SandboxConfig, Stats, TerrainDistribution } from './types';
 import { EcosystemRenderer } from './renderer';
 import { EcosystemManager } from './ecosystem-manager';
 import { RuleDescription } from './RuleDescription';
@@ -40,6 +40,14 @@ const EcosystemSandbox = () => {
     foodCount: 30,
     speed: 0.5, // 初始速度设为较低值
     isRunning: true,
+    maxOrganisms: 100,
+    maxFood: 100,
+    foodSpawnRate: 0.02,
+    foodSpawnThreshold: 20,
+    evolutionThreshold: 100,
+    breedingThreshold: 80,
+    hasTerrain: true, // 明确启用地形
+    terrainGridSize: 20
   });
   
   const [stats, setStats] = useState<Stats>({ 
@@ -47,6 +55,16 @@ const EcosystemSandbox = () => {
     frameTime: 0,
     organismTypes: { basic: 0, predator: 0, scavenger: 0 }
   });
+  
+  // 组件加载标志
+  const isMounted = useRef(false);
+
+  useEffect(() => {
+    isMounted.current = true;
+    return () => {
+      isMounted.current = false;
+    };
+  }, []);
   
   // 渲染函数 - 高性能Canvas绘制
     const render = () => {
@@ -69,22 +87,15 @@ const EcosystemSandbox = () => {
             Math.abs(lastFrameTimeRef.current - deltaTime) > 5) {
           
           lastFps.current = newFps;
-            // 我们不需要保存deltaTime到ref中
-          
-              // 确保生物总数正确计算
-            const organisms = ecosystemManagerRef.current?.getState().organisms || [];
-            const basicCount = organisms.filter(o => o.type === 'basic').length;
-            const predatorCount = organisms.filter(o => o.type === 'predator').length;
-            const scavengerCount = organisms.filter(o => o.type === 'scavenger').length;
+              
+          // 获取统计数据
+          const statsData = ecosystemManagerRef.current?.calculateStats(newFps, deltaTime);
           
           setStats({
             fps: newFps,
             frameTime: deltaTime,
-            organismTypes: {
-              basic: basicCount,
-              predator: predatorCount,
-              scavenger: scavengerCount
-            }
+            organismTypes: statsData?.organismTypes || { basic: 0, predator: 0, scavenger: 0 },
+            terrainDistribution: (statsData?.terrainDistribution as unknown as TerrainDistribution) || { ocean: 0, beach: 0, forest: 0, mountain: 0, plains: 0 }
           });
         }
         
@@ -101,15 +112,26 @@ const EcosystemSandbox = () => {
       const { organisms, foods } = ecosystemManagerRef.current.getState();
       
       // 清空画布
-      rendererRef.current.clear();
-      
-      // 获取画布上下文
-      const ctx = canvas.getContext('2d');
-      if (!ctx) return;
-      
-      // 绘制场景
-      rendererRef.current.drawFoods(ctx, foods);
-      rendererRef.current.drawOrganisms(organisms);
+          rendererRef.current.clear();
+          
+          // 绘制地形（如果启用）
+          if (ecosystemManagerRef.current?.getHasTerrain() !== false) {
+            const terrainGrid = ecosystemManagerRef.current.getTerrainGrid();
+            if (terrainGrid && terrainGrid.length > 0) {
+              rendererRef.current.drawTerrain(
+                terrainGrid,
+                ecosystemManagerRef.current.getTerrainGridSize() || 20
+              );
+            }
+          }
+    
+    // 获取画布上下文
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    
+    // 绘制场景
+    rendererRef.current.drawFoods(ctx, foods);
+    rendererRef.current.drawOrganisms(organisms);
       
       // 确保暂停状态正确显示
       if (!config.isRunning) {
@@ -228,7 +250,7 @@ const EcosystemSandbox = () => {
 
       <main className="flex-grow flex flex-col md:flex-row gap-6 max-w-7xl mx-auto w-full">
         {/* 控制面板 */}
-        <Card className="p-4 w-full md:w-80 flex-shrink-0">
+        <Card className="p-4 w-full md:w-72 flex-shrink-0">
           <h2 className="text-xl font-semibold mb-4">控制面板</h2>
           
           <div className="space-y-6">
@@ -302,23 +324,23 @@ const EcosystemSandbox = () => {
               <h3 className="text-sm font-medium text-slate-500">性能统计</h3>
               <div className="text-sm font-mono">
                 <div>FPS: {stats.fps}</div>
-              <div>帧时间: {stats.frameTime.toFixed(2)}ms</div>
-              <div>生物总数: {stats.organismTypes.basic + stats.organismTypes.predator + stats.organismTypes.scavenger}</div>
-              <Separator className="my-2" />
-              <div className="space-y-1">
-                <div className="flex items-center justify-between">
-                  <span>基础生物:</span>
-                  <span className="text-green-600">{stats.organismTypes.basic || 0}</span>
+                <div>帧时间: {stats.frameTime.toFixed(2)}ms</div>
+                <div>生物总数: {stats.organismTypes.basic + stats.organismTypes.predator + stats.organismTypes.scavenger}</div>
+                <Separator className="my-2" />
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between">
+                    <span>基础生物:</span>
+                    <span className="text-green-600">{stats.organismTypes.basic || 0}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span>捕食者:</span>
+                    <span className="text-red-600">{stats.organismTypes.predator || 0}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span>清道夫:</span>
+                    <span className="text-purple-600">{stats.organismTypes.scavenger || 0}</span>
+                  </div>
                 </div>
-                <div className="flex items-center justify-between">
-                  <span>捕食者:</span>
-                  <span className="text-red-600">{stats.organismTypes.predator || 0}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span>清道夫:</span>
-                  <span className="text-purple-600">{stats.organismTypes.scavenger || 0}</span>
-                </div>
-              </div>
               </div>
             </div>
           </div>
@@ -326,7 +348,7 @@ const EcosystemSandbox = () => {
 
         {/* 沙盒画布 */}
         <Card className="flex-grow overflow-hidden">
-          <div className="relative w-full h-full min-h-[500px]">
+          <div className="relative w-full h-full min-h-[500px]" style={{ maxWidth: 'calc(100vw - 300px)', margin: '0 auto', aspectRatio: '16/9' }}>
             <canvas
               ref={canvasRef}
               className="absolute inset-0 w-full h-full bg-slate-100"

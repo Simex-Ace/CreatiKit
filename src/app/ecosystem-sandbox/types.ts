@@ -1,44 +1,23 @@
-// 食物类型定义
-export interface Food {
-  id: number;
-  x: number;
-  y: number;
-  size: number;
-  color: string;
-  isFlashing?: boolean; // 是否正在闪烁（被吃掉时的效果）
-  flashTime?: number; // 闪烁开始的时间
+// 地形类型
+export type TerrainType = 'ocean' | 'beach' | 'plains' | 'forest' | 'mountain';
+
+// 地形单元格
+export interface TerrainCell {
+  type: TerrainType;
 }
 
-// 生物类型枚举
-export type OrganismType = 'basic' | 'predator' | 'scavenger';
+// 地形网格
+export type TerrainGrid = TerrainCell[][];
 
-// 生物类型定义
-export interface Organism {
-  id: number;
-  x: number;
-  y: number;
-  size: number;
-  speed: number;
-  direction: number; // 角度（弧度）
-  color: string;
-  hunger: number; // 饥饿值：0-100，0表示极度饥饿，100表示饱腹
-  type: OrganismType; // 生物类型
-  age: number; // 年龄
-  canEvolve: boolean; // 是否可以进化
-  isDetectingFood?: boolean; // 是否探测到食物
-  foodDetectionTime?: number; // 探测到食物的时间
-  detectedFoodDistance?: number; // 探测到的食物距离
-  isBreeding?: boolean; // 是否正在繁殖
-  breedingPartnerId?: number; // 繁殖伙伴的ID
-  breedingTime?: number; // 开始繁殖的时间
-  breedingProgress?: number; // 繁殖进度 (0-100)
-  update: (foods: Food[]) => void;
-  eat: (foods: Food[]) => Food[];
-  findNearestFood: (foods: Food[]) => Food | null;
-  evolve: () => Organism | null; // 进化方法
+// 地形效果
+export interface TerrainEffect {
+  speedMultiplier: number;
+  hungerRateMultiplier: number;
+  canSpawnFood: boolean;
+  canSpawnOrganism: boolean;
 }
 
-// 沙盒配置
+// 生态系统配置接口
 export interface SandboxConfig {
   width: number;
   height: number;
@@ -46,9 +25,72 @@ export interface SandboxConfig {
   foodCount: number;
   speed: number;
   isRunning: boolean;
+  maxOrganisms: number;
+  maxFood: number;
+  foodSpawnRate: number;
+  foodSpawnThreshold: number;
+  evolutionThreshold: number;
+  breedingThreshold: number;
+  hasTerrain?: boolean;
+  terrainGridSize?: number;
 }
 
-// 统计信息
+// 生物类型
+export type OrganismType = 'basic' | 'predator' | 'scavenger';
+
+// 生物接口
+export interface Organism {
+  id: number;
+  x: number;
+  y: number;
+  size: number;
+  speed: number;
+  adjustedSpeed?: number;
+  direction: number;
+  color: string;
+  hunger: number;
+  type: OrganismType;
+  age: number;
+  canEvolve: boolean;
+  isBreeding: boolean;
+  breedingPartnerId?: number;
+  breedingTime?: number;
+  breedingProgress?: number;
+  isDetectingFood: boolean;
+  foodDetectionTime?: number;
+  detectedFoodDistance?: number;
+  currentTerrainType?: TerrainType;
+  hungerRateMultiplier?: number;
+  
+  // 方法定义
+  findNearestFood: (foods: Food[]) => Food | null;
+  eat: (food: Food) => boolean;
+  evolve: () => Organism | null;
+  update: (foods: Food[], ecosystemManager: any) => void;
+  calculateDistance?: (x: number, y: number) => number;
+}
+
+// 食物接口
+export interface Food {
+  id: number;
+  x: number;
+  y: number;
+  size: number;
+  isFlashing?: boolean;
+  flashTime?: number;
+  terrainType?: TerrainType;
+}
+
+// 地形分布统计
+export interface TerrainDistribution {
+  ocean: number;
+  beach: number;
+  forest: number;
+  mountain: number;
+  plains: number;
+}
+
+// 统计数据接口
 export interface Stats {
   fps: number;
   frameTime: number;
@@ -57,4 +99,5 @@ export interface Stats {
     predator: number;
     scavenger: number;
   };
+  terrainDistribution?: TerrainDistribution;
 }

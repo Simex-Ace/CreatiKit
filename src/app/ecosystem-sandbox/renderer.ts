@@ -1,10 +1,19 @@
-import { Organism, Food, Stats } from './types';
+import { Organism, Food, Stats, TerrainGrid, TerrainType } from './types';
 
 export class EcosystemRenderer {
   private ctx: CanvasRenderingContext2D;
   private canvasWidth: number;
   private canvasHeight: number;
   private devicePixelRatio: number;
+  
+  // 地形类型对应的颜色映射 - 使用高对比度颜色
+  private terrainColors: Record<string, string> = {
+    ocean: '#0000ff',       // 海洋蓝色（更鲜艳）
+    beach: '#f5deb3',       // 沙滩米色（更浅更真实）
+    plains: '#00ff00',      // 平原绿色（更亮）
+    forest: '#8b4513',      // 森林棕色（对比明显）
+    mountain: '#808080'     // 山脉灰色（更自然）
+  };
 
   constructor(ctx: CanvasRenderingContext2D, canvasWidth: number, canvasHeight: number, devicePixelRatio: number) {
     this.ctx = ctx;
@@ -20,11 +29,21 @@ export class EcosystemRenderer {
   updateSize(canvasWidth: number, canvasHeight: number) {
     this.canvasWidth = canvasWidth;
     this.canvasHeight = canvasHeight;
+    // 不需要重新缩放，因为在构造函数中已经处理过了
   }
 
   // 清空画布
   clear() {
+    this.ctx.save();
+    // 保存当前变换状态
+    const currentTransform = this.ctx.getTransform();
+    // 重置变换矩阵
+    this.ctx.setTransform(1, 0, 0, 1, 0, 0);
+    // 完全清空画布
     this.ctx.clearRect(0, 0, this.canvasWidth, this.canvasHeight);
+    // 恢复之前的变换矩阵
+    this.ctx.setTransform(currentTransform);
+    this.ctx.restore();
   }
 
   // 绘制食物
@@ -317,5 +336,150 @@ export class EcosystemRenderer {
       this.canvasHeight / (2 * this.devicePixelRatio)
     );
     this.ctx.restore();
+  }
+  
+  // 绘制地形网格
+  drawTerrain(terrainGrid: TerrainGrid | null, gridSize: number) {
+    if (!terrainGrid || terrainGrid.length === 0 || terrainGrid[0].length === 0) {
+      return;
+    }
+    
+    this.ctx.save();
+    
+    // 使用设备像素比正确处理画布绘制
+    this.ctx.scale(this.devicePixelRatio, this.devicePixelRatio);
+    
+    // 计算实际的网格单元格大小（基于CSS像素）
+    const cssWidth = this.canvasWidth / this.devicePixelRatio;
+    const cssHeight = this.canvasHeight / this.devicePixelRatio;
+    const cellWidth = cssWidth / terrainGrid[0].length;
+    const cellHeight = cssHeight / terrainGrid.length;
+    
+    // 绘制每个地形单元格
+    for (let y = 0; y < terrainGrid.length; y++) {
+      for (let x = 0; x < terrainGrid[y].length; x++) {
+        const terrainCell = terrainGrid[y][x];
+        const terrainType = terrainCell.type;
+        const color = this.terrainColors[terrainType] || 'hsl(0, 0%, 95%)'; // 默认灰色
+        
+        // 设置基础填充色
+        this.ctx.fillStyle = color;
+        this.ctx.fillRect(
+          Math.floor(x * cellWidth),
+          Math.floor(y * cellHeight),
+          Math.ceil(cellWidth),
+          Math.ceil(cellHeight)
+        );
+      }
+    }
+    
+    this.ctx.restore();
+  }
+  
+  // 添加地形特效
+  private addTerrainEffects(x: number, y: number, cellWidth: number, cellHeight: number, terrainType: TerrainType) {
+    switch (terrainType) {
+      case 'ocean':
+        // 添加海洋波纹效果
+        this.addOceanRipple(x, y, cellWidth, cellHeight);
+        break;
+      case 'beach':
+        // 添加沙滩颗粒感
+        this.addBeachTexture(x, y, cellWidth, cellHeight);
+        break;
+      case 'plains':
+        // 添加平原草地图案
+        this.addPlainsTexture(x, y, cellWidth, cellHeight);
+        break;
+      case 'forest':
+        // 添加森林斑点效果
+        this.addForestSpots(x, y, cellWidth, cellHeight);
+        break;
+      case 'mountain':
+        // 添加山脉条纹效果
+        this.addMountainStripes(x, y, cellWidth, cellHeight);
+        break;
+    }
+  }
+  
+  // 海洋波纹特效
+  private addOceanRipple(x: number, y: number, cellWidth: number, cellHeight: number) {
+    this.ctx.fillStyle = 'rgba(0, 100, 200, 0.1)';
+    this.ctx.beginPath();
+    this.ctx.arc(x * cellWidth + cellWidth / 2, y * cellHeight + cellHeight / 2, Math.min(cellWidth, cellHeight) / 4, 0, Math.PI * 2);
+    this.ctx.fill();
+  }
+  
+  // 沙滩颗粒感
+  private addBeachTexture(x: number, y: number, cellWidth: number, cellHeight: number) {
+    for (let i = 0; i < 5; i++) {
+      const px = x * cellWidth + Math.random() * cellWidth;
+      const py = y * cellHeight + Math.random() * cellHeight;
+      this.ctx.fillStyle = 'rgba(255, 240, 180, 0.5)';
+      this.ctx.fillRect(px, py, 1, 1);
+    }
+  }
+  
+  // 森林斑点效果
+  private addForestSpots(x: number, y: number, cellWidth: number, cellHeight: number) {
+    this.ctx.fillStyle = 'rgba(0, 80, 0, 0.3)';
+    for (let i = 0; i < 3; i++) {
+      const px = x * cellWidth + Math.random() * cellWidth;
+      const py = y * cellHeight + Math.random() * cellHeight;
+      const radius = Math.random() * 3 + 1;
+      this.ctx.beginPath();
+      this.ctx.arc(px, py, radius, 0, Math.PI * 2);
+      this.ctx.fill();
+    }
+  }
+  
+  // 山脉条纹效果
+  private addMountainStripes(x: number, y: number, cellWidth: number, cellHeight: number) {
+    this.ctx.strokeStyle = 'rgba(100, 100, 100, 0.5)';
+    this.ctx.lineWidth = 1;
+    for (let i = 0; i < 3; i++) {
+      const yPos = y * cellHeight + Math.random() * cellHeight;
+      this.ctx.beginPath();
+      this.ctx.moveTo(x * cellWidth, yPos);
+      this.ctx.lineTo((x + 1) * cellWidth, yPos);
+      this.ctx.stroke();
+    }
+  }
+  
+  // 平原草地图案
+  private addPlainsTexture(x: number, y: number, cellWidth: number, cellHeight: number) {
+    this.ctx.fillStyle = 'rgba(0, 150, 50, 0.2)';
+    for (let i = 0; i < 4; i++) {
+      const px = x * cellWidth + Math.random() * cellWidth;
+      const py = y * cellHeight + Math.random() * cellHeight;
+      this.ctx.beginPath();
+      this.ctx.arc(px, py, 1, 0, Math.PI * 2);
+      this.ctx.fill();
+    }
+  }
+  
+  // 绘制网格线
+  private drawGridLines(terrainGrid: TerrainGrid, cellWidth: number, cellHeight: number) {
+    // 只有在网格大小适中时才绘制网格线
+    if (terrainGrid.length <= 50 && terrainGrid[0].length <= 50) {
+      this.ctx.strokeStyle = 'rgba(0, 0, 0, 0.1)';
+      this.ctx.lineWidth = 0.5;
+      
+      // 水平线
+      for (let y = 0; y <= terrainGrid.length; y++) {
+        this.ctx.beginPath();
+        this.ctx.moveTo(0, y * cellHeight);
+        this.ctx.lineTo(terrainGrid[0].length * cellWidth, y * cellHeight);
+        this.ctx.stroke();
+      }
+      
+      // 垂直线
+      for (let x = 0; x <= terrainGrid[0].length; x++) {
+        this.ctx.beginPath();
+        this.ctx.moveTo(x * cellWidth, 0);
+        this.ctx.lineTo(x * cellWidth, terrainGrid.length * cellHeight);
+        this.ctx.stroke();
+      }
+    }
   }
 }
