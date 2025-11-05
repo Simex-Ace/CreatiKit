@@ -95,6 +95,10 @@ export default function Home() {
     router.push('/chemistry-lab');
   };
 
+  const handleEcosystemSandbox = () => {
+    router.push('/ecosystem-sandbox');
+  };
+
   const handleFreeUse = () => {
     // 跳转到功能区域
     window.scrollTo({ top: 500, behavior: 'smooth' });
@@ -186,6 +190,27 @@ export default function Home() {
               <div className="mt-auto pt-4">
                 <Button className="w-full" onClick={handleModelViewer}>
                   预览模型
+                </Button>
+              </div>
+            </div>
+          </Card>
+
+          {/* 生物沙盒卡片 */}
+          <Card className="relative min-h-[300px] flex flex-col transition-all duration-300 hover:shadow-lg border-2 border-emerald-400 transform hover:-translate-y-1">
+            <div className="absolute -top-3 -right-3 bg-emerald-500 text-white text-xs font-bold px-3 py-1 rounded-full">
+              新品
+            </div>
+            <div className="p-6 flex-grow flex flex-col space-y-4">
+              <div className="rounded-full bg-emerald-100 p-3 w-fit">
+                <CloudSun className="h-6 w-6 text-emerald-600" />
+              </div>
+              <h3 className="text-xl font-bold text-emerald-700">生物沙盒模拟</h3>
+              <p className="text-muted-foreground flex-grow">
+                高性能纯前端生态系统模拟，观察生物在沙盒中随机移动，支持添加、暂停和调整速度
+              </p>
+              <div className="mt-auto pt-4">
+                <Button className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold" onClick={handleEcosystemSandbox}>
+                  开始模拟
                 </Button>
               </div>
             </div>
