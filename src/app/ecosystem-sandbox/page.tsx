@@ -26,13 +26,19 @@ const EcosystemSandbox = () => {
   const ecosystemManagerRef = useRef<EcosystemManager | null>(null);
   const rendererRef = useRef<EcosystemRenderer | null>(null);
   
+  // 性能统计相关引用
+  const frameCountRef = useRef(0);
+  const lastFrameTimeRef = useRef(performance.now());
+  const lastFpsUpdateRef = useRef(performance.now());
+  const lastFps = useRef(0);
+  
   // 状态管理
   const [config, setConfig] = useState<SandboxConfig>({
     width: 800,
     height: 600,
     organismCount: 10,
     foodCount: 30,
-    speed: 2,
+    speed: 0.5, // 初始速度设为较低值
     isRunning: true,
   });
   
@@ -42,13 +48,6 @@ const EcosystemSandbox = () => {
     organismTypes: { basic: 0, predator: 0, scavenger: 0 }
   });
   
-  // 性能统计相关引用
-  const frameCountRef = useRef(0);
-  const lastFpsUpdateRef = useRef(Date.now());
-  const lastFrameTimeRef = useRef(Date.now());
-  const lastFps = useRef(0);
-  const lastFrameTime = useRef(0);
-
   // 渲染函数 - 高性能Canvas绘制
     const render = () => {
       const canvas = canvasRef.current;
@@ -60,20 +59,33 @@ const EcosystemSandbox = () => {
       lastFrameTimeRef.current = now;
       
       frameCountRef.current++;
+      if (!lastFpsUpdateRef.current) lastFpsUpdateRef.current = now;
       if (now - lastFpsUpdateRef.current > 1000) { // 每1秒更新一次FPS
         // 精确计算FPS值
         const newFps = Math.round(frameCountRef.current * 1000 / (now - lastFpsUpdateRef.current));
         
         // 有显著变化时才更新状态
         if (Math.abs(lastFps.current - newFps) > 2 || 
-            Math.abs(lastFrameTime.current - deltaTime) > 5) {
+            Math.abs(lastFrameTimeRef.current - deltaTime) > 5) {
           
           lastFps.current = newFps;
-          lastFrameTime.current = deltaTime;
+            // 我们不需要保存deltaTime到ref中
           
-          // 使用管理器计算统计数据
-          const newStats = ecosystemManagerRef.current.calculateStats(newFps, deltaTime);
-          setStats(newStats);
+              // 确保生物总数正确计算
+            const organisms = ecosystemManagerRef.current?.getState().organisms || [];
+            const basicCount = organisms.filter(o => o.type === 'basic').length;
+            const predatorCount = organisms.filter(o => o.type === 'predator').length;
+            const scavengerCount = organisms.filter(o => o.type === 'scavenger').length;
+          
+          setStats({
+            fps: newFps,
+            frameTime: deltaTime,
+            organismTypes: {
+              basic: basicCount,
+              predator: predatorCount,
+              scavenger: scavengerCount
+            }
+          });
         }
         
         frameCountRef.current = 0;
@@ -91,8 +103,12 @@ const EcosystemSandbox = () => {
       // 清空画布
       rendererRef.current.clear();
       
+      // 获取画布上下文
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+      
       // 绘制场景
-      rendererRef.current.drawFoods(foods);
+      rendererRef.current.drawFoods(ctx, foods);
       rendererRef.current.drawOrganisms(organisms);
       
       // 确保暂停状态正确显示

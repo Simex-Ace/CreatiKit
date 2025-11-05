@@ -62,6 +62,22 @@ export const RuleDescription = () => {
               </div>
             </div>
             
+            <div className="flex items-start">
+              <span className="text-2xl mr-2">💞</span>
+              <div>
+                <strong className="font-medium">生物繁殖</strong>
+                <p className="text-slate-600">当生物年龄达到200帧且饥饿值高于70时，会进入繁殖状态并寻找配偶。繁殖中的生物会互相靠近并保持相对静止，完成后会在父母周围随机位置诞生新生物。</p>
+              </div>
+            </div>
+            
+            <div className="flex items-start">
+              <span className="text-2xl mr-2">👪</span>
+              <div>
+                <strong className="font-medium">后代遗传</strong>
+                <p className="text-slate-600">新诞生的生物会继承父母的类型和部分特性，但也会有少量随机变化，形成生物多样性。</p>
+              </div>
+            </div>
+            
             <div className="flex items-start md:col-span-2">
               <span className="text-2xl mr-2">🎮</span>
               <div>

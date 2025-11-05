@@ -28,28 +28,77 @@ export class EcosystemRenderer {
   }
 
   // 绘制食物
-  drawFoods(foods: Food[]) {
+  drawFoods(ctx: CanvasRenderingContext2D, foods: Food[]) {
     if (foods.length === 0) return;
     
-    this.ctx.save();
-    this.ctx.fillStyle = 'hsl(120, 100%, 40%)';
+    const now = Date.now();
+    const flashDuration = 300;
+    
+    ctx.save();
     
     foods.forEach(food => {
-      this.ctx.beginPath();
-      this.ctx.arc(food.x, food.y, food.size, 0, Math.PI * 2);
-      this.ctx.fill();
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(food.x, food.y, food.size, 0, Math.PI * 2);
+      
+      if (food.isFlashing && food.flashTime) {
+        // 计算闪烁进度（0-1）
+        const progress = (now - food.flashTime) / flashDuration;
+        // 创建脉动效果：亮度先增加后减少
+        const brightness = 80 - Math.abs(progress - 0.5) * 40;
+        // 使用亮绿色并设置透明度渐变
+        const alpha = 1 - progress;
+        
+        // 绘制外圈光晕
+        ctx.beginPath();
+        ctx.arc(food.x, food.y, food.size * 2, 0, Math.PI * 2);
+        ctx.fillStyle = `hsla(120, 100%, ${brightness + 10}%, ${alpha * 0.5})`;
+        ctx.fill();
+        
+        // 重新绘制食物本体
+        ctx.beginPath();
+        ctx.arc(food.x, food.y, food.size, 0, Math.PI * 2);
+        ctx.fillStyle = `hsla(120, 100%, 50%, ${alpha})`;
+      } else {
+        // 普通食物显示为绿色
+        ctx.fillStyle = 'hsl(120, 100%, 40%)';
+      }
+      
+      ctx.fill();
+      ctx.restore();
     });
     
-    this.ctx.restore();
+    ctx.restore();
   }
 
   // 绘制单个生物
   private drawOrganism(organism: Organism) {
-    // 根据饥饿值调整颜色
+    // 根据饥饿值和繁殖状态调整颜色
     let displayColor = organism.color;
-    if (organism.hunger < 30) {
+    
+    if (organism.isBreeding) {
+      // 繁殖中的特殊粉色系
+      displayColor = `hsl(300, 100%, ${60 - (organism.breedingProgress || 0) / 3}%)`;
+    } else if (organism.hunger < 30) {
       const green = Math.floor(100 * (organism.hunger / 30));
       displayColor = `rgba(255, ${green}, ${green}, 0.9)`;
+    }
+    
+    // 繁殖中的额外发光效果
+    if (organism.isBreeding) {
+      // 绘制内部发光
+      this.ctx.beginPath();
+      this.ctx.arc(organism.x, organism.y, organism.size * 1.2, 0, Math.PI * 2);
+      this.ctx.fillStyle = `hsla(300, 100%, 80%, ${0.4 + (organism.breedingProgress || 0) / 250})`;
+      this.ctx.fill();
+      
+      // 绘制脉动圆环
+      const pulseRadius = organism.size * (1.3 + 0.2 * Math.sin(Date.now() * 0.004));
+      this.ctx.beginPath();
+      this.ctx.arc(organism.x, organism.y, pulseRadius, 0, Math.PI * 2);
+      this.ctx.strokeStyle = `hsla(300, 100%, 70%, ${0.6})`;
+      this.ctx.lineWidth = 2;
+      this.ctx.stroke();
     }
     
     // 绘制生物主体
@@ -73,31 +122,58 @@ export class EcosystemRenderer {
       this.ctx.stroke();
     }
     
-    // 方向指示器
-    this.ctx.beginPath();
-    this.ctx.moveTo(organism.x, organism.y);
-    this.ctx.lineTo(
-      organism.x + Math.cos(organism.direction) * organism.size * 1.5,
-      organism.y + Math.sin(organism.direction) * organism.size * 1.5
-    );
-    this.ctx.strokeStyle = '#333';
-    this.ctx.lineWidth = 2;
-    this.ctx.stroke();
+    // 繁殖状态不显示方向指示器
+    if (!organism.isBreeding) {
+      // 方向指示器
+      this.ctx.beginPath();
+      this.ctx.moveTo(organism.x, organism.y);
+      this.ctx.lineTo(
+        organism.x + Math.cos(organism.direction) * organism.size * 1.5,
+        organism.y + Math.sin(organism.direction) * organism.size * 1.5
+      );
+      this.ctx.strokeStyle = '#333';
+      this.ctx.lineWidth = 2;
+      this.ctx.stroke();
+      
+      // 饥饿值条 - 繁殖状态不显示
+      if (organism.hunger < 50) {
+        const barWidth = organism.size * 2;
+        const barY = organism.y + organism.size + 5;
+        const xPos = organism.x - barWidth / 2;
+        
+        // 背景条
+        this.ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+        this.ctx.fillRect(xPos, barY, barWidth, 2);
+        
+        // 饥饿值条
+        const hungerWidth = (organism.hunger / 100) * barWidth;
+        this.ctx.fillStyle = organism.hunger < 20 ? 'rgba(255, 0, 0, 0.8)' : 'rgba(255, 165, 0, 0.8)';
+        this.ctx.fillRect(xPos, barY, hungerWidth, 2);
+      }
+    }
     
-    // 饥饿值条
-    if (organism.hunger < 50) {
-      const barWidth = organism.size * 2;
-      const barY = organism.y + organism.size + 5;
-      const xPos = organism.x - barWidth / 2;
+    // 繁殖状态显示特殊标记
+    if (organism.isBreeding) {
+      // 中心爱心标记
+      this.ctx.beginPath();
+      const heartSize = organism.size * 0.5;
+      this.ctx.moveTo(organism.x, organism.y - heartSize * 0.2);
       
-      // 背景条
-      this.ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
-      this.ctx.fillRect(xPos, barY, barWidth, 2);
+      // 绘制简化的爱心形状
+      const curveControl = heartSize * 0.8;
+      this.ctx.bezierCurveTo(
+        organism.x - heartSize, organism.y - heartSize * 1.2,
+        organism.x - heartSize * 1.2, organism.y + heartSize * 0.2,
+        organism.x, organism.y + heartSize * 0.8
+      );
+      this.ctx.bezierCurveTo(
+        organism.x + heartSize * 1.2, organism.y + heartSize * 0.2,
+        organism.x + heartSize, organism.y - heartSize * 1.2,
+        organism.x, organism.y - heartSize * 0.2
+      );
       
-      // 饥饿值条
-      const hungerWidth = (organism.hunger / 100) * barWidth;
-      this.ctx.fillStyle = organism.hunger < 20 ? 'rgba(255, 0, 0, 0.8)' : 'rgba(255, 165, 0, 0.8)';
-      this.ctx.fillRect(xPos, barY, hungerWidth, 2);
+      this.ctx.fillStyle = 'rgba(255, 0, 128, 0.9)';
+      this.ctx.fill();
     }
   }
 
@@ -106,8 +182,112 @@ export class EcosystemRenderer {
     if (organisms.length === 0) return;
     
     this.ctx.save();
+    const now = Date.now();
     
     organisms.forEach(organism => {
+      // 绘制繁殖特效（如果正在繁殖）
+      if (organism.isBreeding) {
+        // 绘制发光效果 - 更明显的光晕
+        this.ctx.beginPath();
+        this.ctx.arc(organism.x, organism.y, organism.size * 2, 0, Math.PI * 2);
+        this.ctx.fillStyle = `hsla(300, 100%, 70%, ${0.3 + (organism.breedingProgress || 0) / 300})`;
+        this.ctx.fill();
+        
+        // 绘制繁殖进度条 - 更美观的设计
+        const progressBarWidth = organism.size * 3;
+        const progressBarHeight = 4;
+        const progressBarY = organism.y - organism.size - 10;
+        
+        // 进度条圆角背景
+        this.ctx.beginPath();
+        this.ctx.roundRect(
+          organism.x - progressBarWidth / 2,
+          progressBarY,
+          progressBarWidth,
+          progressBarHeight,
+          2
+        );
+        this.ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+        this.ctx.fill();
+        
+        // 进度条填充 - 带渐变效果
+        this.ctx.beginPath();
+        this.ctx.roundRect(
+          organism.x - progressBarWidth / 2,
+          progressBarY,
+          progressBarWidth * ((organism.breedingProgress || 0) / 100),
+          progressBarHeight,
+          2
+        );
+        
+        // 创建进度条渐变
+        const progressGradient = this.ctx.createLinearGradient(
+          organism.x - progressBarWidth / 2,
+          progressBarY,
+          organism.x + progressBarWidth / 2,
+          progressBarY
+        );
+        progressGradient.addColorStop(0, 'hsl(280, 100%, 60%)');
+        progressGradient.addColorStop(1, 'hsl(320, 100%, 60%)');
+        this.ctx.fillStyle = progressGradient;
+        this.ctx.fill();
+        
+        // 进度百分比文本
+        if ((organism.breedingProgress || 0) > 10) {
+          this.ctx.fillStyle = 'white';
+          this.ctx.font = `${Math.floor(organism.size * 0.8)}px Arial`;
+          this.ctx.textAlign = 'center';
+          this.ctx.textBaseline = 'middle';
+          this.ctx.fillText(
+            `${Math.round(organism.breedingProgress || 0)}%`,
+            organism.x,
+            progressBarY + progressBarHeight / 2
+          );
+        }
+      }
+      
+      // 如果检测到食物，绘制绿色光环
+      if (organism.isDetectingFood && organism.detectedFoodDistance !== undefined) {
+        // 根据距离调整光环大小和透明度
+        const baseRadius = organism.size * 1.5;
+        const maxRadius = organism.size * 5;
+        const distanceRatio = Math.min(1, organism.detectedFoodDistance / 100); // 限制在0-1范围内
+        const outerRadius = baseRadius + (maxRadius - baseRadius) * (1 - distanceRatio);
+        const ringThickness = organism.size * 0.3; // 环的厚度减小，使环更细
+        const innerRadius = outerRadius - ringThickness;
+        
+        // 创建脉动效果 - 更强的变化
+        const pulseFactor = 0.8 + 0.2 * Math.sin(now * 0.004);
+        
+        // 绘制外层发光模糊效果（光晕）
+        this.ctx.beginPath();
+        this.ctx.arc(organism.x, organism.y, outerRadius + ringThickness * 0.5, 0, Math.PI * 2);
+        this.ctx.strokeStyle = `hsla(120, 100%, 60%, ${0.2 * pulseFactor})`;
+        this.ctx.lineWidth = ringThickness;
+        this.ctx.stroke();
+        
+        // 绘制主要空心环
+        this.ctx.beginPath();
+        this.ctx.arc(organism.x, organism.y, outerRadius, 0, Math.PI * 2);
+        this.ctx.arc(organism.x, organism.y, innerRadius, 0, Math.PI * 2, true); // 内环，反向绘制
+        this.ctx.fillStyle = `hsla(120, 100%, 50%, ${0.4 * pulseFactor})`;
+        this.ctx.fill();
+        
+        // 添加内环发光边缘
+        this.ctx.beginPath();
+        this.ctx.arc(organism.x, organism.y, innerRadius, 0, Math.PI * 2);
+        this.ctx.strokeStyle = `hsla(120, 100%, 80%, ${0.6 * pulseFactor})`;
+        this.ctx.lineWidth = organism.size * 0.2;
+        this.ctx.stroke();
+        
+        // 添加外环发光边缘
+        this.ctx.beginPath();
+        this.ctx.arc(organism.x, organism.y, outerRadius, 0, Math.PI * 2);
+        this.ctx.strokeStyle = `hsla(120, 100%, 70%, ${0.7 * pulseFactor})`;
+        this.ctx.lineWidth = organism.size * 0.2;
+        this.ctx.stroke();
+      }
+      
       this.drawOrganism(organism);
     });
     
