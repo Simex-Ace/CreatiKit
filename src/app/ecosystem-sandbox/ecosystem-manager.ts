@@ -52,7 +52,7 @@ export class EcosystemManager {
       breedingChanceMultiplier: 0.1,    // 极低的繁殖概率
       healthRegenerationRate: 0,        // 无健康恢复
       foodDetectionRangeMultiplier: 0.8, // 食物检测范围减小
-      colorTint: 'rgba(0, 0, 100, 0.2)' // 轻微蓝色调
+      colorTint: 'rgba(230, 6, 69, 0.2)' // 轻微蓝色调
     });
     
     this.terrainEffects.set('beach', {
@@ -96,7 +96,7 @@ export class EcosystemManager {
       breedingChanceMultiplier: 1.3,    // 较高的繁殖概率
       healthRegenerationRate: 0.008,    // 轻微健康恢复
       foodDetectionRangeMultiplier: 1.2, // 中等食物检测范围
-      colorTint: 'rgba(144, 238, 144, 0.2)' // 草原绿色调
+      colorTint: 'rgba(230, 242, 230, 0.2)' // 草原绿色调
     });
   }
   
@@ -129,17 +129,17 @@ export class EcosystemManager {
         const cellX = x * cellSize;
         const cellY = y * cellSize;
         
-        // 五种地形类型的阈值分配 - 调整比例让平原更多，森林更容易生成
+        // 五种地形类型的阈值分配 - 大幅增加平原比例
         let terrainType: TerrainType;
-        if (noise < 0.20) {  // 海洋（缩小范围）
+        if (noise < 0.15) {  // 海洋（进一步缩小范围）
           terrainType = 'ocean';
-        } else if (noise < 0.28) {  // 沙滩（略微缩小）
+        } else if (noise < 0.25) {  // 沙滩（保持适当范围）
           terrainType = 'beach';
-        } else if (noise < 0.60) {  // 平原（显著扩大）
+        } else if (noise < 0.75) {  // 平原（大幅扩大范围）
           terrainType = 'plains';
-        } else if (noise < 0.85) {  // 森林（扩大范围）
+        } else if (noise < 0.90) {  // 森林（适当缩小范围）
           terrainType = 'forest';
-        } else {  // 山脉（略微缩小）
+        } else {  // 山脉（略微缩小范围）
           terrainType = 'mountain';
         }
         

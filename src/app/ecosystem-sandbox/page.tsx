@@ -67,63 +67,63 @@ const EcosystemSandbox = () => {
   }, []);
   
   // 渲染函数 - 高性能Canvas绘制
-    const render = () => {
-      const canvas = canvasRef.current;
-      if (!canvas || !rendererRef.current || !ecosystemManagerRef.current) return;
+  const render = () => {
+    const canvas = canvasRef.current;
+    if (!canvas || !rendererRef.current || !ecosystemManagerRef.current) return;
 
-      // 计算帧率和帧时间 - 更精确的性能监控
-      const now = performance.now();
-      const deltaTime = now - lastFrameTimeRef.current;
-      lastFrameTimeRef.current = now;
+    // 计算帧率和帧时间 - 更精确的性能监控
+    const now = performance.now();
+    const deltaTime = now - lastFrameTimeRef.current;
+    lastFrameTimeRef.current = now;
+    
+    frameCountRef.current++;
+    if (!lastFpsUpdateRef.current) lastFpsUpdateRef.current = now;
+    if (now - lastFpsUpdateRef.current > 1000) { // 每1秒更新一次FPS
+      // 精确计算FPS值
+      const newFps = Math.round(frameCountRef.current * 1000 / (now - lastFpsUpdateRef.current));
       
-      frameCountRef.current++;
-      if (!lastFpsUpdateRef.current) lastFpsUpdateRef.current = now;
-      if (now - lastFpsUpdateRef.current > 1000) { // 每1秒更新一次FPS
-        // 精确计算FPS值
-        const newFps = Math.round(frameCountRef.current * 1000 / (now - lastFpsUpdateRef.current));
+      // 有显著变化时才更新状态
+      if (Math.abs(lastFps.current - newFps) > 2 || 
+          Math.abs(lastFrameTimeRef.current - deltaTime) > 5) {
         
-        // 有显著变化时才更新状态
-        if (Math.abs(lastFps.current - newFps) > 2 || 
-            Math.abs(lastFrameTimeRef.current - deltaTime) > 5) {
-          
-          lastFps.current = newFps;
-              
-          // 获取统计数据
-          const statsData = ecosystemManagerRef.current?.calculateStats(newFps, deltaTime);
-          
-          setStats({
-            fps: newFps,
-            frameTime: deltaTime,
-            organismTypes: statsData?.organismTypes || { basic: 0, predator: 0, scavenger: 0 },
-            terrainDistribution: (statsData?.terrainDistribution as unknown as TerrainDistribution) || { ocean: 0, beach: 0, forest: 0, mountain: 0, plains: 0 }
-          });
-        }
+        lastFps.current = newFps;
+            
+        // 获取统计数据
+        const statsData = ecosystemManagerRef.current?.calculateStats(newFps, deltaTime);
         
-        frameCountRef.current = 0;
-        lastFpsUpdateRef.current = now;
-      }
-
-      // 更新生态系统状态（仅在运行时）
-      if (config.isRunning) {
-        ecosystemManagerRef.current.update();
+        setStats({
+          fps: newFps,
+          frameTime: deltaTime,
+          organismTypes: statsData?.organismTypes || { basic: 0, predator: 0, scavenger: 0 },
+          terrainDistribution: (statsData?.terrainDistribution as unknown as TerrainDistribution) || { ocean: 0, beach: 0, forest: 0, mountain: 0, plains: 0 }
+        });
       }
       
-      // 获取当前生态系统状态
-      const { organisms, foods } = ecosystemManagerRef.current.getState();
-      
-      // 清空画布
-          rendererRef.current.clear();
-          
-          // 绘制地形（如果启用）
-          if (ecosystemManagerRef.current?.getHasTerrain() !== false) {
-            const terrainGrid = ecosystemManagerRef.current.getTerrainGrid();
-            if (terrainGrid && terrainGrid.length > 0) {
-              rendererRef.current.drawTerrain(
-                terrainGrid,
-                ecosystemManagerRef.current.getTerrainGridSize() || 20
-              );
-            }
-          }
+      frameCountRef.current = 0;
+      lastFpsUpdateRef.current = now;
+    }
+
+    // 更新生态系统状态（仅在运行时）
+    if (config.isRunning) {
+      ecosystemManagerRef.current.update();
+    }
+    
+    // 获取当前生态系统状态
+    const { organisms, foods } = ecosystemManagerRef.current.getState();
+    
+    // 清空画布
+    rendererRef.current.clear();
+    
+    // 绘制地形（如果启用）
+    if (ecosystemManagerRef.current?.getHasTerrain() !== false) {
+      const terrainGrid = ecosystemManagerRef.current.getTerrainGrid();
+      if (terrainGrid && terrainGrid.length > 0) {
+        rendererRef.current.drawTerrain(
+          terrainGrid,
+          ecosystemManagerRef.current.getTerrainGridSize() || 20
+        );
+      }
+    }
     
     // 获取画布上下文
     const ctx = canvas.getContext('2d');
@@ -132,15 +132,15 @@ const EcosystemSandbox = () => {
     // 绘制场景
     rendererRef.current.drawFoods(ctx, foods);
     rendererRef.current.drawOrganisms(organisms);
-      
-      // 确保暂停状态正确显示
-      if (!config.isRunning) {
-        rendererRef.current.drawPauseOverlay();
-      }
-      
-      // 继续下一帧动画
-      animationRef.current = requestAnimationFrame(render);
-    };
+    
+    // 确保暂停状态正确显示
+    if (!config.isRunning) {
+      rendererRef.current.drawPauseOverlay();
+    }
+    
+    // 继续下一帧动画
+    animationRef.current = requestAnimationFrame(render);
+  };
 
   // 添加单个生物
   const addOrganism = () => {

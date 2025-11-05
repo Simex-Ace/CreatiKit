@@ -374,9 +374,6 @@ export class EcosystemRenderer {
     
     this.ctx.save();
     
-    // 使用设备像素比正确处理画布绘制
-    this.ctx.scale(this.devicePixelRatio, this.devicePixelRatio);
-    
     // 计算实际的网格单元格大小（基于CSS像素）
     const cssWidth = this.canvasWidth / this.devicePixelRatio;
     const cssHeight = this.canvasHeight / this.devicePixelRatio;
