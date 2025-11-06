@@ -45,7 +45,7 @@ export class EcosystemManager {
   // 初始化地形效果
   private initTerrainEffects() {
     this.terrainEffects.set('ocean', {
-      speedMultiplier: 0.3,
+      speedMultiplier: 0.6,  // 增加海洋中的速度
       hungerRateMultiplier: 2.0,
       canSpawnFood: false,
       canSpawnOrganism: false,
@@ -78,7 +78,7 @@ export class EcosystemManager {
     });
     
     this.terrainEffects.set('mountain', {
-      speedMultiplier: 0.5,
+      speedMultiplier: 0.3,  // 降低山脉中的速度
       hungerRateMultiplier: 1.5,
       canSpawnFood: false,
       canSpawnOrganism: true,
@@ -129,17 +129,17 @@ export class EcosystemManager {
         const cellX = x * cellSize;
         const cellY = y * cellSize;
         
-        // 五种地形类型的阈值分配 - 大幅增加平原比例
+        // 五种地形类型的阈值分配
         let terrainType: TerrainType;
-        if (noise < 0.15) {  // 海洋（进一步缩小范围）
+        if (noise < 0.18) {  // 海洋（稍微增加范围）
           terrainType = 'ocean';
         } else if (noise < 0.25) {  // 沙滩（保持适当范围）
           terrainType = 'beach';
-        } else if (noise < 0.75) {  // 平原（大幅扩大范围）
+        } else if (noise < 0.75) {  // 平原（保持范围）
           terrainType = 'plains';
-        } else if (noise < 0.90) {  // 森林（适当缩小范围）
+        } else if (noise < 0.90) {  // 森林（保持范围）
           terrainType = 'forest';
-        } else {  // 山脉（略微缩小范围）
+        } else {  // 山脉（保持范围）
           terrainType = 'mountain';
         }
         
