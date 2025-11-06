@@ -1,5 +1,10 @@
 import { Organism, Food, Stats, TerrainGrid, TerrainType } from './types';
 import { EcosystemManager } from './ecosystem-manager';
+import cyanobacteriaImage from './image/蓝藻菌.png';
+import amoebaImage from './image/变形虫.png';
+import waterMoldImage from './image/水霉菌.png';
+import primordialSoupImage from './image/原始汤.png';
+import directionIndicatorImage from './image/运动方向.png';
 
 export class EcosystemRenderer {
   private ctx: CanvasRenderingContext2D;
@@ -17,6 +22,17 @@ export class EcosystemRenderer {
     mountain: '#8b4513'     // 山脉褐色
   };
 
+  // 生物图片缓存
+  private organismImages: Record<string, HTMLImageElement> = {
+    basic: new Image(),
+    predator: new Image(),
+    scavenger: new Image()
+  };
+  
+  // 其他图片
+  private primordialSoupImage: HTMLImageElement;
+  private directionIndicatorImage: HTMLImageElement;
+
   constructor(ctx: CanvasRenderingContext2D, canvasWidth: number, canvasHeight: number, devicePixelRatio: number) {
     this.ctx = ctx;
     this.canvasWidth = canvasWidth;
@@ -25,6 +41,17 @@ export class EcosystemRenderer {
     
     // 设置缩放以支持Hi-DPI显示
     this.ctx.scale(devicePixelRatio, devicePixelRatio);
+    
+    // 预加载生物图片
+    this.organismImages.basic.src = cyanobacteriaImage.src || '';
+    this.organismImages.predator.src = amoebaImage.src || '';
+    this.organismImages.scavenger.src = waterMoldImage.src || '';
+    
+    // 预加载其他图片
+    this.primordialSoupImage = new Image();
+    this.primordialSoupImage.src = primordialSoupImage.src || '';
+    this.directionIndicatorImage = new Image();
+    this.directionIndicatorImage.src = directionIndicatorImage.src || '';
   }
   
   // 设置生态系统管理器引用
@@ -64,33 +91,34 @@ export class EcosystemRenderer {
     
     foods.forEach(food => {
       ctx.save();
-      ctx.beginPath();
-      ctx.arc(food.x, food.y, food.size, 0, Math.PI * 2);
       
-      if (food.isFlashing && food.flashTime) {
-        // 计算闪烁进度（0-1）
-        const progress = (now - food.flashTime) / flashDuration;
-        // 创建脉动效果：亮度先增加后减少
-        const brightness = 80 - Math.abs(progress - 0.5) * 40;
-        // 使用亮绿色并设置透明度渐变
-        const alpha = 1 - progress;
+      // 计算食物尺寸
+      const foodSize = food.size * 3; // 调整尺寸以适应图片
+      
+      // 如果图片加载完成，使用原始汤图片
+      if (this.primordialSoupImage.complete && this.primordialSoupImage.src) {
+        // 闪烁效果处理
+        if (food.isFlashing && food.flashTime) {
+          const progress = (now - food.flashTime) / flashDuration;
+          const alpha = 1 - progress;
+          ctx.globalAlpha = alpha;
+        }
         
-        // 绘制外圈光晕
-        ctx.beginPath();
-        ctx.arc(food.x, food.y, food.size * 2, 0, Math.PI * 2);
-        ctx.fillStyle = `hsla(120, 100%, ${brightness + 10}%, ${alpha * 0.5})`;
-        ctx.fill();
-        
-        // 重新绘制食物本体
+        ctx.drawImage(
+          this.primordialSoupImage,
+          food.x - foodSize / 2,
+          food.y - foodSize / 2,
+          foodSize,
+          foodSize
+        );
+      } else {
+        // 图片未加载完成时的回退显示
         ctx.beginPath();
         ctx.arc(food.x, food.y, food.size, 0, Math.PI * 2);
-        ctx.fillStyle = `hsla(120, 100%, 50%, ${alpha})`;
-      } else {
-        // 普通食物显示为绿色
         ctx.fillStyle = 'hsl(120, 100%, 40%)';
+        ctx.fill();
       }
       
-      ctx.fill();
       ctx.restore();
     });
     
@@ -99,26 +127,6 @@ export class EcosystemRenderer {
 
   // 绘制单个生物
   private drawOrganism(organism: Organism) {
-    // 根据饥饿值和繁殖状态调整颜色
-    let displayColor = organism.color;
-    
-    if (organism.isBreeding) {
-      // 繁殖中的特殊粉色系
-      displayColor = `hsl(300, 100%, ${60 - (organism.breedingProgress || 0) / 3}%)`;
-    } else if (organism.hunger < 30) {
-      const green = Math.floor(100 * (organism.hunger / 30));
-      displayColor = `rgba(255, ${green}, ${green}, 0.9)`;
-    }
-    
-    // 应用地形颜色影响
-    if (!organism.isBreeding && organism.currentTerrainType && this.ecosystemManager) {
-      const terrainEffect = this.ecosystemManager.getTerrainEffect(organism.currentTerrainType);
-      if (terrainEffect?.colorTint) {
-        // 保存原始颜色，稍后应用色调
-        this.ctx.save();
-      }
-    }
-    
     // 繁殖中的额外发光效果
     if (organism.isBreeding) {
       // 绘制内部发光
@@ -136,51 +144,88 @@ export class EcosystemRenderer {
       this.ctx.stroke();
     }
     
-    // 绘制生物主体
-    this.ctx.beginPath();
-    this.ctx.arc(organism.x, organism.y, organism.size, 0, Math.PI * 2);
-    this.ctx.fillStyle = displayColor;
-    this.ctx.fill();
+    // 绘制生物图片
+    const image = this.organismImages[organism.type] || this.organismImages.basic;
+    const imageSize = organism.size * 2;
+
+    // 保存上下文状态
+    this.ctx.save();
+
+    // 应用饥饿效果 - 饥饿时降低不透明度
+    if (organism.hunger < 30 && !organism.isBreeding) {
+      this.ctx.globalAlpha = 0.5 + organism.hunger / 60; // 范围从0.5到1
+    }
+
+    // 绘制图片
+    this.ctx.drawImage(
+      image,
+      organism.x - imageSize / 2,
+      organism.y - imageSize / 2,
+      imageSize,
+      imageSize
+    );
+
+    // 恢复上下文状态
+    this.ctx.restore();
     
     // 应用地形色调叠加效果
     if (!organism.isBreeding && organism.currentTerrainType && this.ecosystemManager) {
       const terrainEffect = this.ecosystemManager.getTerrainEffect(organism.currentTerrainType);
       if (terrainEffect?.colorTint) {
+        this.ctx.save();
+        this.ctx.globalCompositeOperation = 'overlay';
+        this.ctx.fillStyle = terrainEffect.colorTint;
         this.ctx.beginPath();
         this.ctx.arc(organism.x, organism.y, organism.size, 0, Math.PI * 2);
-        this.ctx.fillStyle = terrainEffect.colorTint;
         this.ctx.fill();
-        this.ctx.restore(); // 恢复保存的上下文
+        this.ctx.restore();
       }
-    }
-    
-    // 添加类型标记
-    if (organism.type === 'predator') {
-      this.ctx.beginPath();
-      this.ctx.arc(organism.x, organism.y, organism.size * 0.8, 0, Math.PI * 2);
-      this.ctx.strokeStyle = '#660000';
-      this.ctx.lineWidth = 1;
-      this.ctx.stroke();
-    } else if (organism.type === 'scavenger') {
-      this.ctx.beginPath();
-      this.ctx.arc(organism.x, organism.y, organism.size * 0.8, 0, Math.PI);
-      this.ctx.strokeStyle = '#660066';
-      this.ctx.lineWidth = 1;
-      this.ctx.stroke();
     }
     
     // 繁殖状态不显示方向指示器
     if (!organism.isBreeding) {
-      // 方向指示器
-      this.ctx.beginPath();
-      this.ctx.moveTo(organism.x, organism.y);
-      this.ctx.lineTo(
-        organism.x + Math.cos(organism.direction) * organism.size * 1.5,
-        organism.y + Math.sin(organism.direction) * organism.size * 1.5
-      );
-      this.ctx.strokeStyle = '#333';
-      this.ctx.lineWidth = 2;
-      this.ctx.stroke();
+      // 使用运动方向图片作为指示器
+      if (this.directionIndicatorImage.complete && this.directionIndicatorImage.src) {
+        this.ctx.save();
+        
+        // 计算指示器位置（在生物前面）
+        const indicatorDistance = organism.size * 1.2;
+        const indicatorX = organism.x + Math.cos(organism.direction) * indicatorDistance;
+        const indicatorY = organism.y + Math.sin(organism.direction) * indicatorDistance;
+        
+        // 保存当前状态
+        this.ctx.save();
+        
+        // 移动到指示器中心并旋转以匹配生物方向
+        // 调整旋转角度，使箭头方向正确
+        this.ctx.translate(indicatorX, indicatorY);
+        // 修改旋转角度，使箭头指向生物运动方向
+        this.ctx.rotate(organism.direction + Math.PI / 2);
+        
+        // 绘制方向图片
+        const indicatorSize = organism.size * 1.2; // 增大尺寸到原来的1.5倍
+        this.ctx.drawImage(
+          this.directionIndicatorImage,
+          -indicatorSize / 2,
+          -indicatorSize / 2,
+          indicatorSize,
+          indicatorSize
+        );
+        
+        // 恢复状态
+        this.ctx.restore();
+      } else {
+        // 图片未加载完成时的回退显示
+        this.ctx.beginPath();
+        this.ctx.moveTo(organism.x, organism.y);
+        this.ctx.lineTo(
+          organism.x + Math.cos(organism.direction) * organism.size * 1.5,
+          organism.y + Math.sin(organism.direction) * organism.size * 1.5
+        );
+        this.ctx.strokeStyle = '#333';
+        this.ctx.lineWidth = 2;
+        this.ctx.stroke();
+      }
       
       // 饥饿值条 - 繁殖状态不显示
       if (organism.hunger < 50) {
@@ -464,10 +509,13 @@ export class EcosystemRenderer {
     this.ctx.strokeStyle = 'rgba(100, 100, 100, 0.5)';
     this.ctx.lineWidth = 1;
     for (let i = 0; i < 3; i++) {
-      const yPos = y * cellHeight + Math.random() * cellHeight;
+      const startX = x * cellWidth;
+      const startY = y * cellHeight + Math.random() * cellHeight;
+      const endX = x * cellWidth + cellWidth;
+      const endY = startY + (Math.random() - 0.5) * 10;
       this.ctx.beginPath();
-      this.ctx.moveTo(x * cellWidth, yPos);
-      this.ctx.lineTo((x + 1) * cellWidth, yPos);
+      this.ctx.moveTo(startX, startY);
+      this.ctx.lineTo(endX, endY);
       this.ctx.stroke();
     }
   }
@@ -475,37 +523,34 @@ export class EcosystemRenderer {
   // 平原草地图案
   private addPlainsTexture(x: number, y: number, cellWidth: number, cellHeight: number) {
     this.ctx.fillStyle = 'rgba(0, 150, 50, 0.2)';
-    for (let i = 0; i < 4; i++) {
+    for (let i = 0; i < 8; i++) {
       const px = x * cellWidth + Math.random() * cellWidth;
-      const py = y * cellHeight + Math.random() * cellHeight;
-      this.ctx.beginPath();
-      this.ctx.arc(px, py, 1, 0, Math.PI * 2);
-      this.ctx.fill();
+      const py = y * cellHeight + cellHeight * 0.7 + Math.random() * cellHeight * 0.3;
+      const height = Math.random() * 5 + 2;
+      const width = 1;
+      this.ctx.fillRect(px, py - height, width, height);
     }
   }
-  
-  // 绘制网格线
+
+  // 绘制网格线（可选）
   private drawGridLines(terrainGrid: TerrainGrid, cellWidth: number, cellHeight: number) {
-    // 只有在网格大小适中时才绘制网格线
-    if (terrainGrid.length <= 50 && terrainGrid[0].length <= 50) {
-      this.ctx.strokeStyle = 'rgba(0, 0, 0, 0.1)';
-      this.ctx.lineWidth = 1;
-      
-      // 水平线
-      for (let y = 0; y <= terrainGrid.length; y++) {
-        this.ctx.beginPath();
-        this.ctx.moveTo(0, y * cellHeight);
-        this.ctx.lineTo(terrainGrid[0].length * cellWidth, y * cellHeight);
-        this.ctx.stroke();
-      }
-      
-      // 垂直线
-      for (let x = 0; x <= terrainGrid[0].length; x++) {
-        this.ctx.beginPath();
-        this.ctx.moveTo(x * cellWidth, 0);
-        this.ctx.lineTo(x * cellWidth, terrainGrid.length * cellHeight);
-        this.ctx.stroke();
-      }
+    this.ctx.strokeStyle = 'rgba(0, 0, 0, 0.1)';
+    this.ctx.lineWidth = 0.5;
+    
+    // 绘制垂直线
+    for (let x = 0; x <= terrainGrid[0].length; x++) {
+      this.ctx.beginPath();
+      this.ctx.moveTo(x * cellWidth, 0);
+      this.ctx.lineTo(x * cellWidth, terrainGrid.length * cellHeight);
+      this.ctx.stroke();
+    }
+    
+    // 绘制水平线
+    for (let y = 0; y <= terrainGrid.length; y++) {
+      this.ctx.beginPath();
+      this.ctx.moveTo(0, y * cellHeight);
+      this.ctx.lineTo(terrainGrid[0].length * cellWidth, y * cellHeight);
+      this.ctx.stroke();
     }
   }
 }

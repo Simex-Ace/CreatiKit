@@ -99,6 +99,10 @@ export default function Home() {
     router.push('/ecosystem-sandbox');
   };
 
+  const handleBackgroundRemover = () => {
+    router.push('/background-remover');
+  };
+
   const handleFreeUse = () => {
     // 跳转到功能区域
     window.scrollTo({ top: 500, behavior: 'smooth' });
@@ -214,6 +218,35 @@ export default function Home() {
                 </Button>
               </div>
             </div>
+          </Card>
+          
+          {/* 背景移除工具卡片 */}
+          <Card className="relative min-h-[300px] flex flex-col transition-all duration-300 hover:shadow-lg hover:shadow-pink-200 border-2 border-pink-300 transform hover:-translate-y-1 group overflow-hidden">
+            <div className="absolute -top-3 -right-3 bg-pink-500 text-white text-xs font-bold px-3 py-1 rounded-full">
+              热门
+            </div>
+            <div className="p-6 flex-grow flex flex-col space-y-4">
+              <div className="rounded-full bg-pink-100 p-3 w-fit group-hover:scale-110 transition-transform duration-300">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-pink-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" />
+                  <polyline points="14 2 14 8 20 8" />
+                  <circle cx="10" cy="13" r="2" />
+                  <path d="m20 17-1.09-1.09a2 2 0 0 0-2.82 0L10 21" />
+                </svg>
+              </div>
+              <h3 className="text-xl font-bold text-pink-600">✨ 魔法背景移除 ✨</h3>
+              <p className="text-muted-foreground flex-grow text-sm">
+                🎨 一键移除图片背景，让你的照片脱颖而出！简单好用，支持自定义颜色选择和阈值调整，轻松创建透明背景图片～
+              </p>
+              <div className="mt-auto pt-4">
+                <Button className="w-full bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 text-white font-bold shadow-md hover:shadow-lg transform transition-all duration-300" onClick={handleBackgroundRemover}>
+                  开始变魔法
+                </Button>
+              </div>
+            </div>
+            {/* 装饰元素 */}
+            <div className="absolute -bottom-6 -right-6 w-24 h-24 rounded-full bg-gradient-to-br from-yellow-200 to-yellow-100 opacity-50 blur-sm z-0"></div>
+            <div className="absolute -top-4 -left-4 w-16 h-16 rounded-full bg-gradient-to-br from-blue-200 to-blue-100 opacity-50 blur-sm z-0"></div>
           </Card>
 
           {/* 代码工具卡片 */}
