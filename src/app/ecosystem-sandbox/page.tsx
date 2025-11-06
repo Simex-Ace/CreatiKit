@@ -152,6 +152,11 @@ const EcosystemSandbox = () => {
     ecosystemManagerRef.current?.clearAllOrganisms();
   };
   
+  // 重置整个沙盒
+  const resetSandbox = () => {
+    ecosystemManagerRef.current?.resetSandbox();
+  };
+  
   // 重置食物
   const resetFoods = () => {
     ecosystemManagerRef.current?.initFoods(config.foodCount);
@@ -254,7 +259,7 @@ const EcosystemSandbox = () => {
 
       <main className="flex-grow flex flex-col md:flex-row gap-6 max-w-7xl mx-auto w-full">
         {/* 控制面板 */}
-        <Card className="p-4 w-full md:w-72 flex-shrink-0">
+        <Card className="p-4 w-full md:w-72 flex-shrink-0 min-w-72" style={{ maxWidth: '280px' }}>
           <h2 className="text-xl font-semibold mb-4">控制面板</h2>
           
           <div className="space-y-6">
@@ -319,6 +324,13 @@ const EcosystemSandbox = () => {
               >
                 清空所有
               </Button>
+              
+              <Button 
+                className="w-full bg-blue-600 hover:bg-blue-700" 
+                onClick={() => ecosystemManagerRef.current?.resetSandbox()}
+              >
+                重置沙盒
+              </Button>
             </div>
             
             <Separator />
@@ -351,8 +363,8 @@ const EcosystemSandbox = () => {
         </Card>
 
         {/* 沙盒画布 */}
-        <Card className="flex-grow overflow-hidden">
-          <div className="relative w-full h-full min-h-[500px]" style={{ maxWidth: 'calc(100vw - 300px)', margin: '0 auto', aspectRatio: '16/9' }}>
+        <Card className="flex-grow overflow-hidden flex flex-col">
+          <div className="relative w-full h-full min-h-[500px] flex-grow" style={{ aspectRatio: '16/9' }}>
             <canvas
               ref={canvasRef}
               className="absolute inset-0 w-full h-full bg-slate-100"

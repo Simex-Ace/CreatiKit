@@ -786,6 +786,28 @@ export class EcosystemManager {
     }
   }
 
+  /**
+   * 重置整个沙盒
+   */
+  resetSandbox() {
+    // 重置计数器
+    this.idCounter.current = 0;
+    this.foodIdCounter.current = 0;
+    
+    // 清空所有生物和食物
+    this.organisms = [];
+    this.foods = [];
+    
+    // 重新生成地形（如果启用）
+    if (this.hasTerrain) {
+      this.generateTerrain(this.terrainGridSize);
+    }
+    
+    // 重新初始化生物和食物
+    this.initOrganisms(this.config.organismCount);
+    this.initFoods(this.config.foodCount);
+  }
+
   // 添加单个生物
   addOrganism() {
     let organism;

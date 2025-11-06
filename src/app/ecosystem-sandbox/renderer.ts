@@ -389,11 +389,12 @@ export class EcosystemRenderer {
         
         // 设置基础填充色
         this.ctx.fillStyle = color;
+        // 确保单元格之间没有缝隙，略微扩大绘制区域
         this.ctx.fillRect(
-          Math.floor(x * cellWidth),
-          Math.floor(y * cellHeight),
-          Math.ceil(cellWidth),
-          Math.ceil(cellHeight)
+          x * cellWidth,
+          y * cellHeight,
+          cellWidth + 1,  // 增加1px避免缝隙
+          cellHeight + 1  // 增加1px避免缝隙
         );
       }
     }
@@ -488,7 +489,7 @@ export class EcosystemRenderer {
     // 只有在网格大小适中时才绘制网格线
     if (terrainGrid.length <= 50 && terrainGrid[0].length <= 50) {
       this.ctx.strokeStyle = 'rgba(0, 0, 0, 0.1)';
-      this.ctx.lineWidth = 0.5;
+      this.ctx.lineWidth = 1;
       
       // 水平线
       for (let y = 0; y <= terrainGrid.length; y++) {
