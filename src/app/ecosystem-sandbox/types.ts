@@ -66,6 +66,7 @@ export interface Organism {
   detectedFoodDistance?: number;
   currentTerrainType?: TerrainType;
   hungerRateMultiplier?: number;
+  targetFood?: Food; // 目标食物，用于优化移动逻辑
   
   // 方法定义
   findNearestFood: (foods: Food[]) => Food | null;

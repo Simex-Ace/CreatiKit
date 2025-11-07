@@ -1,5 +1,6 @@
 import { Organism, Food, SandboxConfig, TerrainCell, TerrainEffect, TerrainType } from './types';
 import { createOrganism, createFood } from './utils';
+import { SpatialPartition } from './spatial-partition';
 
 export class EcosystemManager {
   private organisms: Organism[];
@@ -13,6 +14,7 @@ export class EcosystemManager {
   private terrainEffects: Map<TerrainType, TerrainEffect>;
   private terrainGridSize: number;
   private hasTerrain: boolean;
+  private spatialPartition: SpatialPartition; // 空间分区系统
 
   constructor(
     config: SandboxConfig,
@@ -40,6 +42,9 @@ export class EcosystemManager {
     if (this.hasTerrain) {
       this.generateTerrain(this.terrainGridSize);
     }
+    
+    // 初始化空间分区系统
+    this.spatialPartition = new SpatialPartition(this.canvasWidth, this.canvasHeight, 50); // 网格大小设为50以获得良好性能
   }
   
   // 初始化地形效果
@@ -758,6 +763,7 @@ export class EcosystemManager {
       } while (attempts < maxAttempts);
       
       this.organisms.push(organism);
+      this.spatialPartition.addObject(organism); // 添加到空间分区
     }
   }
 
@@ -783,6 +789,7 @@ export class EcosystemManager {
       } while (attempts < maxAttempts);
       
       this.foods.push(food);
+      this.spatialPartition.addObject(food); // 添加到空间分区
     }
   }
 
@@ -797,6 +804,9 @@ export class EcosystemManager {
     // 清空所有生物和食物
     this.organisms = [];
     this.foods = [];
+    
+    // 清空空间分区
+    this.spatialPartition.clear();
     
     // 重新生成地形（如果启用）
     if (this.hasTerrain) {
@@ -828,6 +838,7 @@ export class EcosystemManager {
     } while (attempts < maxAttempts);
     
     this.organisms.push(organism);
+    this.spatialPartition.addObject(organism); // 添加到空间分区
   }
 
   // 清空所有生物
@@ -843,6 +854,15 @@ export class EcosystemManager {
   // 处理一次生态系统更新
   update() {
     if (!this.config.isRunning || this.organisms.length === 0) return;
+
+    // 清空并重新构建空间分区
+    this.spatialPartition.clear();
+    for (const organism of this.organisms) {
+      this.spatialPartition.addObject(organism);
+    }
+    for (const food of this.foods) {
+      this.spatialPartition.addObject(food);
+    }
 
     // 合并多次遍历为一次，提高性能
     const newOrganisms: Organism[] = [];
@@ -877,18 +897,23 @@ export class EcosystemManager {
         organism.hungerRateMultiplier = 1.0;
       }
 
-      // 处理吃食物 - 直接计算，避免重复调用findNearestFood
-      for (let j = 0; j < this.foods.length; j++) {
-        if (foodIndicesToRemove.has(j)) continue;
+      // 处理吃食物 - 使用空间分区优化
+      const nearbyFoods = this.spatialPartition.getFoodsInRadius(organism.x, organism.y, organism.size * 2);
+      
+      for (let j = 0; j < nearbyFoods.length; j++) {
+        const food = nearbyFoods[j];
+        const foodIndex = this.foods.findIndex(f => f.id === food.id);
+        
+        if (foodIndicesToRemove.has(foodIndex)) continue;
 
-        const dx = organism.x - this.foods[j].x;
-        const dy = organism.y - this.foods[j].y;
-        const distance = Math.sqrt(dx * dx + dy * dy);
-        const eatRadius = organism.size * 1.2;
+        const dx = organism.x - food.x;
+        const dy = organism.y - food.y;
+        const distanceSquared = dx * dx + dy * dy;
+        const eatRadiusSquared = Math.pow(organism.size * 1.2, 2);
 
-        if (distance <= eatRadius) {
+        if (distanceSquared <= eatRadiusSquared) {
           // 吃到食物
-          foodIndicesToRemove.add(j);
+          foodIndicesToRemove.add(foodIndex);
           organism.hunger = Math.min(100, organism.hunger + 20);
 
           // 清道夫效率加成
@@ -1018,15 +1043,15 @@ export class EcosystemManager {
 
         // 检查繁殖进度和伙伴匹配
         if (organism.isBreeding && !organism.breedingPartnerId) {
-          // 寻找同样处于繁殖状态且靠近的伙伴
-          const potentialPartners = this.organisms.filter(
-            (other) =>
-              other.id !== organism.id &&
-              other.isBreeding &&
-              !other.breedingPartnerId && // 还没有找到伙伴
-              other.type === organism.type &&
-              Math.sqrt(Math.pow(other.x - organism.x, 2) + Math.pow(other.y - organism.y, 2)) < 40 // 适当增加距离要求
-          );
+          // 寻找同样处于繁殖状态且靠近的伙伴 - 使用空间分区优化
+        const nearbyOrganisms = this.spatialPartition.getOrganismsInRadius(organism.x, organism.y, 40);
+        const potentialPartners = nearbyOrganisms.filter(
+          (other) =>
+            other.id !== organism.id &&
+            other.isBreeding &&
+            !other.breedingPartnerId && // 还没有找到伙伴
+            other.type === organism.type
+        );
 
           if (potentialPartners.length > 0) {
             const partner = potentialPartners[0];
@@ -1119,7 +1144,7 @@ export class EcosystemManager {
     this.organisms = newOrganisms;
 
     // 批量补充食物
-    while (this.foods.length < this.config.foodCount * 0.8 && Math.random() < 0.1) {
+  while (this.foods.length < this.config.foodCount * 0.8 && Math.random() < 0.1) {
       let food;
       let attempts = 0;
       const maxAttempts = 10;
@@ -1142,6 +1167,7 @@ export class EcosystemManager {
       } while (hasTerrain && attempts < maxAttempts);
       
       this.foods.push(food);
+      // 注意：新生成的食物将在下一帧的update方法中被添加到空间分区
     }
   }
 
