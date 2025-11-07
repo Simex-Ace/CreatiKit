@@ -28,7 +28,6 @@ const EcosystemSandbox = () => {
   
   // 性能统计相关引用
   const frameCountRef = useRef(0);
-  const lastFrameTimeRef = useRef(performance.now());
   const lastFpsUpdateRef = useRef(performance.now());
   const lastFps = useRef(0);
   
@@ -38,7 +37,7 @@ const EcosystemSandbox = () => {
     height: 600,
     organismCount: 10,
     foodCount: 30,
-    speed: 0.5, // 初始速度设为较低值
+    speed: 0.5,
     isRunning: true,
     maxOrganisms: 100,
     maxFood: 100,
@@ -46,7 +45,7 @@ const EcosystemSandbox = () => {
     foodSpawnThreshold: 20,
     evolutionThreshold: 100,
     breedingThreshold: 80,
-    hasTerrain: true, // 明确启用地形
+    hasTerrain: true,
     terrainGridSize: 20
   });
   
@@ -56,60 +55,40 @@ const EcosystemSandbox = () => {
     organismTypes: { basic: 0, predator: 0, scavenger: 0 }
   });
   
-  // 组件加载标志
-  const isMounted = useRef(false);
-
-  useEffect(() => {
-    isMounted.current = true;
-    return () => {
-      isMounted.current = false;
-    };
-  }, []);
-  
-  // 渲染函数 - 高性能Canvas绘制
+  // 简化的渲染函数
   const render = () => {
     const canvas = canvasRef.current;
     if (!canvas || !rendererRef.current || !ecosystemManagerRef.current) return;
 
-    // 计算帧率和帧时间 - 更精确的性能监控
+    // 计算帧率
     const now = performance.now();
-    const deltaTime = now - lastFrameTimeRef.current;
-    lastFrameTimeRef.current = now;
-    
     frameCountRef.current++;
-    if (!lastFpsUpdateRef.current) lastFpsUpdateRef.current = now;
-    if (now - lastFpsUpdateRef.current > 1000) { // 每1秒更新一次FPS
-      // 精确计算FPS值
+    
+    // 每秒更新一次FPS
+    if (now - lastFpsUpdateRef.current > 1000) {
       const newFps = Math.round(frameCountRef.current * 1000 / (now - lastFpsUpdateRef.current));
+      lastFps.current = newFps;
       
-      // 有显著变化时才更新状态
-      if (Math.abs(lastFps.current - newFps) > 2 || 
-          Math.abs(lastFrameTimeRef.current - deltaTime) > 5) {
-        
-        lastFps.current = newFps;
-            
-        // 获取统计数据
-        const statsData = ecosystemManagerRef.current?.calculateStats(newFps, deltaTime);
-        
-        setStats({
-          fps: newFps,
-          frameTime: deltaTime,
-          organismTypes: statsData?.organismTypes || { basic: 0, predator: 0, scavenger: 0 },
-          terrainDistribution: (statsData?.terrainDistribution as unknown as TerrainDistribution) || { ocean: 0, beach: 0, forest: 0, mountain: 0, plains: 0 }
-        });
-      }
+      // 获取生物统计数据
+      const organismStats = rendererRef.current.calculateOrganismStats(ecosystemManagerRef.current.getState().organisms);
+      
+      setStats({
+        fps: newFps,
+        frameTime: 16.67, // 简化为固定值
+        organismTypes: organismStats
+      });
       
       frameCountRef.current = 0;
       lastFpsUpdateRef.current = now;
     }
 
-    // 更新生态系统状态（仅在运行时）
+    // 更新生态系统（如果运行中）
     if (config.isRunning) {
       ecosystemManagerRef.current.update();
     }
     
-    // 更新渲染器动画状态
-    rendererRef.current.updateAnimation(deltaTime);
+    // 更新渲染器
+    rendererRef.current.updateAnimation(16.67); // 使用固定的增量时间
     
     // 获取当前生态系统状态
     const { organisms, foods } = ecosystemManagerRef.current.getState();
@@ -136,12 +115,12 @@ const EcosystemSandbox = () => {
     rendererRef.current.drawFoods(ctx, foods);
     rendererRef.current.drawOrganisms(organisms);
     
-    // 确保暂停状态正确显示
+    // 显示暂停覆盖层
     if (!config.isRunning) {
       rendererRef.current.drawPauseOverlay();
     }
     
-    // 继续下一帧动画
+    // 继续动画循环
     animationRef.current = requestAnimationFrame(render);
   };
 
@@ -342,9 +321,8 @@ const EcosystemSandbox = () => {
             <div className="space-y-2">
               <h3 className="text-sm font-medium text-slate-500">性能统计</h3>
               <div className="text-sm font-mono">
-                <div>FPS: {stats.fps}</div>
-                <div>帧时间: {stats.frameTime.toFixed(2)}ms</div>
-                <div>生物总数: {stats.organismTypes.basic + stats.organismTypes.predator + stats.organismTypes.scavenger}</div>
+                <div>FPS: {stats.fps} <span className={`${stats.fps < 30 ? 'text-red-500' : stats.fps < 50 ? 'text-amber-500' : 'text-green-500'}`}>({stats.fps < 30 ? '低' : stats.fps < 50 ? '中' : '高'})</span></div>
+                  <div>生物总数: {stats.organismTypes.basic + stats.organismTypes.predator + stats.organismTypes.scavenger}</div>
                 <Separator className="my-2" />
                 <div className="space-y-1">
                   <div className="flex items-center justify-between">
