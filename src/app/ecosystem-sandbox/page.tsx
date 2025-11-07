@@ -108,6 +108,9 @@ const EcosystemSandbox = () => {
       ecosystemManagerRef.current.update();
     }
     
+    // 更新渲染器动画状态
+    rendererRef.current.updateAnimation(deltaTime);
+    
     // 获取当前生态系统状态
     const { organisms, foods } = ecosystemManagerRef.current.getState();
     
