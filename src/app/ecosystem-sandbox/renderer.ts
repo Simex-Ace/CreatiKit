@@ -5,6 +5,12 @@ import amoebaImage from './image/变形虫.png';
 import waterMoldImage from './image/水霉菌.png';
 import primordialSoupImage from './image/原始汤.png';
 import directionIndicatorImage from './image/运动方向.png';
+// 导入地形图片
+import oceanImage from './image/bg/海洋.png';
+import beachImage from './image/bg/沙滩.png';
+import plainsImage from './image/bg/平原.png';
+import forestImage from './image/bg/森林.png';
+import mountainImage from './image/bg/山脉.png';
 
 export class EcosystemRenderer {
   private ctx: CanvasRenderingContext2D;
@@ -13,7 +19,16 @@ export class EcosystemRenderer {
   private devicePixelRatio: number;
   private ecosystemManager: EcosystemManager | null = null;
   
-  // 地形类型对应的颜色映射
+  // 地形类型对应的图片映射
+  private terrainImages: Record<string, HTMLImageElement> = {
+    ocean: new Image(),
+    beach: new Image(),
+    plains: new Image(),
+    forest: new Image(),
+    mountain: new Image()
+  };
+  
+  // 地形类型对应的颜色映射（作为图片加载失败的后备）
   private terrainColors: Record<string, string> = {
     ocean: '#0000ff',       // 海洋蓝色
     beach: '#f5deb3',       // 沙滩米色
@@ -63,6 +78,13 @@ export class EcosystemRenderer {
     this.primordialSoupImage.src = primordialSoupImage.src || '';
     this.directionIndicatorImage = new Image();
     this.directionIndicatorImage.src = directionIndicatorImage.src || '';
+    
+    // 加载地形图片
+    this.terrainImages.ocean.src = oceanImage.src || '';
+    this.terrainImages.beach.src = beachImage.src || '';
+    this.terrainImages.plains.src = plainsImage.src || '';
+    this.terrainImages.forest.src = forestImage.src || '';
+    this.terrainImages.mountain.src = mountainImage.src || '';
   }
   
   // 设置生态系统管理器引用
@@ -389,7 +411,7 @@ export class EcosystemRenderer {
     this.ctx.restore();
   }
   
-  // 简化的地形绘制
+  // 使用图片绘制地形
   drawTerrain(terrainGrid: TerrainGrid | null, gridSize: number) {
     if (!terrainGrid || terrainGrid.length === 0 || terrainGrid[0].length === 0) {
       return;
@@ -398,19 +420,32 @@ export class EcosystemRenderer {
     const cellWidth = this.cssCanvasWidth / terrainGrid[0].length;
     const cellHeight = this.cssCanvasHeight / terrainGrid.length;
     
-    // 直接绘制地形，避免使用离屏Canvas
+    // 直接绘制地形
     for (let y = 0; y < terrainGrid.length; y++) {
       for (let x = 0; x < terrainGrid[y].length; x++) {
         const terrainType = terrainGrid[y][x].type;
-        const color = this.terrainColors[terrainType] || 'hsl(0, 0%, 95%)';
+        const image = this.terrainImages[terrainType];
         
-        this.ctx.fillStyle = color;
-        this.ctx.fillRect(
-          x * cellWidth,
-          y * cellHeight,
-          cellWidth + 1,  // 加1避免缝隙
-          cellHeight + 1
-        );
+        if (image && image.complete && image.src) {
+          // 使用图片绘制地形
+          this.ctx.drawImage(
+            image,
+            x * cellWidth,
+            y * cellHeight,
+            cellWidth + 1,  // 加1避免缝隙
+            cellHeight + 1
+          );
+        } else {
+          // 图片加载失败时使用颜色作为后备
+          const color = this.terrainColors[terrainType] || 'hsl(0, 0%, 95%)';
+          this.ctx.fillStyle = color;
+          this.ctx.fillRect(
+            x * cellWidth,
+            y * cellHeight,
+            cellWidth + 1,
+            cellHeight + 1
+          );
+        }
       }
     }
   }

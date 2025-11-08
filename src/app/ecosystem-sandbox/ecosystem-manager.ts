@@ -50,10 +50,11 @@ export class EcosystemManager {
   // 初始化地形效果
   private initTerrainEffects() {
     this.terrainEffects.set('ocean', {
-      speedMultiplier: 0.6,  // 增加海洋中的速度
+      speedMultiplier: 3.0,  // 大幅增加海洋中的速度，使生物在海里移动明显更快
       hungerRateMultiplier: 2.0,
       canSpawnFood: false,
       canSpawnOrganism: false,
+      canPassThrough: false,
       breedingChanceMultiplier: 0.1,    // 极低的繁殖概率
       healthRegenerationRate: 0,        // 无健康恢复
       foodDetectionRangeMultiplier: 0.8, // 食物检测范围减小
@@ -65,6 +66,7 @@ export class EcosystemManager {
       hungerRateMultiplier: 1.2,
       canSpawnFood: true,
       canSpawnOrganism: true,
+      canPassThrough: true,
       breedingChanceMultiplier: 1.2,    // 略高的繁殖概率
       healthRegenerationRate: 0.005,    // 轻微健康恢复
       foodDetectionRangeMultiplier: 1.1, // 轻微食物检测范围增加
@@ -76,6 +78,7 @@ export class EcosystemManager {
       hungerRateMultiplier: 0.9,
       canSpawnFood: true,
       canSpawnOrganism: true,
+      canPassThrough: true,
       breedingChanceMultiplier: 1.5,    // 高繁殖概率（适合繁殖）
       healthRegenerationRate: 0.01,     // 中等健康恢复
       foodDetectionRangeMultiplier: 1.3, // 高食物检测范围（资源丰富）
@@ -87,6 +90,7 @@ export class EcosystemManager {
       hungerRateMultiplier: 1.5,
       canSpawnFood: false,
       canSpawnOrganism: true,
+      canPassThrough: false,
       breedingChanceMultiplier: 0.9,    // 稍低的繁殖概率
       healthRegenerationRate: 0.015,    // 高健康恢复（山地生物适应能力强）
       foodDetectionRangeMultiplier: 0.7, // 低食物检测范围（资源稀少）
@@ -98,6 +102,7 @@ export class EcosystemManager {
       hungerRateMultiplier: 1.0,
       canSpawnFood: true,
       canSpawnOrganism: true,
+      canPassThrough: true,
       breedingChanceMultiplier: 1.3,    // 较高的繁殖概率
       healthRegenerationRate: 0.008,    // 轻微健康恢复
       foodDetectionRangeMultiplier: 1.2, // 中等食物检测范围
@@ -134,18 +139,50 @@ export class EcosystemManager {
         const cellX = x * cellSize;
         const cellY = y * cellSize;
         
-        // 五种地形类型的阈值分配
+        // 五种地形类型的阈值分配，平原在沙滩和森林之间有最高生成概率
         let terrainType: TerrainType;
-        if (noise < 0.18) {  // 海洋（稍微增加范围）
+        
+        // 基础阈值定义
+        const oceanThreshold = 0.25;
+        const beachThreshold = 0.32;
+        const forestThreshold = 0.85;  // 降低森林阈值，减少森林面积
+        
+        // 平原概率峰值区域（在沙滩和森林之间的中间区域）
+        const plainsPeakMin = 0.5;  // 平原概率峰值的最小值
+        const plainsPeakMax = 0.7;  // 平原概率峰值的最大值
+        const plainsProbabilityFactor = 0.6;  // 增加额外概率因子，提高平原生成概率
+        
+        // 确定地形类型
+        if (noise < oceanThreshold) {
+          // 海洋
           terrainType = 'ocean';
-        } else if (noise < 0.25) {  // 沙滩（保持适当范围）
+        } else if (noise < beachThreshold) {
+          // 沙滩
           terrainType = 'beach';
-        } else if (noise < 0.75) {  // 平原（保持范围）
-          terrainType = 'plains';
-        } else if (noise < 0.90) {  // 森林（保持范围）
-          terrainType = 'forest';
-        } else {  // 山脉（保持范围）
-          terrainType = 'mountain';
+        } else {
+          // 在平原、森林和山脉区域，使用加权概率
+          // 平原在中间高度值有最高概率
+          const isInPlainsPeak = noise >= plainsPeakMin && noise < plainsPeakMax;
+          
+          if (isInPlainsPeak) {
+            // 在平原概率峰值区域，更倾向于生成平原
+            if (Math.random() < plainsProbabilityFactor || noise < forestThreshold - 0.05) {
+              terrainType = 'plains';
+            } else if (noise < forestThreshold) {
+              terrainType = 'forest';
+            } else {
+              terrainType = 'mountain';
+            }
+          } else {
+            // 在非峰值区域，使用标准阈值但扩大平原范围
+            if (noise < forestThreshold - 0.02) {
+              terrainType = 'plains';
+            } else if (noise < forestThreshold) {
+              terrainType = 'forest';
+            } else {
+              terrainType = 'mountain';
+            }
+          }
         }
         
         this.terrainGrid[y][x] = { type: terrainType };
@@ -654,7 +691,8 @@ export class EcosystemManager {
       speedMultiplier: 1.0,
       hungerRateMultiplier: 1.0,
       canSpawnFood: true,
-      canSpawnOrganism: true
+      canSpawnOrganism: true,
+      canPassThrough: true
     };
   }
   

@@ -305,9 +305,62 @@ export const createOrganism = (
       // 使用adjustedSpeed（如果有）或默认速度
       const speedToUse = this.adjustedSpeed !== undefined ? this.adjustedSpeed : this.speed;
       
+      // 计算目标位置
+      let newX = this.x + Math.cos(this.direction) * speedToUse;
+      let newY = this.y + Math.sin(this.direction) * speedToUse;
+      
+      // 地形碰撞检测和绕行
+      if (ecosystemManager) {
+        // 检查目标位置的地形
+        const targetTerrain = ecosystemManager.getTerrainAt(newX, newY);
+        const terrainEffect = ecosystemManager.getTerrainEffect(targetTerrain);
+        
+        // 如果目标位置是不可通行的地形，尝试绕行
+        if (!terrainEffect.canPassThrough) {
+          // 尝试多个方向找到可通行的路径
+          let foundPath = false;
+          const directionsToTry = [0.25, -0.25, 0.5, -0.5, 0.75, -0.75, 1.0, -1.0];
+          
+          for (const angleOffset of directionsToTry) {
+            const testDirection = this.direction + angleOffset;
+            const testX = this.x + Math.cos(testDirection) * speedToUse;
+            const testY = this.y + Math.sin(testDirection) * speedToUse;
+            
+            const testTerrain = ecosystemManager.getTerrainAt(testX, testY);
+            const testTerrainEffect = ecosystemManager.getTerrainEffect(testTerrain);
+            
+            if (testTerrainEffect.canPassThrough && 
+                testX >= this.size && testX <= canvasWidth - this.size &&
+                testY >= this.size && testY <= canvasHeight - this.size) {
+              // 找到可通行的路径
+              newX = testX;
+              newY = testY;
+              this.direction = testDirection;
+              foundPath = true;
+              break;
+            }
+          }
+          
+          // 如果没有找到可通行的路径，随机改变方向
+          if (!foundPath) {
+            this.direction += (Math.random() - 0.5) * 1.5;
+            // 保持当前位置
+            newX = this.x;
+            newY = this.y;
+          }
+        }
+        
+        // 更新当前地形类型
+        this.currentTerrainType = ecosystemManager.getTerrainAt(newX, newY);
+        
+        // 应用地形对饥饿率的影响
+        const currentTerrainEffect = ecosystemManager.getTerrainEffect(this.currentTerrainType);
+        this.hungerRateMultiplier = currentTerrainEffect.hungerRateMultiplier;
+      }
+      
       // 更新位置
-      this.x += Math.cos(this.direction) * speedToUse;
-      this.y += Math.sin(this.direction) * speedToUse;
+      this.x = newX;
+      this.y = newY;
       
       // 确保位置在有效范围内（额外保障）
       this.x = Math.max(this.size, Math.min(canvasWidth - this.size, this.x));
