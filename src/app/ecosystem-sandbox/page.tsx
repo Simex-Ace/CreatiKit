@@ -26,6 +26,29 @@ const EcosystemSandbox = () => {
   const ecosystemManagerRef = useRef<EcosystemManager | null>(null);
   const rendererRef = useRef<EcosystemRenderer | null>(null);
   
+  // 缩放和偏移状态引用 - 用于重置功能
+  const scaleRef = useRef(1);
+  const offsetXRef = useRef(0);
+  const offsetYRef = useRef(0);
+  
+  // 重置视角函数
+  const resetView = () => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    
+    // 重置缩放和偏移
+    scaleRef.current = 1;
+    offsetXRef.current = 0;
+    offsetYRef.current = 0;
+    
+    // 应用重置后的变换
+    canvas.style.transform = `translate(0px, 0px) scale(1)`;
+    canvas.style.transformOrigin = '0 0';
+    
+    // 更新鼠标样式
+    canvas.style.cursor = 'crosshair';
+  };
+  
   // 性能统计相关引用
   const frameCountRef = useRef(0);
   const lastFpsUpdateRef = useRef(performance.now());
@@ -218,10 +241,123 @@ const EcosystemSandbox = () => {
       }
     };
 
+    // 添加缩放和平移相关状态
+    const minScale = 1; // 最小缩放为原始尺寸
+    const maxScale = 3;
+    let isDragging = false;
+    let lastX = 0;
+    let lastY = 0;
+    // 明确的鼠标悬停状态跟踪
+    let isMouseOnCanvas = false;
+    
+    // 应用变换到canvas
+    const applyTransform = () => {
+      canvas.style.transform = `translate(${offsetXRef.current}px, ${offsetYRef.current}px) scale(${scaleRef.current})`;
+      canvas.style.transformOrigin = '0 0';
+    };
+    
+    // 处理鼠标进入canvas事件
+    const handleMouseEnter = function() {
+      isMouseOnCanvas = true;
+      canvas.style.cursor = scaleRef.current > 1 ? 'grab' : 'crosshair';
+    };
+    
+    // 处理鼠标离开canvas事件
+    const handleMouseLeave = function() {
+      isMouseOnCanvas = false;
+      isDragging = false;
+      canvas.style.cursor = 'default';
+    };
+    
+    // 处理滚轮缩放事件
+    const handleWheel = function(e: WheelEvent) {
+      // 只有当按下Ctrl/Meta键时才需要处理
+      if (e.ctrlKey || e.metaKey) {
+        // 阻止浏览器默认的缩放行为 - 这很重要，防止整个页面缩放
+        e.preventDefault();
+        
+        // 只有当鼠标确实在canvas上时，才执行自定义缩放逻辑
+        if (isMouseOnCanvas) {
+          const rect = canvas.getBoundingClientRect();
+          
+          // 根据滚轮方向计算缩放因子
+          const delta = e.deltaY > 0 ? 0.9 : 1.1;
+          const newScale = scaleRef.current * delta;
+          
+          // 限制缩放范围
+          if (newScale >= minScale && newScale <= maxScale) {
+            // 计算鼠标在canvas上的位置
+            const mouseX = e.clientX - rect.left;
+            const mouseY = e.clientY - rect.top;
+            
+            // 调整偏移量以实现以鼠标为中心的缩放
+            const scaleRatio = newScale / scaleRef.current;
+            offsetXRef.current = mouseX - (mouseX - offsetXRef.current) * scaleRatio;
+            offsetYRef.current = mouseY - (mouseY - offsetYRef.current) * scaleRatio;
+            
+            scaleRef.current = newScale;
+            applyTransform();
+          }
+        }
+        // 当鼠标不在canvas上时，虽然阻止了默认行为，但不执行自定义缩放
+      }
+    };
+    
+    // 处理鼠标按下事件（开始拖动）
+    const handleMouseDown = function(e: MouseEvent) {
+      // 只有当缩放大于1时才允许拖动
+      if (scaleRef.current > 1) {
+        isDragging = true;
+        lastX = e.clientX;
+        lastY = e.clientY;
+        canvas.style.cursor = 'grabbing';
+      }
+    };
+    
+    // 处理鼠标移动事件（拖动中）
+    const handleMouseMove = function(e: MouseEvent) {
+      if (isDragging) {
+        const deltaX = e.clientX - lastX;
+        const deltaY = e.clientY - lastY;
+        
+        offsetXRef.current += deltaX;
+        offsetYRef.current += deltaY;
+        
+        applyTransform();
+        
+        lastX = e.clientX;
+        lastY = e.clientY;
+      }
+    };
+    
+    // 处理鼠标释放事件（结束拖动）
+    const handleMouseUp = function() {
+      isDragging = false;
+      canvas.style.cursor = 'grab';
+    };
+    
+    // 添加事件监听器 - 滚轮事件绑定到document
+    document.addEventListener('wheel', handleWheel, { passive: false });
+    canvas.addEventListener('mousedown', handleMouseDown);
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+    canvas.addEventListener('mouseleave', handleMouseLeave);
+    canvas.addEventListener('mouseenter', handleMouseEnter); // 添加鼠标进入事件
+    
+    // 初始设置鼠标样式
+    canvas.style.cursor = 'default'; // 初始为默认，鼠标进入后会更新
+    canvas.style.userSelect = 'none'; // 防止拖动时选中文本
+
     window.addEventListener('resize', handleResize);
 
     return () => {
       window.removeEventListener('resize', handleResize);
+      document.removeEventListener('wheel', handleWheel);
+      canvas.removeEventListener('mousedown', handleMouseDown);
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+      canvas.removeEventListener('mouseleave', handleMouseLeave);
+      canvas.removeEventListener('mouseenter', handleMouseEnter); // 移除鼠标进入事件监听器
       if (animationRef.current) {
         cancelAnimationFrame(animationRef.current);
       }
@@ -312,6 +448,13 @@ const EcosystemSandbox = () => {
                 onClick={() => ecosystemManagerRef.current?.resetSandbox()}
               >
                 重置沙盒
+              </Button>
+              
+              <Button 
+                className="w-full bg-indigo-600 hover:bg-indigo-700" 
+                onClick={resetView}
+              >
+                重置视角
               </Button>
             </div>
             

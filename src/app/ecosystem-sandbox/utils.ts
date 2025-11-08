@@ -317,10 +317,17 @@ export const createOrganism = (
         
         // 如果目标位置是不可通行的地形，尝试绕行
         if (!terrainEffect.canPassThrough) {
-          // 尝试多个方向找到可通行的路径
+          // 尝试8个方向，每45度一个，平衡性能和寻路效果
           let foundPath = false;
-          const directionsToTry = [0.25, -0.25, 0.5, -0.5, 0.75, -0.75, 1.0, -1.0];
+          const directionsToTry = [];
           
+          // 生成8个尝试方向，正负45度增量
+          for (let i = 1; i <= 4; i++) {
+            directionsToTry.push(i * Math.PI / 4);  // 45度增量
+            directionsToTry.push(-i * Math.PI / 4); // 负值方向
+          }
+          
+          // 先尝试小角度偏移
           for (const angleOffset of directionsToTry) {
             const testDirection = this.direction + angleOffset;
             const testX = this.x + Math.cos(testDirection) * speedToUse;
@@ -340,23 +347,29 @@ export const createOrganism = (
               break;
             }
           }
-          
-          // 如果没有找到可通行的路径，随机改变方向
-          if (!foundPath) {
-            this.direction += (Math.random() - 0.5) * 1.5;
-            // 保持当前位置
-            newX = this.x;
-            newY = this.y;
+        
+            // 如果没有找到可通行的路径，大幅改变方向并稍微后退
+            if (!foundPath) {
+              // 更剧烈的方向变化，避免卡在原地
+              this.direction += (Math.random() - 0.5) * Math.PI; // 最多180度转向
+              
+              // 尝试稍微后退一点，避免连续卡在同一位置
+              newX = this.x - Math.cos(this.direction) * speedToUse * 0.5;
+              newY = this.y - Math.sin(this.direction) * speedToUse * 0.5;
+              
+              // 确保后退位置在边界内
+              newX = Math.max(this.size, Math.min(canvasWidth - this.size, newX));
+              newY = Math.max(this.size, Math.min(canvasHeight - this.size, newY));
+            }
           }
+          
+          // 更新当前地形类型
+          this.currentTerrainType = ecosystemManager.getTerrainAt(newX, newY);
+          
+          // 应用地形对饥饿率的影响
+          const currentTerrainEffect = ecosystemManager.getTerrainEffect(this.currentTerrainType);
+          this.hungerRateMultiplier = currentTerrainEffect.hungerRateMultiplier;
         }
-        
-        // 更新当前地形类型
-        this.currentTerrainType = ecosystemManager.getTerrainAt(newX, newY);
-        
-        // 应用地形对饥饿率的影响
-        const currentTerrainEffect = ecosystemManager.getTerrainEffect(this.currentTerrainType);
-        this.hungerRateMultiplier = currentTerrainEffect.hungerRateMultiplier;
-      }
       
       // 更新位置
       this.x = newX;
