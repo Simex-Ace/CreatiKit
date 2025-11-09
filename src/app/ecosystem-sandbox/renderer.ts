@@ -1,4 +1,4 @@
-import { Organism, Food, Stats, TerrainGrid, TerrainType } from './types';
+import { Organism, Food, Stats, TerrainGrid, TerrainType, Thunderstorm } from './types';
 import { EcosystemManager } from './ecosystem-manager';
 import cyanobacteriaImage from './image/蓝藻菌.png';
 import amoebaImage from './image/变形虫.png';
@@ -18,6 +18,13 @@ export class EcosystemRenderer {
   private canvasHeight: number;
   private devicePixelRatio: number;
   private ecosystemManager: EcosystemManager | null = null;
+  private lastRenderTime: number = performance.now();
+  private darknessBase: number = 0.6; // 基础暗度
+  private darknessVariation: number = 0.3; // 变化范围
+  private randomUpdateInterval: number = 1000; // 增加随机更新间隔，使变化更慢（1000毫秒即1秒）
+  private currentDarkness: number = 0.6; // 当前暗度值
+  private targetDarkness: number = 0.6; // 目标暗度值（用于平滑过渡）
+  private transitionSpeed: number = 0.02; // 过渡速度（值越小过渡越平滑）
   
   // 地形类型对应的图片映射
   private terrainImages: Record<string, HTMLImageElement> = {
@@ -161,6 +168,117 @@ export class EcosystemRenderer {
         ctx.fill();
       }
     }
+  }
+  
+  // 绘制雷暴和闪电
+  drawThunderstorms(ctx: CanvasRenderingContext2D, thunderstorms: any[]) {
+    if (!thunderstorms || thunderstorms.length === 0) return;
+
+    for (let i = 0; i < thunderstorms.length; i++) {
+      const storm = thunderstorms[i];
+      if (storm && storm.isActive && typeof storm.x === 'number' && typeof storm.y === 'number') {
+        // 直接使用storm的x和y属性，而不是storm.position
+        const x = storm.x;
+        const y = storm.y;
+        
+        // 计算闪电动画进度（基于持续时间和已过时间）
+        let alpha = storm.flashProgress || 0;
+        if (storm.startTime && storm.duration) {
+          const now = performance.now();
+          const elapsed = now - storm.startTime;
+          // 创建闪烁效果
+          if (elapsed < storm.duration) {
+            // 使用正弦波创建闪烁效果
+            alpha = 0.5 + 0.5 * Math.sin(elapsed * 0.01);
+          }
+        }
+
+        // 始终绘制雷暴效果，即使alpha较低
+        if (alpha > 0) {
+          // 绘制发光效果
+          ctx.save();
+          ctx.globalAlpha = alpha * 0.1;
+          ctx.fillStyle = '#FFFFFF';
+          ctx.fillRect(x - 50, y - 50, 100, 100);
+          ctx.restore();
+
+          // 绘制闪电（更频繁地触发闪电）
+          if (alpha > 0.3) {
+            const numBranches = 1 + Math.floor(Math.random() * 3); // 1-3道闪电
+            for (let b = 0; b < numBranches; b++) {
+              const offsetX = (Math.random() - 0.5) * 30;
+              const offsetY = Math.random() * 20;
+              // 调整闪电终点更接近雷暴中心，使原始汤生成位置与闪电更匹配
+              const endX = x + (Math.random() - 0.5) * 20;
+              const endY = y + 40 + Math.random() * 30;
+              
+              this.drawLightningBolt(ctx, x + offsetX, y + offsetY, endX, endY, 2, '#FFFFFF', alpha * 0.8);
+            }
+          }
+        }
+      }
+    }
+  }
+  
+
+  
+  // 绘制闪电形状的辅助方法
+  private drawLightningBolt(ctx: CanvasRenderingContext2D, startX: number, startY: number, endX: number, endY: number, width: number, color: string, alpha: number) {
+    ctx.globalAlpha = alpha;
+    ctx.strokeStyle = color;
+    ctx.lineWidth = width;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    
+    // 保存状态
+    ctx.save();
+    
+    // 创建闪电路径
+    const points = this.createLightningPoints(startX, startY, endX, endY, 5 + Math.floor(Math.random() * 5));
+    
+    // 绘制主闪电
+    ctx.beginPath();
+    ctx.moveTo(points[0].x, points[0].y);
+    
+    for (let i = 1; i < points.length; i++) {
+      ctx.lineTo(points[i].x, points[i].y);
+    }
+    
+    ctx.stroke();
+    
+    // 添加发光效果
+    ctx.lineWidth = width * 2;
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+    ctx.stroke();
+    
+    // 恢复状态
+    ctx.restore();
+  }
+  
+  // 创建闪电路径点的辅助方法
+  private createLightningPoints(startX: number, startY: number, endX: number, endY: number, segments: number) {
+    const points = [{ x: startX, y: startY }];
+    const dx = endX - startX;
+    const dy = endY - startY;
+    const segmentLength = Math.sqrt(dx * dx + dy * dy) / segments;
+    
+    for (let i = 1; i < segments; i++) {
+      const progress = i / segments;
+      // 基础位置
+      const baseX = startX + dx * progress;
+      const baseY = startY + dy * progress;
+      
+      // 添加随机偏移
+      const offsetX = (Math.random() - 0.5) * segmentLength * 1.2;
+      const offsetY = (Math.random() - 0.5) * segmentLength * 0.5;
+      
+      points.push({ x: baseX + offsetX, y: baseY + offsetY });
+    }
+    
+    // 添加终点
+    points.push({ x: endX, y: endY });
+    
+    return points;
   }
 
   // 简化的生物绘制
@@ -471,5 +589,56 @@ export class EcosystemRenderer {
       this.ctx.lineTo(terrainGrid[0].length * cellWidth, y * cellHeight);
     }
     this.ctx.stroke();
+  }
+  
+  // 主渲染函数
+  render() {
+    // 清除画布
+    this.clear();
+    
+    // 绘制地形
+    if (this.ecosystemManager) {
+      const terrainGrid = this.ecosystemManager.getTerrainGrid();
+      const gridSize = this.ecosystemManager.getTerrainGridSize();
+      this.drawTerrain(terrainGrid, gridSize);
+      
+      // 绘制食物
+      const { foods } = this.ecosystemManager.getState();
+      this.drawFoods(this.ctx, foods);
+      
+      // 绘制生物
+      const { organisms } = this.ecosystemManager.getState();
+      this.drawOrganisms(organisms);
+      
+      // 绘制雷暴（放在最后确保不被覆盖）
+      const thunderstorms = this.ecosystemManager.getThunderstorms();
+      this.drawThunderstorms(this.ctx, thunderstorms);
+      
+      // 计算随机变化的暗度值，不规律更新以营造恶劣天气效果
+      const currentTime = performance.now();
+      const elapsed = currentTime - this.lastRenderTime;
+      
+      // 每隔一段时间随机更新目标暗度值
+      if (elapsed >= this.randomUpdateInterval) {
+        this.lastRenderTime = currentTime;
+        // 随机生成新的目标暗度值，在基础暗度附近波动
+        const randomFactor = (Math.random() - 0.5) * 2; // 生成 -1 到 1 之间的随机数
+        this.targetDarkness = Math.max(0, Math.min(1, this.darknessBase + this.darknessVariation * randomFactor));
+      }
+      
+      // 使用平滑过渡算法更新当前暗度值
+      // 向目标暗度值逐渐靠拢，创造缓和的过渡效果
+      this.currentDarkness += (this.targetDarkness - this.currentDarkness) * this.transitionSpeed;
+      
+      // 使用当前平滑过渡后的暗度值
+      const alpha = this.currentDarkness;
+      
+      // 添加动态变化的半透明黑色覆盖层
+      this.ctx.save();
+      this.ctx.globalAlpha = alpha; // 动态变化的透明度
+      this.ctx.fillStyle = '#000000';
+      this.ctx.fillRect(0, 0, this.canvasWidth, this.canvasHeight);
+      this.ctx.restore();
+    }
   }
 }

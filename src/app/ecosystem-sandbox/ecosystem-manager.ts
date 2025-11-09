@@ -1,4 +1,4 @@
-import { Organism, Food, SandboxConfig, TerrainCell, TerrainEffect, TerrainType } from './types';
+import { Organism, Food, SandboxConfig, TerrainCell, TerrainEffect, TerrainType, Thunderstorm, EcosystemStage } from './types';
 import { createOrganism, createFood } from './utils';
 import { SpatialPartition } from './spatial-partition';
 
@@ -15,6 +15,13 @@ export class EcosystemManager {
   private terrainGridSize: number;
   private hasTerrain: boolean;
   private spatialPartition: SpatialPartition; // 空间分区系统
+  
+  // 雷暴相关
+  private thunderstorms: Thunderstorm[];
+  private thunderstormIdCounter: number;
+  private lastThunderstormTime: number;
+  private thunderstormMinInterval: number; // 雷暴最小间隔时间
+  private thunderstormMaxInterval: number; // 雷暴最大间隔时间
 
   constructor(
     config: SandboxConfig,
@@ -35,10 +42,17 @@ export class EcosystemManager {
     this.terrainGridSize = config.terrainGridSize || 20;
     this.hasTerrain = config.hasTerrain !== false;
     
+    // 初始化雷暴相关属性
+    this.thunderstorms = [];
+    this.thunderstormIdCounter = 0;
+    this.lastThunderstormTime = 0;
+    this.thunderstormMinInterval = 3000; // 3秒
+    this.thunderstormMaxInterval = 8000; // 8秒
+    
     // 初始化地形效果
     this.initTerrainEffects();
     
-    // 生成地形
+    // 生成地形 - 根据当前阶段决定地形类型
     if (this.hasTerrain) {
       this.generateTerrain(this.terrainGridSize);
     }
@@ -117,6 +131,7 @@ export class EcosystemManager {
     const widthCells = Math.max(20, Math.floor(this.canvasWidth / cellSize));
     const heightCells = Math.max(20, Math.floor(this.canvasHeight / cellSize));
     
+    // 初始化地形网格
     this.terrainGrid = Array(heightCells).fill(0).map(() => Array(widthCells).fill(0).map(() => ({
       type: 'plains' as TerrainType,
       x: 0,
@@ -124,82 +139,98 @@ export class EcosystemManager {
       size: cellSize
     })));
     
-    // 步骤1: 生成基础地形高度图
-    const heightMap: number[][] = Array(heightCells).fill(0).map(() => Array(widthCells).fill(0));
-    for (let y = 0; y < heightCells; y++) {
-      for (let x = 0; x < widthCells; x++) {
-        heightMap[y][x] = this.getNoise(x, y);
+    // 根据当前阶段生成不同的地形
+    if (this.config.currentStage === 'primordial_soup') {
+      // 原始汤时代：只生成纯海洋地形，不进行任何陆地连通性检查
+      for (let y = 0; y < heightCells; y++) {
+        for (let x = 0; x < widthCells; x++) {
+          this.terrainGrid[y][x] = { type: 'ocean' };
+        }
       }
-    }
-    
-    // 步骤2: 第一次地形分配，使用更低的海洋阈值确保海洋是一整块
-    for (let y = 0; y < heightCells; y++) {
-      for (let x = 0; x < widthCells; x++) {
-        const noise = heightMap[y][x];
-        const cellX = x * cellSize;
-        const cellY = y * cellSize;
-        
-        // 五种地形类型的阈值分配，平原在沙滩和森林之间有最高生成概率
-        let terrainType: TerrainType;
-        
-        // 基础阈值定义
-        const oceanThreshold = 0.25;
-        const beachThreshold = 0.32;
-        const forestThreshold = 0.85;  // 降低森林阈值，减少森林面积
-        
-        // 平原概率峰值区域（在沙滩和森林之间的中间区域）
-        const plainsPeakMin = 0.5;  // 平原概率峰值的最小值
-        const plainsPeakMax = 0.7;  // 平原概率峰值的最大值
-        const plainsProbabilityFactor = 0.6;  // 增加额外概率因子，提高平原生成概率
-        
-        // 确定地形类型
-        if (noise < oceanThreshold) {
-          // 海洋
-          terrainType = 'ocean';
-        } else if (noise < beachThreshold) {
-          // 沙滩
-          terrainType = 'beach';
-        } else {
-          // 在平原、森林和山脉区域，使用加权概率
-          // 平原在中间高度值有最高概率
-          const isInPlainsPeak = noise >= plainsPeakMin && noise < plainsPeakMax;
+    } else {
+      // 其他阶段：生成多样化地形
+      // 步骤1: 生成基础地形高度图
+      const heightMap: number[][] = Array(heightCells).fill(0).map(() => Array(widthCells).fill(0));
+      for (let y = 0; y < heightCells; y++) {
+        for (let x = 0; x < widthCells; x++) {
+          heightMap[y][x] = this.getNoise(x, y);
+        }
+      }
+      
+      // 步骤2: 第一次地形分配
+      for (let y = 0; y < heightCells; y++) {
+        for (let x = 0; x < widthCells; x++) {
+          const noise = heightMap[y][x];
           
-          if (isInPlainsPeak) {
-            // 在平原概率峰值区域，更倾向于生成平原
-            if (Math.random() < plainsProbabilityFactor || noise < forestThreshold - 0.05) {
-              terrainType = 'plains';
-            } else if (noise < forestThreshold) {
-              terrainType = 'forest';
-            } else {
-              terrainType = 'mountain';
-            }
+          // 五种地形类型的阈值分配
+          let terrainType: TerrainType;
+          
+          // 基础阈值定义
+          const oceanThreshold = 0.25;
+          const beachThreshold = 0.32;
+          const forestThreshold = 0.85;
+          
+          // 平原概率峰值区域
+          const plainsPeakMin = 0.5;
+          const plainsPeakMax = 0.7;
+          const plainsProbabilityFactor = 0.6;
+          
+          // 确定地形类型
+          if (noise < oceanThreshold) {
+            terrainType = 'ocean';
+          } else if (noise < beachThreshold) {
+            terrainType = 'beach';
           } else {
-            // 在非峰值区域，使用标准阈值但扩大平原范围
-            if (noise < forestThreshold - 0.02) {
-              terrainType = 'plains';
-            } else if (noise < forestThreshold) {
-              terrainType = 'forest';
+            const isInPlainsPeak = noise >= plainsPeakMin && noise < plainsPeakMax;
+            
+            if (isInPlainsPeak) {
+              if (Math.random() < plainsProbabilityFactor || noise < forestThreshold - 0.05) {
+                terrainType = 'plains';
+              } else if (noise < forestThreshold) {
+                terrainType = 'forest';
+              } else {
+                terrainType = 'mountain';
+              }
             } else {
-              terrainType = 'mountain';
+              if (noise < forestThreshold - 0.02) {
+                terrainType = 'plains';
+              } else if (noise < forestThreshold) {
+                terrainType = 'forest';
+              } else {
+                terrainType = 'mountain';
+              }
             }
           }
+          
+          this.terrainGrid[y][x] = { type: terrainType };
         }
-        
-        this.terrainGrid[y][x] = { type: terrainType };
+      }
+      
+      // 步骤3: 地形平滑和连续性增强
+      this.smoothTerrain();
+      
+      // 步骤4: 确保地形过渡自然
+      this.enforceTerrainTransitions();
+      
+      // 步骤5: 特殊处理山脉分布
+      this.distributeMountains();
+      
+      // 确保陆地连通性
+      this.ensureLandConnectivity();
+    }
+    
+    // 初始化每个网格单元的坐标信息
+    for (let y = 0; y < heightCells; y++) {
+      for (let x = 0; x < widthCells; x++) {
+        this.terrainGrid[y][x].x = x * cellSize;
+        this.terrainGrid[y][x].y = y * cellSize;
+        this.terrainGrid[y][x].size = cellSize;
       }
     }
     
-    // 步骤3: 地形平滑和连续性增强
-    this.smoothTerrain();
-    
-    // 步骤4: 确保地形过渡自然
-    this.enforceTerrainTransitions();
-    
-    // 步骤5: 特殊处理山脉分布，确保它们分布在平原中部或地图角落
-    this.distributeMountains();
-    
-    // 确保陆地连通性
-    this.ensureLandConnectivity();
+    // 保存网格大小
+    this.terrainGridSize = cellSize;
+    this.hasTerrain = true;
   }
   
   // 地形平滑，确保所有地形形成大片连续区域
@@ -642,6 +673,92 @@ export class EcosystemManager {
     return Math.max(0, Math.min(1, noise));
   }
   
+  // 创建雷暴
+  private createThunderstorm() {
+    // 只在原始汤时代创建雷暴
+    if (this.config.currentStage !== 'primordial_soup') return;
+    
+    // 随机位置，但确保在画布内
+    const x = Math.random() * this.canvasWidth;
+    const y = Math.random() * this.canvasHeight;
+    
+    // 确保雷暴落在海洋地形上
+    const terrainType = this.getTerrainAt(x, y);
+    if (terrainType !== 'ocean') return;
+    
+    // 创建雷暴对象
+    const thunderstorm: Thunderstorm = {
+      id: this.thunderstormIdCounter++,
+      x: x,
+      y: y,
+      radius: 30 + Math.random() * 50, // 随机半径
+      intensity: 0.5 + Math.random() * 0.5, // 0.5到1.0的强度
+      duration: 1000 + Math.random() * 2000, // 1到3秒的持续时间
+      startTime: performance.now(),
+      isActive: true,
+      color: `rgba(255, ${200 + Math.floor(Math.random() * 55)}, 0, ${0.6 + Math.random() * 0.4})`
+    };
+    
+    this.thunderstorms.push(thunderstorm);
+  }
+
+  // 更新雷暴
+  private updateThunderstorms() {
+    const now = performance.now();
+    
+    // 清理已结束的雷暴
+    this.thunderstorms = this.thunderstorms.filter(thunderstorm => {
+      const elapsed = now - thunderstorm.startTime;
+      if (elapsed > thunderstorm.duration) {
+        // 雷暴结束时，有概率生成原始汤
+        if (Math.random() < 0.4) { // 70%概率生成原始汤
+          this.spawnPrimordialSoup(thunderstorm.x, thunderstorm.y);
+        }
+        return false;
+      }
+      return true;
+    });
+    
+    // 检查是否需要生成新雷暴
+    if (now - this.lastThunderstormTime > this.thunderstormMinInterval) {
+      // 在最小间隔和最大间隔之间随机决定是否生成
+      const interval = this.thunderstormMinInterval + Math.random() * (this.thunderstormMaxInterval - this.thunderstormMinInterval);
+      if (now - this.lastThunderstormTime > interval) {
+        this.createThunderstorm();
+        this.lastThunderstormTime = now;
+      }
+    }
+  }
+
+  // 生成原始汤
+  private spawnPrimordialSoup(x: number, y: number) {
+    // 确保在海洋地形上生成
+    const terrainType = this.getTerrainAt(x, y);
+    if (terrainType !== 'ocean') return;
+    
+    // 创建原始汤（作为特殊的食物）
+    const primordialSoup: Food = {
+      id: this.foodIdCounter.current++,
+      x: x,
+      y: y,
+      size: 5 + Math.random() * 5,
+      isPrimordialSoup: true,
+      terrainType: 'ocean',
+      isFlashing: true,
+      flashTime: performance.now()
+    };
+    
+    this.foods.push(primordialSoup);
+    
+    // 更新原始汤计数
+    this.config.primordialSoupCount++;
+    
+    // 检查是否可以解锁下一阶段
+    if (this.config.primordialSoupCount >= this.config.primordialSoupThreshold) {
+      this.config.canAdvanceStage = true;
+    }
+  }
+
   // 确保陆地连通性
   private ensureLandConnectivity() {
     // 检查是否有陆地
@@ -709,6 +826,37 @@ export class EcosystemManager {
   // 获取是否有地形
   public getHasTerrain(): boolean {
     return this.hasTerrain;
+  }
+  
+  // 获取雷暴数组
+  public getThunderstorms(): Thunderstorm[] {
+    return this.thunderstorms;
+  }
+  
+  // 进入下一阶段
+  public advanceStage(): boolean {
+    if (!this.config.canAdvanceStage || this.config.currentStage !== 'primordial_soup') {
+      return false;
+    }
+    
+    // 这里只实现到第二阶段，后续可以扩展
+    this.config.currentStage = 'early_life';
+    this.config.canAdvanceStage = false;
+    
+    // 重新生成地形
+    if (this.hasTerrain) {
+      this.generateTerrain(this.terrainGridSize);
+    }
+    
+    // 清空雷暴
+    this.thunderstorms = [];
+    
+    return true;
+  }
+  
+  // 获取配置（用于UI更新）
+  public getConfig(): SandboxConfig {
+    return this.config;
   }
 
   // 更新配置
@@ -879,9 +1027,17 @@ export class EcosystemManager {
     this.spatialPartition.addObject(organism); // 添加到空间分区
   }
 
-  // 清空所有生物
+  // 清空所有生物和原始汤
   clearAllOrganisms() {
     this.organisms = [];
+    // 在原始汤阶段，清空也意味着重置原始汤状态
+    if (this.config.currentStage === 'primordial_soup') {
+      // 清空原始汤相关的数据结构
+      // 重新生成全海洋地形
+      if (this.hasTerrain) {
+        this.generateTerrain(this.terrainGridSize);
+      }
+    }
   }
 
   // 重置食物
@@ -891,7 +1047,24 @@ export class EcosystemManager {
 
   // 处理一次生态系统更新
   update() {
-    if (!this.config.isRunning || this.organisms.length === 0) return;
+    if (!this.config.isRunning) return;
+
+    // 更新雷暴（在所有阶段都可以调用，但会在方法内部检查阶段）
+    this.updateThunderstorms();
+
+    // 原始汤时代特殊处理
+    if (this.config.currentStage === 'primordial_soup') {
+      // 只保留原始汤，清除其他食物
+      this.foods = this.foods.filter(food => food.isPrimordialSoup);
+      
+      // 清除所有生物
+      this.organisms = [];
+      
+      return; // 跳过其他更新逻辑
+    }
+
+    // 非原始汤时代的正常更新逻辑
+    if (this.organisms.length === 0) return;
 
     // 清空并重新构建空间分区
     this.spatialPartition.clear();

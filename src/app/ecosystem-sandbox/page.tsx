@@ -8,10 +8,11 @@ import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 
 // 导入类型和工具
-import { SandboxConfig, Stats, TerrainDistribution } from './types';
+import { SandboxConfig, Stats, TerrainDistribution, EcosystemStage } from './types';
 import { EcosystemRenderer } from './renderer';
 import { EcosystemManager } from './ecosystem-manager';
 import { RuleDescription } from './RuleDescription';
+import { EcosystemStageUI } from './stage-ui';
 
 // 主组件
 
@@ -25,6 +26,9 @@ const EcosystemSandbox = () => {
   // 管理器和渲染器引用
   const ecosystemManagerRef = useRef<EcosystemManager | null>(null);
   const rendererRef = useRef<EcosystemRenderer | null>(null);
+  
+  // 阶段UI引用
+  const stageUIRef = useRef<EcosystemStageUI | null>(null);
   
   // 缩放和偏移状态引用 - 用于重置功能
   const scaleRef = useRef(1);
@@ -60,7 +64,7 @@ const EcosystemSandbox = () => {
     height: 600,
     organismCount: 10,
     foodCount: 30,
-    speed: 0.5,
+    speed: 0.5, // 保留配置但不在UI中显示
     isRunning: true,
     maxOrganisms: 100,
     maxFood: 100,
@@ -69,7 +73,13 @@ const EcosystemSandbox = () => {
     evolutionThreshold: 100,
     breedingThreshold: 80,
     hasTerrain: true,
-    terrainGridSize: 20
+    terrainGridSize: 20,
+    
+    // 世代阶段相关配置
+    currentStage: 'primordial_soup' as EcosystemStage,
+    primordialSoupCount: 0,
+    primordialSoupThreshold: 20, // 需要收集20个原始汤才能进入下一阶段
+    canAdvanceStage: false
   });
   
   const [stats, setStats] = useState<Stats>({ 
@@ -110,33 +120,25 @@ const EcosystemSandbox = () => {
       ecosystemManagerRef.current.update();
     }
     
+    // 更新阶段UI
+    if (stageUIRef.current && ecosystemManagerRef.current) {
+      const currentConfig = ecosystemManagerRef.current.getConfig();
+      stageUIRef.current.updateUI(
+        currentConfig.currentStage,
+        currentConfig.primordialSoupCount,
+        currentConfig.primordialSoupThreshold,
+        currentConfig.canAdvanceStage
+      );
+    }
+    
     // 更新渲染器
     rendererRef.current.updateAnimation(16.67); // 使用固定的增量时间
-    
-    // 获取当前生态系统状态
-    const { organisms, foods } = ecosystemManagerRef.current.getState();
     
     // 清空画布
     rendererRef.current.clear();
     
-    // 绘制地形（如果启用）
-    if (ecosystemManagerRef.current?.getHasTerrain() !== false) {
-      const terrainGrid = ecosystemManagerRef.current.getTerrainGrid();
-      if (terrainGrid && terrainGrid.length > 0) {
-        rendererRef.current.drawTerrain(
-          terrainGrid,
-          ecosystemManagerRef.current.getTerrainGridSize() || 20
-        );
-      }
-    }
-    
-    // 获取画布上下文
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-    
-    // 绘制场景
-    rendererRef.current.drawFoods(ctx, foods);
-    rendererRef.current.drawOrganisms(organisms);
+    // 使用renderer的内部render方法绘制所有内容
+    rendererRef.current.render();
     
     // 显示暂停覆盖层
     if (!config.isRunning) {
@@ -167,11 +169,7 @@ const EcosystemSandbox = () => {
     ecosystemManagerRef.current?.initFoods(config.foodCount);
   };
 
-  // 调整速度
-  const handleSpeedChange = (value: number[]) => {
-    setConfig(prev => ({ ...prev, speed: value[0] }));
-    ecosystemManagerRef.current?.updateConfig({ speed: value[0] });
-  };
+  // 速度控制已移除 - 当前阶段不需要
 
   // 切换运行状态
   const toggleRunning = () => {
@@ -203,13 +201,6 @@ const EcosystemSandbox = () => {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    // 初始化渲染器
-    rendererRef.current = new EcosystemRenderer(ctx, rect.width * devicePixelRatio, rect.height * devicePixelRatio, devicePixelRatio);
-      // 设置生态系统管理器引用，用于获取地形效果
-      if (ecosystemManagerRef.current) {
-        rendererRef.current.setEcosystemManager(ecosystemManagerRef.current);
-      }
-    
     // 初始化生态系统管理器
     ecosystemManagerRef.current = new EcosystemManager(
       config,
@@ -218,6 +209,23 @@ const EcosystemSandbox = () => {
       rect.width,
       rect.height
     );
+    
+    // 初始化渲染器
+    rendererRef.current = new EcosystemRenderer(ctx, rect.width * devicePixelRatio, rect.height * devicePixelRatio, devicePixelRatio);
+    rendererRef.current.setEcosystemManager(ecosystemManagerRef.current);
+    
+    // 初始化阶段UI
+    stageUIRef.current = new EcosystemStageUI();
+    stageUIRef.current.setAdvanceCallback(() => {
+      if (ecosystemManagerRef.current?.advanceStage()) {
+        // 更新配置中的阶段信息
+        setConfig(prev => ({
+          ...prev,
+          currentStage: 'early_life' as EcosystemStage,
+          canAdvanceStage: false
+        }));
+      }
+    });
 
     // 初始化生物和食物
     ecosystemManagerRef.current.initOrganisms(config.organismCount);
@@ -361,6 +369,12 @@ const EcosystemSandbox = () => {
       if (animationRef.current) {
         cancelAnimationFrame(animationRef.current);
       }
+      
+      // 销毁阶段UI
+      if (stageUIRef.current) {
+        stageUIRef.current.destroy();
+        stageUIRef.current = null;
+      }
     };
   }, []);
 
@@ -395,59 +409,13 @@ const EcosystemSandbox = () => {
             
             <Separator />
             
-            {/* 速度控制 */}
-            <div className="space-y-2">
-              <div className="flex justify-between items-center">
-                <Label htmlFor="speed-slider">移动速度</Label>
-                <span className="text-sm font-mono">{config.speed.toFixed(1)}px/帧</span>
-              </div>
-              <Slider
-                id="speed-slider"
-                value={[config.speed]}
-                min={0.1}
-                max={5}
-                step={0.1}
-                onValueChange={handleSpeedChange}
-              />
-            </div>
-            
-            <Separator />
-            
             {/* 操作按钮 */}
             <div className="space-y-3">
-              <Button 
-                className="w-full bg-green-600 hover:bg-green-700" 
-                onClick={addOrganism}
-              >
-                添加生物
-              </Button>
-              
-              <Button 
-                className="w-full bg-amber-500 hover:bg-amber-600" 
-                onClick={() => initOrganisms(config.organismCount)}
-              >
-                重置生物（{config.organismCount}个）
-              </Button>
-              
-              <Button 
-                className="w-full bg-emerald-500 hover:bg-emerald-600" 
-                onClick={resetFoods}
-              >
-                重置食物（{config.foodCount}个）
-              </Button>
-              
               <Button 
                 className="w-full bg-red-500 hover:bg-red-600" 
                 onClick={clearAll}
               >
                 清空所有
-              </Button>
-              
-              <Button 
-                className="w-full bg-blue-600 hover:bg-blue-700" 
-                onClick={() => ecosystemManagerRef.current?.resetSandbox()}
-              >
-                重置沙盒
               </Button>
               
               <Button 

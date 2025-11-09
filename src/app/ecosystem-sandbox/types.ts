@@ -1,9 +1,15 @@
 // 地形类型
 export type TerrainType = 'ocean' | 'beach' | 'plains' | 'forest' | 'mountain';
 
+// 世代阶段
+export type EcosystemStage = 'primordial_soup' | 'early_life' | 'evolution' | 'advanced';
+
 // 地形单元格
 export interface TerrainCell {
   type: TerrainType;
+  x?: number;
+  y?: number;
+  size?: number;
 }
 
 // 地形网格
@@ -39,6 +45,12 @@ export interface SandboxConfig {
   breedingThreshold: number;
   hasTerrain?: boolean;
   terrainGridSize?: number;
+  
+  // 世代阶段相关
+  currentStage: EcosystemStage;
+  primordialSoupCount: number; // 原始汤数量
+  primordialSoupThreshold: number; // 解锁下一阶段所需的原始汤数量
+  canAdvanceStage: boolean; // 是否可以进入下一阶段
 }
 
 // 生物类型
@@ -86,6 +98,20 @@ export interface Food {
   isFlashing?: boolean;
   flashTime?: number;
   terrainType?: TerrainType;
+  isPrimordialSoup?: boolean; // 是否为原始汤
+}
+
+// 雷暴接口
+export interface Thunderstorm {
+  id: number;
+  x: number;
+  y: number;
+  radius: number;
+  intensity: number;
+  duration: number;
+  startTime: number;
+  isActive: boolean;
+  color: string;
 }
 
 // 地形分布统计

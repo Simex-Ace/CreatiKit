@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>闪电效果演示</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: #000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        canvas {
+            border: 2px solid #333;
+            background-color: #000;
+        }
+        .controls {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: rgba(0, 0, 0, 0.8);
+            padding: 15px;
+            border-radius: 8px;
+        }
+        button {
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="lightningCanvas" width="800" height="600"></canvas>
+    <div class="controls">
+        <button id="generateLightning">生成闪电</button>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('lightningCanvas');
+        const ctx = canvas.getContext('2d');
+        const generateBtn = document.getElementById('generateLightning');
+
+        // 生成闪电的主函数
+        function drawLightning() {
+            // 清空画布
+            ctx.fillStyle = '#000';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // 随机生成闪电起点和终点
+            const startX = canvas.width * 0.3 + Math.random() * canvas.width * 0.4; // 画布中间部分
+            const startY = 50 + Math.random() * 50; // 顶部
+            const endX = startX + (Math.random() * 100 - 50); // 终点左右偏移
+            const endY = canvas.height * 0.7 + Math.random() * canvas.height * 0.2; // 画布下半部分
+
+            // 绘制主闪电
+            drawLightningBolt(startX, startY, endX, endY, 3, '#FFFFFF', 1);
+
+            // 绘制2-3个分支
+            const branchCount = 2 + Math.floor(Math.random() * 2);
+            for (let i = 0; i < branchCount; i++) {
+                // 从主闪电路径上的随机点开始
+                const branchStartRatio = 0.2 + Math.random() * 0.6;
+                const branchStartX = startX + (endX - startX) * branchStartRatio;
+                const branchStartY = startY + (endY - startY) * branchStartRatio;
+                
+                // 分支角度和长度
+                const branchAngle = (Math.random() - 0.5) * Math.PI * 0.8; // -40°到40°
+                const branchLength = (endY - startY) * (0.3 + Math.random() * 0.4);
+                
+                const branchEndX = branchStartX + Math.cos(branchAngle) * branchLength;
+                const branchEndY = branchStartY + Math.sin(branchAngle + Math.PI/2) * branchLength; // +90°使其向下
+                
+                // 更细的分支
+                drawLightningBolt(branchStartX, branchStartY, branchEndX, branchEndY, 1.5, '#FFFFFF', 0.8);
+            }
+        }
+
+        // 绘制闪电形状的辅助方法
+        function drawLightningBolt(startX, startY, endX, endY, width, color, alpha) {
+            ctx.save();
+            ctx.globalAlpha = alpha;
+            ctx.strokeStyle = color;
+            ctx.lineWidth = width;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            
+            ctx.beginPath();
+            ctx.moveTo(startX, startY);
+            
+            let currentX = startX;
+            let currentY = startY;
+            const segments = 8 + Math.floor(Math.random() * 4); // 8-12个线段
+            
+            for (let i = 0; i < segments - 1; i++) {
+                // 计算到终点的剩余距离
+                const remainingX = endX - currentX;
+                const remainingY = endY - currentY;
+                const segmentRatio = 0.6 + Math.random() * 0.3; // 每段长度为剩余距离的60-90%
+                
+                // 主要方向移动
+                const mainSegmentX = remainingX * segmentRatio;
+                const mainSegmentY = remainingY * segmentRatio;
+                
+                // 添加水平偏移，创建锯齿状闪电效果
+                const horizontalOffset = remainingY * (0.05 + Math.random() * 0.1) * (Math.random() > 0.5 ? 1 : -1);
+                
+                // 计算下一个点
+                const nextX = currentX + mainSegmentX + horizontalOffset;
+                const nextY = currentY + mainSegmentY;
+                
+                // 直接连线
+                ctx.lineTo(nextX, nextY);
+                
+                currentX = nextX;
+                currentY = nextY;
+                
+                // 添加小的分支
+                if (Math.random() < 0.4) {
+                    const branchLength = Math.sqrt(mainSegmentX*mainSegmentX + mainSegmentY*mainSegmentY) * 0.4;
+                    const branchAngle = Math.atan2(mainSegmentY, mainSegmentX) + (Math.random() - 0.5) * Math.PI * 0.6;
+                    
+                    const branchEndX = currentX + Math.cos(branchAngle) * branchLength;
+                    const branchEndY = currentY + Math.sin(branchAngle) * branchLength;
+                    
+                    ctx.moveTo(currentX, currentY);
+                    ctx.lineTo(branchEndX, branchEndY);
+                    ctx.moveTo(currentX, currentY);
+                }
+            }
+            
+            // 连接到终点
+            ctx.lineTo(endX, endY);
+            ctx.stroke();
+            
+            // 添加发光效果 - 更亮的边缘
+            ctx.lineWidth *= 3;
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+            ctx.stroke();
+            
+            // 添加较弱的光晕
+            ctx.lineWidth *= 2;
+            ctx.strokeStyle = 'rgba(135, 206, 235, 0.2)';
+            ctx.stroke();
+            
+            ctx.restore();
+        }
+
+        // 添加闪烁效果的函数
+        function animateLightning() {
+            // 生成初始闪电
+            drawLightning();
+            
+            // 添加闪烁效果
+            let flashCount = 0;
+            const maxFlashes = 3 + Math.floor(Math.random() * 3); // 3-6次闪烁
+            const flashInterval = setInterval(() => {
+                flashCount++;
+                if (flashCount <= maxFlashes) {
+                    // 改变透明度的闪烁效果
+                    ctx.globalAlpha = 0.6 * (flashCount % 2);
+                    ctx.fillStyle = '#FFF';
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+                    ctx.globalAlpha = 1;
+                } else {
+                    clearInterval(flashInterval);
+                }
+            }, 100);
+        }
+
+        // 按钮点击事件
+        generateBtn.addEventListener('click', animateLightning);
+
+        // 初始绘制一次闪电
+        drawLightning();
+    </script>
+</body>
+</html>
