@@ -54,7 +54,7 @@ export class EcosystemManager {
       hungerRateMultiplier: 2.0,
       canSpawnFood: false,
       canSpawnOrganism: false,
-      canPassThrough: false,
+      canPassThrough: true,
       breedingChanceMultiplier: 0.1,    // 极低的繁殖概率
       healthRegenerationRate: 0,        // 无健康恢复
       foodDetectionRangeMultiplier: 0.8, // 食物检测范围减小
