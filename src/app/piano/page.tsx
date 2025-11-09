@@ -16,6 +16,7 @@ export default function PianoPage() {
   const {
     playNote,
     stopNote,
+    stopAllNotes,
     initializeAudio,
     isReady,
     isLoading,
@@ -229,7 +230,9 @@ export default function PianoPage() {
       playbackTimerRef.current = null;
     }
     setActiveNotes(new Set());
-  }, []);
+    // 停止所有音符，确保没有残留声音
+    stopAllNotes();
+  }, [stopAllNotes]);
 
   // 保存录音到本地
   const saveRecording = useCallback(() => {
@@ -369,16 +372,10 @@ export default function PianoPage() {
       }
       
       // 正常音符播放
-      const note = KEY_TO_NOTE[event.key.toLowerCase()];
+      const note = KEY_TO_NOTE[event.key.toLowerCase()] || KEY_TO_NOTE[event.code];
       if (note && NOTE_FREQUENCIES[note]) {
-        // 根据当前八度调整音符
-        const baseNote = note.slice(0, -1); // 去掉八度数字
-        const adjustedNote = `${baseNote}${currentOctave}`;
-        
-        if (NOTE_FREQUENCIES[adjustedNote]) {
-          event.preventDefault();
-          handleKeyDown(adjustedNote, NOTE_FREQUENCIES[adjustedNote]);
-        }
+        event.preventDefault();
+        handleKeyDown(note, NOTE_FREQUENCIES[note]);
       }
     };
 
@@ -390,15 +387,10 @@ export default function PianoPage() {
       }
       
       // 正常音符释放
-      const note = KEY_TO_NOTE[event.key.toLowerCase()];
-      if (note && NOTE_FREQUENCIES[note]) {
-        const baseNote = note.slice(0, -1);
-        const adjustedNote = `${baseNote}${currentOctave}`;
-        
-        if (NOTE_FREQUENCIES[adjustedNote] && activeNotes.has(adjustedNote)) {
-          event.preventDefault();
-          handleKeyUp(adjustedNote);
-        }
+      const note = KEY_TO_NOTE[event.key.toLowerCase()] || KEY_TO_NOTE[event.code];
+      if (note && NOTE_FREQUENCIES[note] && activeNotes.has(note)) {
+        event.preventDefault();
+        handleKeyUp(note);
       }
     };
 
@@ -421,11 +413,14 @@ export default function PianoPage() {
   // 清理函数
   useEffect(() => {
     return () => {
+      // 停止回放
       if (playbackTimerRef.current) {
         clearTimeout(playbackTimerRef.current);
       }
+      // 组件卸载时停止所有音符，确保没有残留声音
+      stopAllNotes();
     };
-  }, []);
+  }, [stopAllNotes]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 py-8 transition-colors duration-300">
@@ -579,39 +574,37 @@ export default function PianoPage() {
                 onKeyUp={handleKeyUp}
                 activeNotes={activeNotes}
                 disabled={!audioInitialized || isPlayingBack}
-                currentOctave={currentOctave}
-                showOctaves={3}
               />
               
               <div className="mt-8 text-center space-y-4">
                 <h3 className="text-xl font-semibold text-gray-800">键盘映射</h3>
                 <div className="grid grid-cols-3 md:grid-cols-6 gap-2 text-sm">
                   <div className="bg-gray-100 p-3 rounded-lg">
-                    <span className="font-mono bg-gray-200 px-2 py-1 rounded">A</span>
-                    <span className="ml-2">C{currentOctave} (Do)</span>
+                    <span className="font-mono bg-gray-200 px-2 py-1 rounded">s</span>
+                    <span className="ml-2">C4 (中央C)</span>
                   </div>
                   <div className="bg-gray-100 p-3 rounded-lg">
-                    <span className="font-mono bg-gray-200 px-2 py-1 rounded">W</span>
-                    <span className="ml-2">C#{currentOctave} (升Do)</span>
+                    <span className="font-mono bg-gray-200 px-2 py-1 rounded">d</span>
+                    <span className="ml-2">C#4 (升Do)</span>
                   </div>
                   <div className="bg-gray-100 p-3 rounded-lg">
-                    <span className="font-mono bg-gray-200 px-2 py-1 rounded">S</span>
-                    <span className="ml-2">D{currentOctave} (Re)</span>
+                    <span className="font-mono bg-gray-200 px-2 py-1 rounded">f</span>
+                    <span className="ml-2">D4 (Re)</span>
                   </div>
                   <div className="bg-gray-100 p-3 rounded-lg">
-                    <span className="font-mono bg-gray-200 px-2 py-1 rounded">E</span>
-                    <span className="ml-2">D#{currentOctave} (升Re)</span>
+                    <span className="font-mono bg-gray-200 px-2 py-1 rounded">g</span>
+                    <span className="ml-2">D#4 (升Re)</span>
                   </div>
                   <div className="bg-gray-100 p-3 rounded-lg">
-                    <span className="font-mono bg-gray-200 px-2 py-1 rounded">D</span>
-                    <span className="ml-2">E{currentOctave} (Mi)</span>
+                    <span className="font-mono bg-gray-200 px-2 py-1 rounded">h</span>
+                    <span className="ml-2">E4 (Mi)</span>
                   </div>
                   <div className="bg-gray-100 p-3 rounded-lg">
-                    <span className="font-mono bg-gray-200 px-2 py-1 rounded">F</span>
-                    <span className="ml-2">F{currentOctave} (Fa)</span>
+                    <span className="font-mono bg-gray-200 px-2 py-1 rounded">j</span>
+                    <span className="ml-2">F4 (Fa)</span>
                   </div>
                 </div>
-                <p className="text-gray-500 text-sm">继续使用 G, H, J, K, L 等键来演奏更高的音符</p>
+                <p className="text-gray-500 text-sm">音符直接映射到对应的键位，无需八度切换</p>
                 
                 <div className="mt-6 p-4 bg-blue-50 rounded-lg">
                   <h4 className="font-semibold text-blue-700 mb-2">快捷键说明</h4>
