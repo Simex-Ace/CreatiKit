@@ -78,7 +78,7 @@ const EcosystemSandbox = () => {
     // 世代阶段相关配置
     currentStage: 'primordial_soup' as EcosystemStage,
     primordialSoupCount: 0,
-    primordialSoupThreshold: 20, // 需要收集20个原始汤才能进入下一阶段
+    primordialSoupThreshold: 2, // 需要收集20个原始汤才能进入下一阶段
     canAdvanceStage: false
   });
   
@@ -86,6 +86,12 @@ const EcosystemSandbox = () => {
     fps: 0, 
     frameTime: 0,
     organismTypes: { basic: 0, predator: 0, scavenger: 0 }
+  });
+  
+  // 调试状态
+  const [debugInfo, setDebugInfo] = useState<{ total: number, toBeRemoved: number }>({
+    total: 0,
+    toBeRemoved: 0
   });
   
   // 简化的渲染函数
@@ -117,7 +123,22 @@ const EcosystemSandbox = () => {
 
     // 更新生态系统（如果运行中）
     if (config.isRunning) {
+      // 获取更新前的调试信息
+      const organisms = ecosystemManagerRef.current.getState().organisms;
+      const beforeCount = organisms.length;
+      const beforeToBeRemoved = organisms.filter(o => o.toBeRemoved).length;
+      
       ecosystemManagerRef.current.update();
+      
+      // 获取更新后的调试信息
+      const afterOrganisms = ecosystemManagerRef.current.getState().organisms;
+      setDebugInfo({
+        total: afterOrganisms.length,
+        toBeRemoved: afterOrganisms.filter(o => o.toBeRemoved).length
+      });
+      
+      console.log(`[DEBUG] 更新前: 总数=${beforeCount}, toBeRemoved=${beforeToBeRemoved}`);
+      console.log(`[DEBUG] 更新后: 总数=${afterOrganisms.length}, toBeRemoved=${afterOrganisms.filter(o => o.toBeRemoved).length}`);
     }
     
     // 更新阶段UI
@@ -221,7 +242,7 @@ const EcosystemSandbox = () => {
         // 更新配置中的阶段信息
         setConfig(prev => ({
           ...prev,
-          currentStage: 'early_life' as EcosystemStage,
+          currentStage: 'prokaryotic_eukaryotic' as EcosystemStage,
           canAdvanceStage: false
         }));
       }
@@ -447,6 +468,15 @@ const EcosystemSandbox = () => {
                   <div className="flex items-center justify-between">
                     <span>清道夫:</span>
                     <span className="text-purple-600">{stats.organismTypes.scavenger || 0}</span>
+                  </div>
+                </div>
+                
+                {/* 调试信息显示 */}
+                <div className="mt-4 p-2 bg-amber-50 rounded-md">
+                  <h4 className="font-semibold text-amber-800 mb-2">调试信息</h4>
+                  <div className="text-xs space-y-1 text-amber-700">
+                    <div>总细胞数: {debugInfo.total}</div>
+                    <div>待移除细胞: {debugInfo.toBeRemoved}</div>
                   </div>
                 </div>
               </div>

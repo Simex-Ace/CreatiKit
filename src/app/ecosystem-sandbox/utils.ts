@@ -6,7 +6,8 @@ export const createFood = (idCounter: { current: number }, canvasWidth: number, 
     id: idCounter.current++,
     x: Math.random() * canvasWidth,
     y: Math.random() * canvasHeight,
-    size: 3
+    size: 3,
+    isPrimordialSoup: false // 默认不创建原始汤
   };
 };
 
@@ -19,6 +20,8 @@ export const createOrganism = (
   idCounter?: { current: number }
 ): Organism => {
   const counter = idCounter || { current: 0 };
+  
+  // 初始化时默认不标记为toBeRemoved，后续会根据条件修改
   
   let baseColor = '';
   let baseSize = 0;
@@ -34,6 +37,16 @@ export const createOrganism = (
       baseColor = `hsl(${Math.random() * 60 + 300}, 80%, 60%)`;
       baseSize = Math.random() * 3 + 6;
       baseSpeed = Math.random() * 0.2 + config.speed * 0.25;
+      break;
+    case 'cyanobacteria':
+      baseColor = `hsl(${Math.random() * 30 + 120}, 100%, 40%)`; // 绿色调
+      baseSize = Math.random() * 2 + 4; // 较小
+      baseSpeed = Math.random() * 0.05 + 0.1; // 稍微增加基础速度，但会在update中进一步降低
+      break;
+    case 'primitive_eukaryote':
+      baseColor = `hsl(${Math.random() * 30 + 180}, 90%, 50%)`; // 蓝绿色调
+      baseSize = Math.random() * 2 + 5; // 中等
+      baseSpeed = Math.random() * 0.1 + 0.2; // 基础速度
       break;
     default:
       baseColor = `hsl(${Math.random() * 60 + 180}, 70%, 50%)`;
@@ -58,8 +71,13 @@ export const createOrganism = (
     breedingTime: undefined,
     breedingProgress: 0,
     isDetectingFood: false,
-    foodDetectionTime: undefined,
-    detectedFoodDistance: undefined,
+      foodDetectionTime: undefined,
+      detectedFoodDistance: undefined,
+      // 用于原核和真核生物的分裂繁殖
+      lastSplitAge: 0,
+      // 标记是否需要被移除
+      toBeRemoved: false,
+
     calculateDistance: function(x: number, y: number): number {
       const dx = x - this.x;
       const dy = y - this.y;
@@ -113,108 +131,99 @@ export const createOrganism = (
     },
     
     evolve: function(): Organism | null {
-      if (!this.canEvolve || this.age < 500 || this.hunger < 60) {
-        return null;
-      }
-      
-      const evolutionType = Math.random() > 0.5 ? 'predator' : 'scavenger';
-      let evolvedBaseColor = '';
-      let evolvedBaseSize = 0;
-      let evolvedBaseSpeed = 0;
-      
-      if (evolutionType === 'predator') {
-        evolvedBaseColor = `hsl(${Math.random() * 30}, 100%, 50%)`;
-        evolvedBaseSize = this.size * (1 + Math.random() * 0.2 - 0.1);
-        evolvedBaseSpeed = Math.random() * 0.2 + config.speed * 0.3;
-      } else {
-        evolvedBaseColor = `hsl(${Math.random() * 60 + 300}, 80%, 60%)`;
-        evolvedBaseSize = this.size * (1 + Math.random() * 0.2 - 0.1);
-        evolvedBaseSpeed = Math.random() * 0.2 + config.speed * 0.25;
-      }
-      
-      const evolvedOrganism: Organism = {
-        id: counter.current++,
-        x: this.x,
-        y: this.y,
-        size: evolvedBaseSize,
-        speed: evolvedBaseSpeed,
-        direction: Math.random() * Math.PI * 2,
-        color: evolvedBaseColor,
-        hunger: 80,
-        type: evolutionType,
-        age: 0,
-        canEvolve: false,
-        isBreeding: false,
-        breedingPartnerId: undefined,
-        breedingTime: undefined,
-        breedingProgress: 0,
-        isDetectingFood: false,
-        foodDetectionTime: undefined,
-        detectedFoodDistance: undefined,
-        findNearestFood: this.findNearestFood,
-        eat: this.eat,
-        evolve: this.evolve,
-        update: this.update
-      };
-      
-      setTimeout(() => {
-        this.color = evolvedOrganism.color;
-      }, 50);
-      
-      return evolvedOrganism;
+      // 禁用进化功能，当前阶段只保留蓝藻和原始真核细胞
+      return null;
     },
     
-    update: function(foods: Food[], ecosystemManager?: any) {
-      this.age++;      
+    update: function(foods: Food[], ecosystemManager?: any): null {
+      // 年龄只增不减
+      this.age = (this.age || 0) + 1;
+      
+      // 对于蓝藻和原始真核细胞的特殊处理
+      if (this.type === 'cyanobacteria' || this.type === 'primitive_eukaryote') {
+        // 完全禁用有性生殖，强制所有繁殖只能通过分裂
+        this.isBreeding = false;
+        this.breedingPartnerId = undefined;
+        this.breedingTime = undefined;
+        this.breedingProgress = 0;
+        // 清除所有可能触发有性生殖的属性
+        this.targetPartner = null;
+        this.isLookingForPartner = false;
+        this.reproductionCooldown = 0;
+
+        // 分裂功能已在ecosystem-manager.ts中实现，这里不再生成新细胞
+        // 这里只处理基础移动行为
+        
+        // 低速随机移动
+        this.direction += (Math.random() - 0.5) * 0.05; // 非常小的方向变化，更平滑的移动
+        
+        // 使用极低的速度移动
+        const slowSpeed = this.speed * 0.3; // 速度降低到原来的30%
+        this.x += Math.cos(this.direction) * slowSpeed;
+        this.y += Math.sin(this.direction) * slowSpeed;
+        
+        // 边界检查
+        if (ecosystemManager && ecosystemManager.canvasWidth && ecosystemManager.canvasHeight) {
+          if (this.x - this.size < 0) this.x = this.size;
+          if (this.x + this.size > ecosystemManager.canvasWidth) this.x = ecosystemManager.canvasWidth - this.size;
+          if (this.y - this.size < 0) this.y = this.size;
+          if (this.y + this.size > ecosystemManager.canvasHeight) this.y = ecosystemManager.canvasHeight - this.size;
+        }
+      }
+      
+      // 确保函数总是返回null，避免生成额外的细胞
+      return null;
+      
       // 保存当前速度，如果是繁殖状态则不被后续逻辑覆盖
       const isBreedingState = this.isBreeding;
       const breedingSpeed = isBreedingState ? this.speed : undefined;
       
-      let hungerDecrease = 0.03;
+      let hungerDecrease = 0.04; // 略微增加基础饥饿消耗
       
-      if (this.type === 'predator') hungerDecrease = 0.05;
-      else if (this.type === 'scavenger') hungerDecrease = 0.02;
+      if (this.type === 'predator') hungerDecrease = 0.06; // 增加捕食者饥饿消耗
+      else if (this.type === 'scavenger') hungerDecrease = 0.03; // 增加清道夫饥饿消耗
       
-      if (this.speed > config.speed * 0.5) hungerDecrease *= 1.2;
-      
-      // 移除不存在的属性引用
-      // 应用地形对饥饿率的影响 - 直接使用已设置的属性
-      if (this.hungerRateMultiplier) {
-        hungerDecrease *= this.hungerRateMultiplier;
-      }
-      
-      // 应用地形的健康恢复效果
-      if (ecosystemManager && this.currentTerrainType) {
-        const terrainEffect = ecosystemManager.getTerrainEffect(this.currentTerrainType);
-        if (terrainEffect.healthRegenerationRate) {
-          // 健康恢复减缓饥饿减少
-          hungerDecrease = Math.max(0, hungerDecrease - terrainEffect.healthRegenerationRate);
+      if (this.speed > config.speed * 0.5) hungerDecrease *= 1.3; // 增加移动对饥饿的影响
+        
+        // 应用地形的健康恢复效果
+        if (ecosystemManager && this.currentTerrainType) {
+          const terrainEffect = ecosystemManager.getTerrainEffect(this.currentTerrainType);
+          if (terrainEffect.healthRegenerationRate) {
+            // 健康恢复减缓饥饿减少
+            hungerDecrease = Math.max(0, hungerDecrease - terrainEffect.healthRegenerationRate);
+          }
         }
-      }
+        
+        // 确保hungerRateMultiplier有默认值以解决TypeScript错误
+        const hungerRateMultiplier = this.hungerRateMultiplier ?? 1.0;
+        hungerDecrease *= hungerRateMultiplier;
       
       this.hunger = Math.max(0, this.hunger - hungerDecrease);
       
       const isStarving = this.hunger < 10;
       const isHungry = this.hunger < 30;
       
-      // 改进的边界碰撞检测 - 使用函数参数中的canvasWidth和canvasHeight
-      if (this.x - this.size < 0 || this.x + this.size > canvasWidth ||
-          this.y - this.size < 0 || this.y + this.size > canvasHeight) {
-        // 反弹逻辑 - 使用更平滑的反弹
-        if (this.x - this.size < 0) {
-          this.x = this.size;
-          this.direction = Math.PI - this.direction;
-        } else if (this.x + this.size > canvasWidth) {
-          this.x = canvasWidth - this.size;
-          this.direction = Math.PI - this.direction;
-        }
-        
-        if (this.y - this.size < 0) {
-          this.y = this.size;
-          this.direction = -this.direction;
-        } else if (this.y + this.size > canvasHeight) {
-          this.y = canvasHeight - this.size;
-          this.direction = -this.direction;
+      // 改进的边界碰撞检测
+      if (ecosystemManager && ecosystemManager.canvasWidth && ecosystemManager.canvasHeight) {
+        const { canvasWidth, canvasHeight } = ecosystemManager;
+        if (this.x - this.size < 0 || this.x + this.size > canvasWidth ||
+            this.y - this.size < 0 || this.y + this.size > canvasHeight) {
+          // 反弹逻辑 - 使用更平滑的反弹
+          if (this.x - this.size < 0) {
+            this.x = this.size;
+            this.direction = Math.PI - this.direction;
+          } else if (this.x + this.size > canvasWidth) {
+            this.x = canvasWidth - this.size;
+            this.direction = Math.PI - this.direction;
+          }
+          
+          if (this.y - this.size < 0) {
+            this.y = this.size;
+            this.direction = -this.direction;
+          } else if (this.y + this.size > canvasHeight) {
+            this.y = canvasHeight - this.size;
+            this.direction = -this.direction;
+          }
         }
         
         // 添加一个小的随机性，避免生物重复相同路径
@@ -227,11 +236,13 @@ export const createOrganism = (
       // 更新食物检测状态
       this.isDetectingFood = !!nearestFood;
       this.foodDetectionTime = nearestFood ? 0 : (this.foodDetectionTime || 0) + 1;
-      this.detectedFoodDistance = nearestFood ? Math.sqrt(Math.pow(nearestFood.x - this.x, 2) + Math.pow(nearestFood.y - this.y, 2)) : undefined;
+      // 使用非空断言操作符解决TypeScript null检查问题
+      this.detectedFoodDistance = nearestFood ? Math.sqrt(Math.pow(nearestFood!.x - this.x, 2) + Math.pow(nearestFood!.y - this.y, 2)) : undefined;
       
       if (nearestFood) {
-          const dx = nearestFood.x - this.x;
-          const dy = nearestFood.y - this.y;
+          // 使用非空断言操作符解决TypeScript null检查问题
+          const dx = nearestFood!.x - this.x;
+          const dy = nearestFood!.y - this.y;
           const distance = Math.sqrt(dx * dx + dy * dy);
           
           // 基础检测范围
@@ -253,13 +264,14 @@ export const createOrganism = (
         this.direction += turnAmount * (angleDiff > Math.PI ? -1 : 1);
         
         let baseSpeed;
-        if (this.type === 'predator') {
-          baseSpeed = Math.random() * 0.2 + config.speed * 0.3;
-        } else if (this.type === 'scavenger') {
-          baseSpeed = Math.random() * 0.2 + config.speed * 0.25;
-        } else {
-          baseSpeed = Math.random() * 0.2 + config.speed * 0.2;
-        }
+      const configSpeed = ecosystemManager?.config?.speed || 1; // 从ecosystemManager获取config.speed
+      if (this.type === 'predator') {
+        baseSpeed = Math.random() * 0.2 + configSpeed * 0.3;
+      } else if (this.type === 'scavenger') {
+        baseSpeed = Math.random() * 0.2 + configSpeed * 0.25;
+      } else {
+        baseSpeed = Math.random() * 0.2 + configSpeed * 0.2;
+      }
         
         if (isStarving) {
           baseSpeed *= 0.7;
@@ -281,12 +293,13 @@ export const createOrganism = (
         }
         
         let baseSpeed;
+        const configSpeed = ecosystemManager?.config?.speed || 1; // 从ecosystemManager获取config.speed
         if (this.type === 'predator') {
-          baseSpeed = Math.random() * 0.2 + config.speed * 0.3;
+          baseSpeed = Math.random() * 0.2 + configSpeed * 0.3;
         } else if (this.type === 'scavenger') {
-          baseSpeed = Math.random() * 0.2 + config.speed * 0.25;
+          baseSpeed = Math.random() * 0.2 + configSpeed * 0.25;
         } else {
-          baseSpeed = Math.random() * 0.2 + config.speed * 0.2;
+          baseSpeed = Math.random() * 0.2 + configSpeed * 0.2;
         }
         
         this.speed = isStarving ? Math.max(0.1, baseSpeed * 0.5) : baseSpeed;
@@ -294,7 +307,7 @@ export const createOrganism = (
       
       // 繁殖状态下恢复之前的速度设置
       if (isBreedingState && breedingSpeed !== undefined) {
-        this.speed = breedingSpeed;
+        this.speed = breedingSpeed as number; // 类型断言确保speed是number类型
       }
       
       // 随机改变方向 - 更频繁的方向变化，避免卡住
@@ -302,8 +315,8 @@ export const createOrganism = (
         this.direction += (Math.random() - 0.5) * 1.0;
       }
       
-      // 使用adjustedSpeed（如果有）或默认速度
-      const speedToUse = this.adjustedSpeed !== undefined ? this.adjustedSpeed : this.speed;
+      // 使用adjustedSpeed（如果有）或默认速度，确保有默认值
+      const speedToUse = this.adjustedSpeed ?? this.speed ?? 0.1;
       
       // 计算目标位置
       let newX = this.x + Math.cos(this.direction) * speedToUse;
@@ -336,6 +349,8 @@ export const createOrganism = (
             const testTerrain = ecosystemManager.getTerrainAt(testX, testY);
             const testTerrainEffect = ecosystemManager.getTerrainEffect(testTerrain);
             
+            const canvasWidth = ecosystemManager.canvasWidth || 800;
+            const canvasHeight = ecosystemManager.canvasHeight || 600;
             if (testTerrainEffect.canPassThrough && 
                 testX >= this.size && testX <= canvasWidth - this.size &&
                 testY >= this.size && testY <= canvasHeight - this.size) {
@@ -376,8 +391,13 @@ export const createOrganism = (
       this.y = newY;
       
       // 确保位置在有效范围内（额外保障）
-      this.x = Math.max(this.size, Math.min(canvasWidth - this.size, this.x));
-      this.y = Math.max(this.size, Math.min(canvasHeight - this.size, this.y));
+      const safeCanvasWidth = ecosystemManager?.canvasWidth || 800;
+      const safeCanvasHeight = ecosystemManager?.canvasHeight || 600;
+      this.x = Math.max(this.size, Math.min(safeCanvasWidth - this.size, this.x));
+      this.y = Math.max(this.size, Math.min(safeCanvasHeight - this.size, this.y));
+      
+      // 确保函数总是返回null，所有分裂逻辑已移至ecosystem-manager.ts
+      return null;
     }
   };
   

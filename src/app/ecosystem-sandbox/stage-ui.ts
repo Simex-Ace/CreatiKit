@@ -58,7 +58,7 @@ export class EcosystemStageUI {
       case 'primordial_soup':
         stageName = '原始汤时代';
         break;
-      case 'early_life':
+      case 'prokaryotic_eukaryotic':
         stageName = '早期生命';
         break;
       case 'evolution':

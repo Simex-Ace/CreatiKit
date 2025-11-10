@@ -15,6 +15,7 @@ export class EcosystemManager {
   private terrainGridSize: number;
   private hasTerrain: boolean;
   private spatialPartition: SpatialPartition; // 空间分区系统
+  private newOffspring: Organism[] | null = null; // 用于存储分裂产生的新细胞
   
   // 雷暴相关
   private thunderstorms: Thunderstorm[];
@@ -59,6 +60,15 @@ export class EcosystemManager {
     
     // 初始化空间分区系统
     this.spatialPartition = new SpatialPartition(this.canvasWidth, this.canvasHeight, 50); // 网格大小设为50以获得良好性能
+    
+    // 不再直接生成原始汤，当前阶段不需要原始汤
+    if (this.config.currentStage === 'primordial_soup') {
+      // 不生成原始汤，保持canAdvanceStage为false
+      this.config.canAdvanceStage = false;
+    }
+    
+    // 服务器端初始化日志
+    console.log(`[SERVER-INIT] EcosystemManager初始化完成，当前阶段: ${this.config.currentStage}, 是否启用地形: ${this.hasTerrain}`);
   }
   
   // 初始化地形效果
@@ -147,6 +157,16 @@ export class EcosystemManager {
           this.terrainGrid[y][x] = { type: 'ocean' };
         }
       }
+    } else if (this.config.currentStage === 'prokaryotic_eukaryotic') {
+      // 原核+原始真核时代：海洋占90%，沙滩占10%
+      for (let y = 0; y < heightCells; y++) {
+        for (let x = 0; x < widthCells; x++) {
+          const terrainType = Math.random() < 0.9 ? 'ocean' : 'beach';
+          this.terrainGrid[y][x] = { type: terrainType };
+        }
+      }
+      // 确保沙滩和海洋有合理的过渡
+      this.smoothTerrain();
     } else {
       // 其他阶段：生成多样化地形
       // 步骤1: 生成基础地形高度图
@@ -711,7 +731,7 @@ export class EcosystemManager {
       const elapsed = now - thunderstorm.startTime;
       if (elapsed > thunderstorm.duration) {
         // 雷暴结束时，有概率生成原始汤
-        if (Math.random() < 0.4) { // 70%概率生成原始汤
+        if (Math.random() < 0.7) { // 修复概率从0.4改为0.7，确保更容易生成原始汤
           this.spawnPrimordialSoup(thunderstorm.x, thunderstorm.y);
         }
         return false;
@@ -752,10 +772,12 @@ export class EcosystemManager {
     
     // 更新原始汤计数
     this.config.primordialSoupCount++;
+    console.log(`生成原始汤！当前数量: ${this.config.primordialSoupCount}`);
     
     // 检查是否可以解锁下一阶段
     if (this.config.primordialSoupCount >= this.config.primordialSoupThreshold) {
       this.config.canAdvanceStage = true;
+      console.log(`原始汤数量达到阈值！现在可以进阶到下一阶段。`);
     }
   }
 
@@ -835,13 +857,191 @@ export class EcosystemManager {
   
   // 进入下一阶段
   public advanceStage(): boolean {
-    if (!this.config.canAdvanceStage || this.config.currentStage !== 'primordial_soup') {
+    console.log(`尝试进阶阶段: 当前阶段=${this.config.currentStage}, canAdvanceStage=${this.config.canAdvanceStage}`);
+    
+    // 即使没有达到阈值，也允许开发者手动触发（用于调试）
+    if (this.config.currentStage !== 'primordial_soup') {
+      console.log('无法进阶: 当前不是原始汤阶段');
       return false;
     }
     
-    // 这里只实现到第二阶段，后续可以扩展
-    this.config.currentStage = 'early_life';
+    // 进入原核+原始真核时代
+    this.config.currentStage = 'prokaryotic_eukaryotic';
     this.config.canAdvanceStage = false;
+    console.log('成功进入原核+原始真核时代！');
+    
+    // 重新生成地形以包含陆地（第二阶段需要陆地）
+    if (this.hasTerrain) {
+      console.log('重新生成地形以包含陆地...');
+      this.generateTerrain(this.terrainGridSize);
+    }
+    
+    // 将原始汤转化为蓝藻或原始真核细胞
+    this.organisms = [];
+    const primordialSoups = this.foods.filter(food => food.isPrimordialSoup);
+    console.log(`找到 ${primordialSoups.length} 个原始汤，开始转化为生物...`);
+    
+    primordialSoups.forEach(soup => {
+      // 50%概率变成蓝藻，50%概率变成原始真核细胞
+      const organismType = Math.random() > 0.5 ? 'cyanobacteria' : 'primitive_eukaryote';
+      const newOrganism = {
+        id: this.idCounter.current++,
+        x: soup.x,
+        y: soup.y,
+        size: 8,
+        speed: organismType === 'cyanobacteria' ? 0.05 : 0.2,
+        direction: Math.random() * Math.PI * 2,
+        color: organismType === 'cyanobacteria' ? '#00FF00' : '#00CCFF',
+        hunger: 100,
+        type: organismType as any,
+        age: 0,
+        canEvolve: false,
+        isBreeding: false,
+        breedingPartnerId: undefined,
+        breedingTime: undefined,
+        breedingProgress: 0,
+        isDetectingFood: false,
+        foodDetectionTime: undefined,
+        detectedFoodDistance: undefined,
+        lastSplitAge: 0,
+        // 添加当前地形类型
+        currentTerrainType: this.getTerrainAt(soup.x, soup.y),
+        // 调整后的速度和饥饿率
+        adjustedSpeed: organismType === 'cyanobacteria' ? 0.05 : 0.2,
+        hungerRateMultiplier: 1.0,
+        isPreparingSplit: false,
+        splitPreparationTime: undefined as number | undefined,
+        calculateDistance: function(x: number, y: number): number {
+          const dx = x - this.x;
+          const dy = y - this.y;
+          return Math.sqrt(dx * dx + dy * dy);
+        },
+        findNearestFood: function(foods: any[]): any | null {
+          return null; // 第二阶段生物不需要寻找食物
+        },
+        eat: function(food: any): boolean {
+          return false; // 第二阶段生物不需要进食
+        },
+        evolve: function(): any | null {
+          return null; // 第二阶段生物暂时不进化
+        },
+        update: function(foods: any[], ecosystemManager: any) {
+          this.age++;
+          const preparationDuration = 3000; // 分裂准备时间（毫秒）
+          
+          // 初始化分裂准备状态属性（如果不存在）
+          if (this.isPreparingSplit === undefined) {
+            this.isPreparingSplit = false;
+            this.splitPreparationTime = undefined;
+          }
+          
+          // 分裂准备阶段：原地旋转
+          if (this.isPreparingSplit) {
+            const now = Date.now();
+            const preparationDuration = 2000; // 准备时间2秒
+            
+            // 快速原地旋转
+            this.direction += 0.1; // 增加旋转速度
+            
+            // 暂停移动
+            this.speed = 0;
+            
+            // 准备时间结束，进行分裂
+            if (this.splitPreparationTime !== undefined && now - this.splitPreparationTime >= preparationDuration) {
+              // 设置随机大小范围，让分裂后的生物大小有变化
+              const minSize = 3;
+              const maxSize = 6;
+              const newOrganism = {
+                id: ecosystemManager.idCounter.current++,
+                x: this.x + (Math.random() - 0.5) * 20,
+                y: this.y + (Math.random() - 0.5) * 20,
+                size: minSize + Math.random() * (maxSize - minSize),
+                speed: ecosystemManager.config.speed * (0.5 + Math.random() * 0.5),
+                isPreparingSplit: false,
+                splitPreparationTime: undefined,
+                direction: Math.random() * Math.PI * 2,
+                color: this.color,
+                hunger: 100,
+                type: this.type,
+                age: 0,
+                canEvolve: false,
+                isBreeding: false,
+                breedingPartnerId: undefined,
+                breedingTime: undefined,
+                breedingProgress: 0,
+                isDetectingFood: false,
+                foodDetectionTime: undefined,
+                detectedFoodDistance: undefined,
+                lastSplitAge: 0,
+                currentTerrainType: ecosystemManager.getTerrainAt(this.x, this.y),
+                adjustedSpeed: this.adjustedSpeed,
+                hungerRateMultiplier: this.hungerRateMultiplier,
+                calculateDistance: this.calculateDistance,
+                findNearestFood: this.findNearestFood,
+                eat: this.eat,
+                evolve: this.evolve,
+                update: this.update
+              };
+              
+              // 使用临时数组存储新细胞，避免在遍历过程中修改数组
+              if (!ecosystemManager.newOffspring) {
+                ecosystemManager.newOffspring = [];
+              }
+              
+              // 只添加一个新细胞，实现一分为二
+              ecosystemManager.newOffspring.push(newOrganism);
+              
+              // 分裂后消耗能量
+              this.hunger -= 50;
+              this.lastSplitAge = this.age;
+              
+              // 分裂完成，重置母体状态
+              this.isPreparingSplit = false;
+              this.splitPreparationTime = undefined;
+              this.speed = ecosystemManager.config.speed * (0.5 + Math.random() * 0.5);
+            }
+          } else {
+            // 检查是否可以进入分裂准备状态
+            if (this.age > 1000 && this.hunger > 80 && 
+                (!this.lastSplitAge || this.age - this.lastSplitAge > 500)) {
+              if (Math.random() < 0.002) {
+                this.isPreparingSplit = true;
+                this.splitPreparationTime = Date.now();
+              }
+            }
+          }
+          
+          // 寿命限制
+          const maxLifespan = 5000;
+          if (this.age >= maxLifespan) {
+            this.hunger = 0;
+          }
+          
+          // 移动逻辑
+          if (!this.isPreparingSplit) {
+            this.direction += (Math.random() - 0.5) * 0.1;
+            this.x += Math.cos(this.direction) * this.speed;
+            this.y += Math.sin(this.direction) * this.speed;
+          }
+          
+          // 边界检查
+          if (this.x < 0) this.x = 0;
+          if (this.x > ecosystemManager.canvasWidth) this.x = ecosystemManager.canvasWidth;
+          if (this.y < 0) this.y = 0;
+          if (this.y > ecosystemManager.canvasHeight) this.y = ecosystemManager.canvasHeight;
+          
+          // 地形效果
+          const terrainType = ecosystemManager.getTerrainAt(this.x, this.y);
+          this.currentTerrainType = terrainType;
+          const terrainEffect = ecosystemManager.getTerrainEffect(terrainType);
+          this.adjustedSpeed = this.speed * terrainEffect.speedMultiplier;
+        }
+      };
+      this.organisms.push(newOrganism);
+    });
+    
+    // 清除所有食物
+    this.foods = [];
     
     // 重新生成地形
     if (this.hasTerrain) {
@@ -936,7 +1136,9 @@ export class EcosystemManager {
       const maxAttempts = 10;
       
       do {
-        organism = createOrganism('basic', this.config, this.canvasWidth, this.canvasHeight, this.idCounter);
+        // 当前阶段只生成蓝藻和原始真核细胞
+        const organismType = Math.random() > 0.5 ? 'cyanobacteria' : 'primitive_eukaryote';
+        organism = createOrganism(organismType, this.config, this.canvasWidth, this.canvasHeight, this.idCounter);
         const terrainType = this.getTerrainAt(organism.x, organism.y);
         const terrainEffect = this.getTerrainEffect(terrainType);
         attempts++;
@@ -955,6 +1157,12 @@ export class EcosystemManager {
 
   // 批量初始化食物
   initFoods(count: number) {
+    // 在第一阶段（原始汤）和第二阶段（原核+原始真核）不初始化食物
+    if (this.config.currentStage === 'primordial_soup' || this.config.currentStage === 'prokaryotic_eukaryotic') {
+      this.foods = [];
+      return;
+    }
+    
     this.foods = [];
     for (let i = 0; i < count; i++) {
       let food;
@@ -970,6 +1178,7 @@ export class EcosystemManager {
         
         if (terrainEffect.canSpawnFood) {
           food.terrainType = terrainType;
+          food.isPrimordialSoup = false; // 确保不设置为原始汤
           break;
         }
       } while (attempts < maxAttempts);
@@ -1005,14 +1214,23 @@ export class EcosystemManager {
   }
 
   // 添加单个生物
-  addOrganism() {
+  addOrganism(organismObj?: any) {
+    // 如果传入了生物对象，直接添加
+    if (organismObj) {
+      this.organisms.push(organismObj);
+      this.spatialPartition.addObject(organismObj);
+      return;
+    }
+    
+    // 否则创建新生物，只生成蓝藻和原始真核细胞
     let organism;
     let attempts = 0;
     const maxAttempts = 10;
     
-    // 确保生物不在海洋生成
     do {
-      organism = createOrganism('basic', this.config, this.canvasWidth, this.canvasHeight, this.idCounter);
+      // 当前阶段只生成蓝藻和原始真核细胞
+      const organismType = Math.random() > 0.5 ? 'cyanobacteria' : 'primitive_eukaryote';
+      organism = createOrganism(organismType, this.config, this.canvasWidth, this.canvasHeight, this.idCounter);
       const terrainType = this.getTerrainAt(organism.x, organism.y);
       const terrainEffect = this.getTerrainEffect(terrainType);
       attempts++;
@@ -1042,12 +1260,20 @@ export class EcosystemManager {
 
   // 重置食物
   resetFoods() {
+    // 在第一阶段和第二阶段不重置食物
+    if (this.config.currentStage === 'primordial_soup' || this.config.currentStage === 'prokaryotic_eukaryotic') {
+      this.foods = [];
+      return;
+    }
     this.initFoods(this.config.foodCount);
   }
 
   // 处理一次生态系统更新
   update() {
     if (!this.config.isRunning) return;
+    
+    // 记录更新前的生物数量
+    const beforeCount = this.organisms.length;
 
     // 更新雷暴（在所有阶段都可以调用，但会在方法内部检查阶段）
     this.updateThunderstorms();
@@ -1056,6 +1282,11 @@ export class EcosystemManager {
     if (this.config.currentStage === 'primordial_soup') {
       // 只保留原始汤，清除其他食物
       this.foods = this.foods.filter(food => food.isPrimordialSoup);
+      
+      // 调试信息：显示原始汤数量和是否可以进阶
+      if (Math.random() < 0.1) { // 每10帧左右显示一次，避免日志过多
+        console.log(`原始汤数量: ${this.config.primordialSoupCount}, 是否可以进阶: ${this.config.canAdvanceStage}`);
+      }
       
       // 清除所有生物
       this.organisms = [];
@@ -1066,13 +1297,29 @@ export class EcosystemManager {
     // 非原始汤时代的正常更新逻辑
     if (this.organisms.length === 0) return;
 
-    // 清空并重新构建空间分区
-    this.spatialPartition.clear();
-    for (const organism of this.organisms) {
-      this.spatialPartition.addObject(organism);
-    }
-    for (const food of this.foods) {
-      this.spatialPartition.addObject(food);
+    // 在第二阶段（原核+原始真核）不显示任何食物，但允许生物正常更新和移动
+    if (this.config.currentStage === 'prokaryotic_eukaryotic') {
+      this.foods = [];
+      
+      // 清空并重新构建空间分区（只添加生物）
+      this.spatialPartition.clear();
+      for (const organism of this.organisms) {
+        this.spatialPartition.addObject(organism);
+      }
+      
+      // 继续执行更新逻辑，但跳过食物相关处理
+    } else {
+      // 清除所有原始汤食物
+      this.foods = this.foods.filter(food => !food.isPrimordialSoup);
+      
+      // 清空并重新构建空间分区
+      this.spatialPartition.clear();
+      for (const organism of this.organisms) {
+        this.spatialPartition.addObject(organism);
+      }
+      for (const food of this.foods) {
+        this.spatialPartition.addObject(food);
+      }
     }
 
     // 合并多次遍历为一次，提高性能
@@ -1085,8 +1332,21 @@ export class EcosystemManager {
     for (let i = 0; i < this.organisms.length; i++) {
       const organism = this.organisms[i];
 
-      // 更新生物状态，传入地形信息
-      organism.update(this.foods, this);
+      // 更新生物状态，传入地形信息并接收可能的子细胞
+      const offspring = organism.update(this.foods, this);
+      
+      // 禁止分裂：不添加子细胞到新列表中
+      // if (offspring) {
+      //   newOrganisms.push(...offspring);
+      // }
+      
+      // 如果生物被标记为toBeRemoved（例如分裂后的母细胞），跳过添加到新列表
+      if (organism.toBeRemoved) {
+        continue;
+      }
+      
+      // 将未标记为toBeRemoved的生物添加到新列表
+      newOrganisms.push(organism);
       
       // 处理地形影响
       if (hasTerrain) {
@@ -1137,169 +1397,168 @@ export class EcosystemManager {
 
       // 检查死亡
       if (organism.hunger <= 0) {
-        // 死亡生成食物
-        if (Math.random() < 0.7) {
-          const food = {
-            id: this.foodIdCounter.current++,
-            x: organism.x,
-            y: organism.y,
-            size: 4,
-            color: 'hsl(120, 100%, 60%)'
-          };
-          
-          // 地形类型信息已通过其他方式处理，不再需要单独存储在食物对象上
-          
-          this.foods.push(food);
-        }
+        // 死亡后直接消失，不生成食物
+        organism.toBeRemoved = true;
         continue;
       }
 
-      // 处理繁殖过程
-      if (organism.isBreeding && organism.breedingPartnerId) {
-        const partner = this.organisms.find(o => o.id === organism.breedingPartnerId);
+      // 只在非第二阶段（原核+原始真核）执行有性生殖逻辑
+      if (this.config.currentStage !== 'prokaryotic_eukaryotic') {
+        // 处理繁殖过程
+        if (organism.isBreeding && organism.breedingPartnerId) {
+          const partner = this.organisms.find(o => o.id === organism.breedingPartnerId);
 
-        // 如果伙伴仍然存在且处于繁殖状态
-        if (partner && partner.isBreeding && partner.breedingPartnerId === organism.id) {
-          // 更新繁殖进度
-          const breedingDuration = 3000; // 繁殖需要3秒
-          const progress = Math.min(100, ((now - organism.breedingTime!) / breedingDuration) * 100);
-          organism.breedingProgress = progress;
-          partner.breedingProgress = progress; // 同步伙伴的进度
+          // 如果伙伴仍然存在且处于繁殖状态
+          if (partner && partner.isBreeding && partner.breedingPartnerId === organism.id) {
+            // 更新繁殖进度
+            const breedingDuration = 3000; // 繁殖需要3秒
+            const progress = Math.min(100, ((now - organism.breedingTime!) / breedingDuration) * 100);
+            organism.breedingProgress = progress;
+            partner.breedingProgress = progress; // 同步伙伴的进度
 
-          // 繁殖完成
+            // 繁殖完成
             if (progress >= 100) {
-              // 生成后代，确保在合适的地形
-              let offspring;
-              let attempts = 0;
-              const maxAttempts = 10;
-              
-              do {
-                offspring = createOrganism(organism.type, this.config, this.canvasWidth, this.canvasHeight, this.idCounter);
-                // 计算父母中间位置
-                const centerX = (organism.x + partner.x) / 2;
-                const centerY = (organism.y + partner.y) / 2;
-                // 在父母旁边随机位置生成（±20像素范围内）
-                const offsetAngle = Math.random() * Math.PI * 2;
-                const offsetDistance = (organism.size + partner.size) * 0.5 + Math.random() * 10;
-                offspring.x = centerX + Math.cos(offsetAngle) * offsetDistance;
-                offspring.y = centerY + Math.sin(offsetAngle) * offsetDistance;
-                
-                // 确保后代在可生存的地形
-                if (hasTerrain) {
-                  const terrainType = this.getTerrainAt(offspring.x, offspring.y);
-                  const terrainEffect = this.getTerrainEffect(terrainType);
-                  attempts++;
-                  
-                  if (terrainEffect.canSpawnOrganism) {
-                    offspring.currentTerrainType = terrainType;
-                    break;
-                  }
-                }
-              } while (hasTerrain && attempts < maxAttempts);
-              
-              // 继承特性
-              const avgSize = (organism.size + partner.size) / 2;
-              offspring.size = avgSize * (0.8 + Math.random() * 0.4);
-              offspring.hunger = 60;
-              newOrganisms.push(offspring);
+              // 禁止繁殖：注释掉后代生成和添加的代码
+              // let offspring;
+              // let attempts = 0;
+              // const maxAttempts = 10;
+              // 
+              // do {
+              //   offspring = createOrganism(organism.type, this.config, this.canvasWidth, this.canvasHeight, this.idCounter);
+              //   // 计算父母中间位置
+              //   const centerX = (organism.x + partner.x) / 2;
+              //   const centerY = (organism.y + partner.y) / 2;
+              //   // 在父母旁边随机位置生成（±20像素范围内）
+              //   const offsetAngle = Math.random() * Math.PI * 2;
+              //   const offsetDistance = (organism.size + partner.size) * 0.5 + Math.random() * 10;
+              //   offspring.x = centerX + Math.cos(offsetAngle) * offsetDistance;
+              //   offspring.y = centerY + Math.sin(offsetAngle) * offsetDistance;
+              //   
+              //   // 确保后代在可生存的地形
+              //   if (hasTerrain) {
+              //     const terrainType = this.getTerrainAt(offspring.x, offspring.y);
+              //     const terrainEffect = this.getTerrainEffect(terrainType);
+              //     attempts++;
+              //     
+              //     if (terrainEffect.canSpawnOrganism) {
+              //       offspring.currentTerrainType = terrainType;
+              //       break;
+              //     }
+              //   }
+              // } while (hasTerrain && attempts < maxAttempts);
+              // 
+              // // 继承特性
+              // const avgSize = (organism.size + partner.size) / 2;
+              // offspring.size = avgSize * (0.8 + Math.random() * 0.4);
+              // offspring.hunger = 60;
+              // newOrganisms.push(offspring);
 
-            // 繁殖消耗能量
-            organism.hunger = Math.max(30, organism.hunger - 30);
-            partner.hunger = Math.max(30, partner.hunger - 30);
+              // 禁止繁殖后不再消耗能量
+              // organism.hunger = Math.max(30, organism.hunger - 30);
+              // partner.hunger = Math.max(30, partner.hunger - 30);
 
-            // 重置繁殖状态
+              // 重置繁殖状态
+              organism.isBreeding = false;
+              organism.breedingPartnerId = undefined;
+              organism.breedingTime = undefined;
+              organism.breedingProgress = 0;
+              organism.speed = Math.random() * 0.2 + this.config.speed * 0.3; // 恢复移动能力，增加随机性
+
+              // 重置伙伴的繁殖状态
+              partner.isBreeding = false;
+              partner.breedingPartnerId = undefined;
+              partner.breedingTime = undefined;
+              partner.breedingProgress = 0;
+              partner.speed = Math.random() * 0.2 + this.config.speed * 0.3; // 恢复移动能力，增加随机性
+            }
+          } else {
+            // 伙伴不在了或状态不一致，取消繁殖
             organism.isBreeding = false;
             organism.breedingPartnerId = undefined;
             organism.breedingTime = undefined;
             organism.breedingProgress = 0;
             organism.speed = Math.random() * 0.2 + this.config.speed * 0.3; // 恢复移动能力，增加随机性
-
-            // 重置伙伴的繁殖状态
-            partner.isBreeding = false;
-            partner.breedingPartnerId = undefined;
-            partner.breedingTime = undefined;
-            partner.breedingProgress = 0;
-            partner.speed = Math.random() * 0.2 + this.config.speed * 0.3; // 恢复移动能力，增加随机性
           }
         } else {
-          // 伙伴不在了或状态不一致，取消繁殖
-          organism.isBreeding = false;
-            organism.breedingPartnerId = undefined;
-            organism.breedingTime = undefined;
-            organism.breedingProgress = 0;
-            organism.speed = Math.random() * 0.2 + this.config.speed * 0.3; // 恢复移动能力，增加随机性
+          // 繁殖系统 - 改进版：需要双方都确认繁殖状态
+          if (!organism.isBreeding && organism.hunger > 80 && organism.age > 100) {
+            // 有概率进入繁殖准备状态
+            // 获取地形繁殖概率倍数
+            let breedingChanceMultiplier = 1;
+            if (organism.currentTerrainType) {
+              const terrainEffect = this.getTerrainEffect(organism.currentTerrainType);
+              if (terrainEffect.breedingChanceMultiplier) {
+                breedingChanceMultiplier = terrainEffect.breedingChanceMultiplier;
+              }
+            }
+            
+            // 应用地形影响的繁殖概率
+            const baseBreedingChance = 0.002; // 大幅降低繁殖概率
+            if (Math.random() < baseBreedingChance * breedingChanceMultiplier) { // 降低触发概率
+              organism.isBreeding = true;
+              organism.breedingTime = now;
+              organism.breedingProgress = 0;
+              organism.speed = this.config.speed * 0.3; // 设置为正常速度的30%，而不是完全停止
+            }
+          }
+
+          // 检查繁殖进度和伙伴匹配
+          if (organism.isBreeding && !organism.breedingPartnerId) {
+            // 寻找同样处于繁殖状态且靠近的伙伴 - 使用空间分区优化
+            const nearbyOrganisms = this.spatialPartition.getOrganismsInRadius(organism.x, organism.y, 40);
+            const potentialPartners = nearbyOrganisms.filter(
+              (other) =>
+                other.id !== organism.id &&
+                other.isBreeding &&
+                !other.breedingPartnerId && // 还没有找到伙伴
+                other.type === organism.type
+            );
+
+            if (potentialPartners.length > 0) {
+              const partner = potentialPartners[0];
+              // 双方匹配成功，互相设置伙伴ID
+              organism.breedingPartnerId = partner.id;
+              partner.breedingPartnerId = organism.id;
+              // 确保双方开始时间一致
+              organism.breedingTime = now;
+              partner.breedingTime = now;
+              console.log(`繁殖匹配成功: 生物 ${organism.id} 与生物 ${partner.id} 配对`);
+            } else {
+              // 如果15秒内没找到伙伴，取消繁殖状态
+              const waitDuration = now - organism.breedingTime!;
+              if (waitDuration > 15000) {
+                organism.isBreeding = false;
+                organism.breedingTime = undefined;
+                organism.breedingProgress = 0;
+                // 恢复移动能力，使用适中的速度
+                const baseSpeed = Math.random() * 0.2 + this.config.speed * 0.25;
+                organism.speed = baseSpeed;
+              }
+            }
+          }
         }
       } else {
-        // 繁殖系统 - 改进版：需要双方都确认繁殖状态
-        if (!organism.isBreeding && organism.hunger > 80 && organism.age > 100) {
-          // 有概率进入繁殖准备状态
-          // 获取地形繁殖概率倍数
-          let breedingChanceMultiplier = 1;
-          if (organism.currentTerrainType) {
-            const terrainEffect = this.getTerrainEffect(organism.currentTerrainType);
-            if (terrainEffect.breedingChanceMultiplier) {
-              breedingChanceMultiplier = terrainEffect.breedingChanceMultiplier;
-            }
-          }
-          
-          // 应用地形影响的繁殖概率
-          const baseBreedingChance = 0.005;
-          if (Math.random() < baseBreedingChance * breedingChanceMultiplier) { // 降低触发概率
-            organism.isBreeding = true;
-            organism.breedingTime = now;
-            organism.breedingProgress = 0;
-            organism.speed = this.config.speed * 0.3; // 设置为正常速度的30%，而不是完全停止
-          }
-        }
-
-        // 检查繁殖进度和伙伴匹配
-        if (organism.isBreeding && !organism.breedingPartnerId) {
-          // 寻找同样处于繁殖状态且靠近的伙伴 - 使用空间分区优化
-        const nearbyOrganisms = this.spatialPartition.getOrganismsInRadius(organism.x, organism.y, 40);
-        const potentialPartners = nearbyOrganisms.filter(
-          (other) =>
-            other.id !== organism.id &&
-            other.isBreeding &&
-            !other.breedingPartnerId && // 还没有找到伙伴
-            other.type === organism.type
-        );
-
-          if (potentialPartners.length > 0) {
-            const partner = potentialPartners[0];
-            // 双方匹配成功，互相设置伙伴ID
-            organism.breedingPartnerId = partner.id;
-            partner.breedingPartnerId = organism.id;
-            // 确保双方开始时间一致
-            organism.breedingTime = now;
-            partner.breedingTime = now;
-            console.log(`繁殖匹配成功: 生物 ${organism.id} 与生物 ${partner.id} 配对`);
-          } else {
-            // 如果15秒内没找到伙伴，取消繁殖状态
-            const waitDuration = now - organism.breedingTime!;
-            if (waitDuration > 15000) {
-              organism.isBreeding = false;
-              organism.breedingTime = undefined;
-              organism.breedingProgress = 0;
-              // 恢复移动能力，使用适中的速度
-              const baseSpeed = Math.random() * 0.2 + this.config.speed * 0.25;
-              organism.speed = baseSpeed;
-            }
-          }
-        }
+        // 第二阶段：强制禁用所有繁殖状态
+        organism.isBreeding = false;
+        organism.breedingPartnerId = undefined;
+        organism.breedingTime = undefined;
+        organism.breedingProgress = 0;
       }
 
       // 处理进化 - 每帧只让少数生物尝试进化
+      // 禁止进化生成新生物
       if (organism.canEvolve && Math.random() < 0.005 && !organism.isBreeding) {
-        const evolved = organism.evolve();
-        if (evolved) {
-          // 设置进化后生物的地形类型
-          if (hasTerrain) {
-            evolved.currentTerrainType = this.getTerrainAt(evolved.x, evolved.y);
-          }
-          newOrganisms.push(evolved);
-          // 移除原生物，避免重复添加
-          continue;
-        }
+        // 不执行进化，或者只执行进化但不创建新生物
+        // const evolved = organism.evolve();
+        // if (evolved) {
+        //   // 设置进化后生物的地形类型
+        //   if (hasTerrain) {
+        //     evolved.currentTerrainType = this.getTerrainAt(evolved.x, evolved.y);
+        //   }
+        //   newOrganisms.push(evolved);
+        //   // 移除原生物，避免重复添加
+        //   continue;
+        // }
       }
 
       // 繁殖中的生物停止移动
@@ -1339,7 +1598,8 @@ export class EcosystemManager {
         }
       }
 
-      newOrganisms.push(organism);
+      // 生物是否添加到新列表的逻辑已在主循环开始处处理
+      // 这里不再需要额外的添加逻辑
     }
 
     // 删除被吃掉的食物
@@ -1351,40 +1611,55 @@ export class EcosystemManager {
     }
     this.foods = remainingFoods;
 
-    // 更新生物列表
+    // 细胞数量更新完成
+    
+    // 保留toBeRemoved标记，确保死亡的生物能够被正确移除
+    // 注意：只有未被标记为toBeRemoved的生物才会被添加到newOrganisms列表中
+    
+    // 添加分裂产生的新细胞到newOrganisms数组
+    if (this.newOffspring && this.newOffspring.length > 0) {
+      newOrganisms.push(...this.newOffspring);
+      this.newOffspring = null; // 重置newOffspring数组
+    }
+
+    // 用构建好的新列表直接覆盖旧列表
     this.organisms = newOrganisms;
 
-    // 批量补充食物
-  while (this.foods.length < this.config.foodCount * 0.8 && Math.random() < 0.1) {
-      let food;
-      let attempts = 0;
-      const maxAttempts = 10;
-      
-      // 确保食物在可生成食物的地形生成
-      do {
-        food = createFood(this.foodIdCounter, this.canvasWidth, this.canvasHeight);
-        if (hasTerrain) {
-          const terrainType = this.getTerrainAt(food.x, food.y);
-          const terrainEffect = this.getTerrainEffect(terrainType);
-          attempts++;
-          
-          if (terrainEffect.canSpawnFood) {
-            food.terrainType = terrainType;
+    // 批量补充食物（仅在非第一、二阶段）
+    if (this.config.currentStage === 'prokaryotic_eukaryotic' || 
+        this.config.currentStage === 'evolution' || 
+        this.config.currentStage === 'advanced') {
+      while (this.foods.length < this.config.foodCount * 0.8 && Math.random() < 0.1) {
+        let food;
+        let attempts = 0;
+        const maxAttempts = 10;
+        
+        // 确保食物在可生成食物的地形生成
+        do {
+          food = createFood(this.foodIdCounter, this.canvasWidth, this.canvasHeight);
+          if (hasTerrain) {
+            const terrainType = this.getTerrainAt(food.x, food.y);
+            const terrainEffect = this.getTerrainEffect(terrainType);
+            attempts++;
+            
+            if (terrainEffect.canSpawnFood) {
+              food.terrainType = terrainType;
+              break;
+            }
+          } else {
             break;
           }
-        } else {
-          break;
-        }
-      } while (hasTerrain && attempts < maxAttempts);
-      
-      this.foods.push(food);
-      // 注意：新生成的食物将在下一帧的update方法中被添加到空间分区
+        } while (hasTerrain && attempts < maxAttempts);
+        
+        this.foods.push(food);
+        // 注意：新生成的食物将在下一帧的update方法中被添加到空间分区
+      }
     }
   }
 
   // 计算FPS和性能统计
-  calculateStats(currentFps: number, currentFrameTime: number): { fps: number; frameTime: number; organismTypes: { basic: number; predator: number; scavenger: number }; terrainDistribution?: { [key: string]: number } } {
-    const organismTypes = { basic: 0, predator: 0, scavenger: 0 };
+  calculateStats(currentFps: number, currentFrameTime: number): { fps: number; frameTime: number; organismTypes: { basic: number; predator: number; scavenger: number; cyanobacteria: number; primitive_eukaryote: number }; terrainDistribution?: { [key: string]: number } } {
+    const organismTypes = { basic: 0, predator: 0, scavenger: 0, cyanobacteria: 0, primitive_eukaryote: 0 };
     this.organisms.forEach(organism => {
       if (organism.type && organismTypes.hasOwnProperty(organism.type)) {
         organismTypes[organism.type]++;

@@ -3,6 +3,7 @@ import { EcosystemManager } from './ecosystem-manager';
 import cyanobacteriaImage from './image/蓝藻菌.png';
 import amoebaImage from './image/变形虫.png';
 import waterMoldImage from './image/水霉菌.png';
+import primitiveEukaryoteImage from './image/原始真核细胞.png';
 import primordialSoupImage from './image/原始汤.png';
 import directionIndicatorImage from './image/运动方向.png';
 // 导入地形图片
@@ -26,6 +27,14 @@ export class EcosystemRenderer {
   private targetDarkness: number = 0.6; // 目标暗度值（用于平滑过渡）
   private transitionSpeed: number = 0.02; // 过渡速度（值越小过渡越平滑）
   
+  // 太阳相关属性
+  private sunPosition: { x: number; y: number };
+  private sunSize: number = 40;
+  private sunRotation: number = 0; // 太阳旋转角度
+  private sunRotationSpeed: number = 0.0005; // 太阳旋转速度
+  private sunGlowRadius: number = 75; // 太阳发光半径
+  private sunGlowPulse: number = 0;
+  
   // 地形类型对应的图片映射
   private terrainImages: Record<string, HTMLImageElement> = {
     ocean: new Image(),
@@ -48,7 +57,9 @@ export class EcosystemRenderer {
   private organismImages: Record<string, HTMLImageElement> = {
     basic: new Image(),
     predator: new Image(),
-    scavenger: new Image()
+    scavenger: new Image(),
+    cyanobacteria: new Image(),
+    primitive_eukaryote: new Image()
   };
   
   // 其他图片
@@ -75,10 +86,18 @@ export class EcosystemRenderer {
     // 禁用图像平滑以提高性能
     this.ctx.imageSmoothingEnabled = false;
     
+    // 初始化太阳位置（右上角）
+    this.sunPosition = {
+      x: this.cssCanvasWidth - this.sunSize * 1.5,
+      y: this.sunSize * 1.5
+    };
+    
     // 加载生物图片
     this.organismImages.basic.src = cyanobacteriaImage.src || '';
     this.organismImages.predator.src = amoebaImage.src || '';
     this.organismImages.scavenger.src = waterMoldImage.src || '';
+    this.organismImages.cyanobacteria.src = cyanobacteriaImage.src || '';
+    this.organismImages.primitive_eukaryote.src = primitiveEukaryoteImage.src || '';
     
     // 加载其他图片
     this.primordialSoupImage = new Image();
@@ -138,7 +157,8 @@ export class EcosystemRenderer {
       // 简单的视口剔除
       if (!this.isInViewport(food.x, food.y, food.size * 3)) continue;
       
-      if (hasImage) {
+      // 只对真正的原始汤使用原始汤图片，其他食物使用普通圆形
+      if (food.isPrimordialSoup && hasImage) {
         // 处理闪烁效果
         if (food.isFlashing && food.flashTime) {
           const progress = (performance.now() - food.flashTime) / flashDuration;
@@ -161,7 +181,7 @@ export class EcosystemRenderer {
           ctx.globalAlpha = 1;
         }
       } else {
-        // 图片未加载时的回退方案
+        // 非原始汤食物使用普通圆形
         ctx.fillStyle = 'hsl(120, 100%, 40%)';
         ctx.beginPath();
         ctx.arc(food.x, food.y, food.size, 0, Math.PI * 2);
@@ -288,6 +308,9 @@ export class EcosystemRenderer {
     for (let i = 0; i < organisms.length; i++) {
       const organism = organisms[i];
       
+      // 跳过渲染已标记为待移除的生物（死亡的生物）
+      if (organism.toBeRemoved) continue;
+      
       // 简单的视口剔除
       if (!this.isInViewport(organism.x, organism.y, organism.size * 5)) continue;
       
@@ -299,11 +322,71 @@ export class EcosystemRenderer {
         this.ctx.globalAlpha = 0.5 + organism.hunger / 60;
       }
       
-      // 绘制生物图片
+      // 绘制生物图片或默认圆形
       const imageSize = organism.size * 2;
       const xPos = Math.floor(organism.x - imageSize / 2);
       const yPos = Math.floor(organism.y - imageSize / 2);
-      this.ctx.drawImage(image, xPos, yPos, imageSize, imageSize);
+      
+      if (image && image.complete && image.src) {
+        // 如果图片存在且已加载完成，使用图片
+        try {
+          this.ctx.drawImage(image, xPos, yPos, imageSize, imageSize);
+        } catch (e) {
+          // 绘制简单的圆形作为默认表示
+          this.ctx.beginPath();
+          this.ctx.arc(organism.x, organism.y, organism.size, 0, Math.PI * 2);
+          
+          // 根据生物类型设置颜色
+          switch (organism.type) {
+            case 'basic':
+            case 'cyanobacteria':
+              this.ctx.fillStyle = '#4CAF50';
+              break;
+            case 'predator':
+              this.ctx.fillStyle = '#F44336';
+              break;
+            case 'scavenger':
+              this.ctx.fillStyle = '#FF9800';
+              break;
+            case 'primitive_eukaryote':
+              this.ctx.fillStyle = '#9C27B0';
+              break;
+            default:
+              this.ctx.fillStyle = '#2196F3';
+          }
+          
+          this.ctx.fill();
+          this.ctx.closePath();
+        }
+      } else {
+        // 否则绘制简单的圆形作为默认表示
+        this.ctx.beginPath();
+        this.ctx.arc(organism.x, organism.y, organism.size, 0, Math.PI * 2);
+        
+        // 根据生物类型设置颜色
+        switch (organism.type) {
+          case 'basic':
+            this.ctx.fillStyle = '#4CAF50';
+            break;
+          case 'predator':
+            this.ctx.fillStyle = '#F44336';
+            break;
+          case 'scavenger':
+            this.ctx.fillStyle = '#FF9800';
+            break;
+          case 'cyanobacteria':
+            this.ctx.fillStyle = '#00BCD4';
+            break;
+          case 'primitive_eukaryote':
+            this.ctx.fillStyle = '#9C27B0';
+            break;
+          default:
+            this.ctx.fillStyle = '#2196F3';
+        }
+        
+        this.ctx.fill();
+        this.ctx.closePath();
+      }
       
       // 恢复透明度
       this.ctx.globalAlpha = 1;
@@ -505,8 +588,8 @@ export class EcosystemRenderer {
   }
 
   // 计算生物类型统计
-  calculateOrganismStats(organisms: Organism[]): { basic: number; predator: number; scavenger: number } {
-    const stats = { basic: 0, predator: 0, scavenger: 0 };
+  calculateOrganismStats(organisms: Organism[]): { basic: number; predator: number; scavenger: number; cyanobacteria: number; primitive_eukaryote: number } {
+    const stats = { basic: 0, predator: 0, scavenger: 0, cyanobacteria: 0, primitive_eukaryote: 0 };
     organisms.forEach(org => stats[org.type]++);
     return stats;
   }
@@ -591,6 +674,118 @@ export class EcosystemRenderer {
     this.ctx.stroke();
   }
   
+  // 绘制太阳效果
+  private drawSun(ctx: CanvasRenderingContext2D) {
+    const { x, y } = this.sunPosition;
+    const currentTime = performance.now();
+    
+    // 更新太阳旋转和动态光晕参数
+    this.sunRotation += this.sunRotationSpeed * 8; // 降低旋转速度使动画更自然
+    // 添加动态光晕脉动效果
+    if (!this.sunGlowPulse) this.sunGlowPulse = 0;
+    this.sunGlowPulse += 0.01;
+    const glowIntensity = 0.6 + Math.sin(this.sunGlowPulse) * 0.2; // 0.4-0.8范围脉动
+    
+    ctx.save();
+    
+    // 绘制柔和的动态外部光晕 - 更大范围但更透明
+    const outerGlowRadius = this.sunGlowRadius * 1.5;
+    const outerGradient = ctx.createRadialGradient(x, y, 0, x, y, outerGlowRadius);
+    outerGradient.addColorStop(0, `rgba(255, 240, 150, ${glowIntensity * 0.2})`); // 柔和的橙黄色
+    outerGradient.addColorStop(0.3, `rgba(255, 240, 150, ${glowIntensity * 0.15})`);
+    outerGradient.addColorStop(0.6, `rgba(255, 240, 150, ${glowIntensity * 0.08})`);
+    outerGradient.addColorStop(0.9, `rgba(255, 240, 150, ${glowIntensity * 0.02})`);
+    outerGradient.addColorStop(1, 'rgba(255, 240, 150, 0)');
+    ctx.fillStyle = outerGradient;
+    ctx.fillRect(x - outerGlowRadius, y - outerGlowRadius, outerGlowRadius * 2, outerGlowRadius * 2);
+    
+    // 绘制中间层光晕
+    const middleGlowRadius = this.sunGlowRadius;
+    const middleGradient = ctx.createRadialGradient(x, y, 0, x, y, middleGlowRadius);
+    middleGradient.addColorStop(0, `rgba(255, 220, 100, ${glowIntensity * 0.5})`);
+    middleGradient.addColorStop(0.3, `rgba(255, 220, 100, ${glowIntensity * 0.3})`);
+    middleGradient.addColorStop(0.7, `rgba(255, 220, 100, ${glowIntensity * 0.1})`);
+    middleGradient.addColorStop(1, 'rgba(255, 220, 100, 0)');
+    ctx.fillStyle = middleGradient;
+    ctx.fillRect(x - middleGlowRadius, y - middleGlowRadius, middleGlowRadius * 2, middleGlowRadius * 2);
+    
+    // 添加太阳边界模糊层 - 专门用于柔化太阳边缘
+    const blurRadius = this.sunSize * 1.1;
+    const blurGradient = ctx.createRadialGradient(x, y, 0, x, y, blurRadius);
+    blurGradient.addColorStop(0, 'rgba(255, 220, 150, 0.6)'); // 半透明的黄色
+    blurGradient.addColorStop(0.7, 'rgba(255, 220, 150, 0.3)'); // 边缘过渡
+    blurGradient.addColorStop(0.9, 'rgba(255, 220, 150, 0.1)'); // 更淡的边缘
+    blurGradient.addColorStop(1, 'rgba(255, 220, 150, 0)');
+    ctx.fillStyle = blurGradient;
+    ctx.beginPath();
+    ctx.arc(x, y, blurRadius, 0, Math.PI * 2);
+    ctx.fill();
+    
+    // 绘制太阳主体 - 优化多层次渐变使边界过渡更平滑
+    const sunGradient = ctx.createRadialGradient(x, y, 0, x, y, this.sunSize);
+    sunGradient.addColorStop(0, '#FFFACD'); // 非常浅的黄色中心
+    sunGradient.addColorStop(0.3, '#FFF8DC'); // 浅黄色过渡
+    sunGradient.addColorStop(0.5, '#FFD700'); // 金黄色
+    sunGradient.addColorStop(0.7, '#FFC107'); // 明亮的橙色
+    sunGradient.addColorStop(0.85, '#FFA500'); // 橙黄色
+    sunGradient.addColorStop(0.95, '#FF8C00'); // 更深的橙色边缘
+    sunGradient.addColorStop(1, '#FF8C00'); // 保持边缘颜色一致
+    
+    ctx.fillStyle = sunGradient;
+    ctx.beginPath();
+    ctx.arc(x, y, this.sunSize, 0, Math.PI * 2);
+    ctx.fill();
+    
+    // 绘制动态光线 - 使用两层不同长度和透明度的光线
+    const rayCount = 16;
+    
+    // 内层光线 - 较短较亮
+    ctx.strokeStyle = `rgba(255, 255, 0, ${glowIntensity * 0.9})`;
+    ctx.lineWidth = 2.5;
+    ctx.globalAlpha = 0.9;
+    
+    for (let i = 0; i < rayCount; i++) {
+      // 每隔一根射线绘制内层光线，使分布更自然
+      if (i % 2 === 0) {
+        const angle = (i / rayCount) * Math.PI * 2 + this.sunRotation;
+        // 动态变化光线长度，添加随机性
+        const randomLength = this.sunSize * 0.4 * (0.9 + Math.random() * 0.2);
+        const startX = x + Math.cos(angle) * this.sunSize;
+        const startY = y + Math.sin(angle) * this.sunSize;
+        const endX = x + Math.cos(angle) * (this.sunSize + randomLength);
+        const endY = y + Math.sin(angle) * (this.sunSize + randomLength);
+        
+        // 使用线段绘制光线，添加自然淡出效果
+        ctx.beginPath();
+        ctx.moveTo(startX, startY);
+        ctx.lineTo(endX, endY);
+        ctx.stroke();
+      }
+    }
+    
+    // 外层光线 - 较长较弱
+    ctx.strokeStyle = `rgba(255, 240, 150, ${glowIntensity * 0.7})`;
+    ctx.lineWidth = 1.5;
+    ctx.globalAlpha = 0.7;
+    
+    for (let i = 0; i < rayCount; i++) {
+      const angle = (i / rayCount) * Math.PI * 2 + this.sunRotation;
+      // 更长的光线，添加不同的随机长度
+      const randomLength = this.sunSize * 0.8 * (0.85 + Math.random() * 0.3);
+      const startX = x + Math.cos(angle) * (this.sunSize + this.sunSize * 0.2);
+      const startY = y + Math.sin(angle) * (this.sunSize + this.sunSize * 0.2);
+      const endX = x + Math.cos(angle) * (this.sunSize + randomLength);
+      const endY = y + Math.sin(angle) * (this.sunSize + randomLength);
+      
+      ctx.beginPath();
+      ctx.moveTo(startX, startY);
+      ctx.lineTo(endX, endY);
+      ctx.stroke();
+    }
+    
+    ctx.restore();
+  }
+  
   // 主渲染函数
   render() {
     // 清除画布
@@ -610,35 +805,46 @@ export class EcosystemRenderer {
       const { organisms } = this.ecosystemManager.getState();
       this.drawOrganisms(organisms);
       
-      // 绘制雷暴（放在最后确保不被覆盖）
-      const thunderstorms = this.ecosystemManager.getThunderstorms();
-      this.drawThunderstorms(this.ctx, thunderstorms);
+      // 获取当前阶段
+      const config = this.ecosystemManager.getConfig();
+      const currentStage = config.currentStage;
       
-      // 计算随机变化的暗度值，不规律更新以营造恶劣天气效果
-      const currentTime = performance.now();
-      const elapsed = currentTime - this.lastRenderTime;
-      
-      // 每隔一段时间随机更新目标暗度值
-      if (elapsed >= this.randomUpdateInterval) {
-        this.lastRenderTime = currentTime;
-        // 随机生成新的目标暗度值，在基础暗度附近波动
-        const randomFactor = (Math.random() - 0.5) * 2; // 生成 -1 到 1 之间的随机数
-        this.targetDarkness = Math.max(0, Math.min(1, this.darknessBase + this.darknessVariation * randomFactor));
+      // 根据当前阶段绘制不同的效果
+      if (currentStage === 'primordial_soup') {
+        // 原始汤时代：显示雷暴和暗度变化
+        // 绘制雷暴（放在最后确保不被覆盖）
+        const thunderstorms = this.ecosystemManager.getThunderstorms();
+        this.drawThunderstorms(this.ctx, thunderstorms);
+        
+        // 计算随机变化的暗度值，不规律更新以营造恶劣天气效果
+        const currentTime = performance.now();
+        const elapsed = currentTime - this.lastRenderTime;
+        
+        // 每隔一段时间随机更新目标暗度值
+        if (elapsed >= this.randomUpdateInterval) {
+          this.lastRenderTime = currentTime;
+          // 随机生成新的目标暗度值，在基础暗度附近波动
+          const randomFactor = (Math.random() - 0.5) * 2; // 生成 -1 到 1 之间的随机数
+          this.targetDarkness = Math.max(0, Math.min(1, this.darknessBase + this.darknessVariation * randomFactor));
+        }
+        
+        // 使用平滑过渡算法更新当前暗度值
+        // 向目标暗度值逐渐靠拢，创造缓和的过渡效果
+        this.currentDarkness += (this.targetDarkness - this.currentDarkness) * this.transitionSpeed;
+        
+        // 使用当前平滑过渡后的暗度值
+        const alpha = this.currentDarkness;
+        
+        // 添加动态变化的半透明黑色覆盖层
+        this.ctx.save();
+        this.ctx.globalAlpha = alpha; // 动态变化的透明度
+        this.ctx.fillStyle = '#000000';
+        this.ctx.fillRect(0, 0, this.canvasWidth, this.canvasHeight);
+        this.ctx.restore();
+      } else if (currentStage === 'prokaryotic_eukaryotic') {
+        // 原核+原始真核时代：显示太阳效果，不显示雷暴和暗度变化
+        this.drawSun(this.ctx);
       }
-      
-      // 使用平滑过渡算法更新当前暗度值
-      // 向目标暗度值逐渐靠拢，创造缓和的过渡效果
-      this.currentDarkness += (this.targetDarkness - this.currentDarkness) * this.transitionSpeed;
-      
-      // 使用当前平滑过渡后的暗度值
-      const alpha = this.currentDarkness;
-      
-      // 添加动态变化的半透明黑色覆盖层
-      this.ctx.save();
-      this.ctx.globalAlpha = alpha; // 动态变化的透明度
-      this.ctx.fillStyle = '#000000';
-      this.ctx.fillRect(0, 0, this.canvasWidth, this.canvasHeight);
-      this.ctx.restore();
     }
   }
 }

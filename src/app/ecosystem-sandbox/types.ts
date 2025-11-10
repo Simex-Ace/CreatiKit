@@ -2,7 +2,7 @@
 export type TerrainType = 'ocean' | 'beach' | 'plains' | 'forest' | 'mountain';
 
 // 世代阶段
-export type EcosystemStage = 'primordial_soup' | 'early_life' | 'evolution' | 'advanced';
+export type EcosystemStage = 'primordial_soup' | 'prokaryotic_eukaryotic' | 'evolution' | 'advanced';
 
 // 地形单元格
 export interface TerrainCell {
@@ -54,7 +54,7 @@ export interface SandboxConfig {
 }
 
 // 生物类型
-export type OrganismType = 'basic' | 'predator' | 'scavenger';
+export type OrganismType = 'basic' | 'predator' | 'scavenger' | 'cyanobacteria' | 'primitive_eukaryote';
 
 // 生物接口
 export interface Organism {
@@ -80,12 +80,25 @@ export interface Organism {
   currentTerrainType?: TerrainType;
   hungerRateMultiplier?: number;
   targetFood?: Food; // 目标食物，用于优化移动逻辑
+  lastSplitAge?: number; // 上次分裂年龄，用于无性生殖
+  
+  // 分裂繁殖相关属性
+  isSplitting?: boolean;
+  splitProgress?: number;
+  splitDirection?: number;
+  originalSize?: number;
+  toBeRemoved?: boolean;
+  
+  // 有性生殖相关属性
+  targetPartner?: Organism | null;
+  isLookingForPartner?: boolean;
+  reproductionCooldown?: number;
   
   // 方法定义
   findNearestFood: (foods: Food[]) => Food | null;
   eat: (food: Food) => boolean;
   evolve: () => Organism | null;
-  update: (foods: Food[], ecosystemManager: any) => void;
+  update: (foods: Food[], ecosystemManager?: any) => void;
   calculateDistance?: (x: number, y: number) => number;
 }
 
