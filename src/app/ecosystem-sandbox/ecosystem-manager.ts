@@ -1248,14 +1248,29 @@ export class EcosystemManager {
   // 清空所有生物和原始汤
   clearAllOrganisms() {
     this.organisms = [];
-    // 在原始汤阶段，清空也意味着重置原始汤状态
+    
+    // 第一阶段（原始汤时代）：清空所有原始汤
     if (this.config.currentStage === 'primordial_soup') {
-      // 清空原始汤相关的数据结构
+      // 清空所有原始汤
+      this.foods = [];
+      // 重置原始汤计数
+      this.config.primordialSoupCount = 0;
+      // 重置进阶状态
+      this.config.canAdvanceStage = false;
       // 重新生成全海洋地形
       if (this.hasTerrain) {
         this.generateTerrain(this.terrainGridSize);
       }
+      console.log('第一阶段：已清空所有原始汤');
     }
+    // 第二阶段（原核+原始真核时代）：清空所有生物
+    else if (this.config.currentStage === 'prokaryotic_eukaryotic') {
+      // 清空所有生物
+      this.organisms = [];
+      console.log('第二阶段：已清空所有生物');
+    }
+    // 清空空间分区
+    this.spatialPartition.clear();
   }
 
   // 重置食物
