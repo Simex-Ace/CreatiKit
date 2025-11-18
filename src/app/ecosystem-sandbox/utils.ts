@@ -71,12 +71,16 @@ export const createOrganism = (
     breedingTime: undefined,
     breedingProgress: 0,
     isDetectingFood: false,
-      foodDetectionTime: undefined,
-      detectedFoodDistance: undefined,
-      // 用于原核和真核生物的分裂繁殖
-      lastSplitAge: 0,
-      // 标记是否需要被移除
-      toBeRemoved: false,
+    foodDetectionTime: undefined,
+    detectedFoodDistance: undefined,
+    // 用于原核和真核生物的分裂繁殖
+    lastSplitAge: 0,
+    hasSplitOnce: false, // 新增：标记是否已经完成过至少一次分裂
+    // 标记是否需要被移除
+    toBeRemoved: false,
+    // 添加卡住检测相关属性
+    stuckCounter: 0, // 记录卡住的帧数
+    lastPosition: { x: 0, y: 0 }, // 记录上一帧的位置
 
     calculateDistance: function(x: number, y: number): number {
       const dx = x - this.x;
@@ -88,14 +92,19 @@ export const createOrganism = (
       
       let nearestFood: Food | null = null;
       let minDistance = Infinity;
-      let perceptionRadius = this.size * 10;
+      let perceptionRadius = this.size * 15; // 大幅增加感知半径
       
       if (this.hunger < 30) {
-        perceptionRadius *= 1.5;
+        perceptionRadius *= 2; // 饥饿时大幅增加感知范围
       }
       
+      // 为所有生物类型提供感知加成
       if (this.type === 'predator') {
-        perceptionRadius *= 1.2;
+        perceptionRadius *= 1.4; // 捕食者更强的感知能力
+      } else if (this.type === 'scavenger') {
+        perceptionRadius *= 1.3; // 清道夫较强的感知能力
+      } else if (this.type === 'amoeba' || this.type === 'water_mold') {
+        perceptionRadius *= 1.2; // 第三阶段生物增强感知能力
       }
       
       for (const food of foods) {
@@ -112,22 +121,25 @@ export const createOrganism = (
       return nearestFood;
     },
     
-    eat: function(food: Food): boolean {
+    eat: function(food: Food, ecosystemManager?: any): boolean {
       const eatRadius = this.size * 1.2;
       const dx = food.x - this.x;
       const dy = food.y - this.y;
       const distance = Math.sqrt(dx * dx + dy * dy);
       
-      if (distance > eatRadius) {
-        return false;
-      } else {
+      if (distance <= eatRadius) {
+        // 增加饥饿值
         this.hunger = Math.min(100, this.hunger + 20);
         
         if (this.type === 'scavenger') {
           this.hunger = Math.min(100, this.hunger + 10);
         }
+        
+        // 重置卡住计数器
+        this.stuckCounter = 0;
         return true;
       }
+      return false;
     },
     
     evolve: function(): Organism | null {
@@ -136,11 +148,46 @@ export const createOrganism = (
     },
     
     update: function(foods: Food[], ecosystemManager?: any): null {
-      // 年龄只增不减
-      this.age = (this.age || 0) + 1;
+        // 年龄只增不减
+        this.age = (this.age || 0) + 1;
+        
+        // 初始化卡住检测属性（如果不存在）
+        if (this.stuckCounter === undefined) this.stuckCounter = 0;
+        if (this.lastPosition === undefined) this.lastPosition = { x: this.x, y: this.y };
+        
+        // 检测是否卡住（位置变化小于阈值）
+        const positionChangeThreshold = 0.1;
+        const dx = Math.abs(this.x - this.lastPosition.x);
+        const dy = Math.abs(this.y - this.lastPosition.y);
+        const positionChanged = dx > positionChangeThreshold || dy > positionChangeThreshold;
+        
+        if (!positionChanged) {
+          this.stuckCounter++;
+        } else {
+          this.stuckCounter = 0;
+        }
+        
+        // 更新上一帧位置
+        this.lastPosition.x = this.x;
+        this.lastPosition.y = this.y;
+        
+        // 当生物卡住超过一定帧数时，增加饥饿消耗
+        const stuckThreshold = 60;
+        if (this.stuckCounter > stuckThreshold) {
+          // 卡住时加速饥饿消耗
+          this.hunger = Math.max(0, this.hunger - 0.1);
+          
+          // 当卡住时间过长时，直接标记为死亡
+          if (this.stuckCounter > stuckThreshold * 5) {
+            console.log(`${this.type} 生物ID:${this.id} 因长时间卡住而死亡`);
+            this.toBeRemoved = true;
+            return null;
+          }
+        }
       
-      // 对于蓝藻和原始真核细胞的特殊处理
-      if (this.type === 'cyanobacteria' || this.type === 'primitive_eukaryote') {
+      // 对于蓝藻、原始真核细胞和第三阶段生物的特殊处理
+      if (this.type === 'cyanobacteria' || this.type === 'primitive_eukaryote' || 
+          this.type === 'amoeba' || this.type === 'water_mold') {
         // 完全禁用有性生殖，强制所有繁殖只能通过分裂
         this.isBreeding = false;
         this.breedingPartnerId = undefined;
@@ -154,21 +201,50 @@ export const createOrganism = (
         // 分裂功能已在ecosystem-manager.ts中实现，这里不再生成新细胞
         // 这里只处理基础移动行为
         
-        // 低速随机移动
-        this.direction += (Math.random() - 0.5) * 0.05; // 非常小的方向变化，更平滑的移动
+        // 第三阶段生物（amoeba和water_mold）禁止旋转，只保留移动功能
+        if (this.type !== 'amoeba' && this.type !== 'water_mold') {
+          // 仅对蓝藻和原始真核细胞进行方向变化
+          if (this.type === 'cyanobacteria' && ecosystemManager) {
+            // 蓝藻特殊处理：检测周围地形，避免移动到非海洋区域
+            // 预测下一步的位置
+            const speedToUse = this.adjustedSpeed || this.speed;
+            const nextX = this.x + Math.cos(this.direction) * speedToUse * 10; // 预测更远距离
+            const nextY = this.y + Math.sin(this.direction) * speedToUse * 10;
+            
+            // 检查预测位置的地形类型
+            const predictedTerrain = ecosystemManager.getTerrainAt?.(nextX, nextY);
+            
+            if (predictedTerrain && predictedTerrain !== 'ocean') {
+              // 如果预测会移动到非海洋区域，转向180度返回海洋
+              this.direction += Math.PI; // 完全反向
+            } else {
+              // 正常的随机方向变化
+              this.direction += (Math.random() - 0.5) * 0.05; // 非常小的方向变化，更平滑的移动
+            }
+          } else {
+            // 原始真核细胞的随机方向变化
+            this.direction += (Math.random() - 0.5) * 0.05;
+          }
+        } else {
+          // 第三阶段生物不改变方向，保持初始方向
+          // 第三阶段禁止旋转
+        }
         
-        // 使用极低的速度移动
-        const slowSpeed = this.speed * 0.3; // 速度降低到原来的30%
-        this.x += Math.cos(this.direction) * slowSpeed;
-        this.y += Math.sin(this.direction) * slowSpeed;
+        // 使用调整后的速度移动（考虑地形影响）
+        const speedToUse = this.adjustedSpeed || this.speed;
+        this.x += Math.cos(this.direction) * speedToUse;
+        this.y += Math.sin(this.direction) * speedToUse;
         
-        // 边界检查
+        // 边界检查，但不改变方向
         if (ecosystemManager && ecosystemManager.canvasWidth && ecosystemManager.canvasHeight) {
           if (this.x - this.size < 0) this.x = this.size;
           if (this.x + this.size > ecosystemManager.canvasWidth) this.x = ecosystemManager.canvasWidth - this.size;
           if (this.y - this.size < 0) this.y = this.size;
           if (this.y + this.size > ecosystemManager.canvasHeight) this.y = ecosystemManager.canvasHeight - this.size;
         }
+        
+        // 第三阶段生物直接返回，避免执行后续可能改变方向的逻辑
+        return null;
       }
       
       // 确保函数总是返回null，避免生成额外的细胞

@@ -46,15 +46,16 @@ export interface SandboxConfig {
   hasTerrain?: boolean;
   terrainGridSize?: number;
   
-  // 世代阶段相关
   currentStage: EcosystemStage;
   primordialSoupCount: number; // 原始汤数量
   primordialSoupThreshold: number; // 解锁下一阶段所需的原始汤数量
+  prokaryoticCount: number; // 原核生物数量（用于第二阶段进阶）
+  prokaryoticThreshold: number; // 解锁第三阶段所需的原核生物数量
   canAdvanceStage: boolean; // 是否可以进入下一阶段
 }
 
 // 生物类型
-export type OrganismType = 'basic' | 'predator' | 'scavenger' | 'cyanobacteria' | 'primitive_eukaryote';
+export type OrganismType = 'basic' | 'predator' | 'scavenger' | 'cyanobacteria' | 'primitive_eukaryote' | 'amoeba' | 'water_mold';
 
 // 生物接口
 export interface Organism {
@@ -81,6 +82,7 @@ export interface Organism {
   hungerRateMultiplier?: number;
   targetFood?: Food; // 目标食物，用于优化移动逻辑
   lastSplitAge?: number; // 上次分裂年龄，用于无性生殖
+  hasSplitOnce?: boolean; // 是否已经完成过至少一次分裂
   
   // 分裂繁殖相关属性
   isSplitting?: boolean;
@@ -89,6 +91,14 @@ export interface Organism {
   originalSize?: number;
   toBeRemoved?: boolean;
   
+  // 移动状态相关属性
+  lastPosition?: {x: number; y: number};
+  stuckCounter?: number;
+  
+  // 分裂准备状态属性
+  isPreparingSplit?: boolean;
+  splitPreparationTime?: number;
+  
   // 有性生殖相关属性
   targetPartner?: Organism | null;
   isLookingForPartner?: boolean;
@@ -96,9 +106,14 @@ export interface Organism {
   
   // 方法定义
   findNearestFood: (foods: Food[]) => Food | null;
-  eat: (food: Food) => boolean;
+  eat: (food: Food, ecosystemManager?: any) => boolean;
+  
+  // 地形适应性相关属性
+  timeInUnsuitableTerrain?: number; // 在非适宜地形的时间
+  isInSuitableTerrain?: boolean; // 当前是否在适宜地形
+  lastSuitableTerrainPosition?: {x: number, y: number}; // 最后在适宜地形的位置
   evolve: () => Organism | null;
-  update: (foods: Food[], ecosystemManager?: any) => void;
+  update: (foods: Food[], ecosystemManager?: any) => Organism[] | null | undefined;
   calculateDistance?: (x: number, y: number) => number;
 }
 
@@ -112,6 +127,9 @@ export interface Food {
   flashTime?: number;
   terrainType?: TerrainType;
   isPrimordialSoup?: boolean; // 是否为原始汤
+  isOrganicDebris?: boolean; // 是否为有机碎屑（第三阶段使用）
+  fromOrganismType?: string; // 有机碎屑来源的生物类型
+  lifetime?: number; // 有机碎屑的生命周期（用于衰变）
 }
 
 // 雷暴接口
@@ -140,10 +158,6 @@ export interface TerrainDistribution {
 export interface Stats {
   fps: number;
   frameTime: number;
-  organismTypes: {
-    basic: number;
-    predator: number;
-    scavenger: number;
-  };
+  organismTypes: { [key: string]: number };
   terrainDistribution?: TerrainDistribution;
 }

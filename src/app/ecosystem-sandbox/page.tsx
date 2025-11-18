@@ -79,13 +79,15 @@ const EcosystemSandbox = () => {
     currentStage: 'primordial_soup' as EcosystemStage,
     primordialSoupCount: 0,
     primordialSoupThreshold: 2, // 需要收集20个原始汤才能进入下一阶段
+    prokaryoticCount: 0,
+    prokaryoticThreshold: 10,
     canAdvanceStage: false
   });
   
   const [stats, setStats] = useState<Stats>({ 
     fps: 0, 
     frameTime: 0,
-    organismTypes: { basic: 0, predator: 0, scavenger: 0 }
+    organismTypes: { basic: 0, predator: 0, scavenger: 0, cyanobacteria: 0, primitive_eukaryote: 0, amoeba: 0, water_mold: 0 }
   });
   
   // 调试状态
@@ -148,7 +150,9 @@ const EcosystemSandbox = () => {
         currentConfig.currentStage,
         currentConfig.primordialSoupCount,
         currentConfig.primordialSoupThreshold,
-        currentConfig.canAdvanceStage
+        currentConfig.canAdvanceStage,
+        currentConfig.prokaryoticCount,
+        currentConfig.prokaryoticThreshold
       );
     }
     

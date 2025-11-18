@@ -5,6 +5,7 @@ import amoebaImage from './image/变形虫.png';
 import waterMoldImage from './image/水霉菌.png';
 import primitiveEukaryoteImage from './image/原始真核细胞.png';
 import primordialSoupImage from './image/原始汤.png';
+import organicDebrisImage from './image/有机碎屑.png';
 import directionIndicatorImage from './image/运动方向.png';
 // 导入地形图片
 import oceanImage from './image/bg/海洋.png';
@@ -55,15 +56,15 @@ export class EcosystemRenderer {
 
   // 生物图片
   private organismImages: Record<string, HTMLImageElement> = {
-    basic: new Image(),
-    predator: new Image(),
-    scavenger: new Image(),
-    cyanobacteria: new Image(),
-    primitive_eukaryote: new Image()
+    cyanobacteria: new Image(), // 蓝藻
+    amoeba: new Image(),        // 变形虫
+    water_mold: new Image(),    // 水霉菌
+    primitive_eukaryote: new Image() // 原始真核细胞
   };
   
   // 其他图片
   private primordialSoupImage: HTMLImageElement;
+  private organicDebrisImage: HTMLImageElement;
   private directionIndicatorImage: HTMLImageElement;
   
   // CSS像素的画布尺寸
@@ -93,15 +94,16 @@ export class EcosystemRenderer {
     };
     
     // 加载生物图片
-    this.organismImages.basic.src = cyanobacteriaImage.src || '';
-    this.organismImages.predator.src = amoebaImage.src || '';
-    this.organismImages.scavenger.src = waterMoldImage.src || '';
-    this.organismImages.cyanobacteria.src = cyanobacteriaImage.src || '';
-    this.organismImages.primitive_eukaryote.src = primitiveEukaryoteImage.src || '';
+    this.organismImages.cyanobacteria.src = cyanobacteriaImage.src || '';     // 蓝藻使用蓝藻图片
+    this.organismImages.amoeba.src = amoebaImage.src || '';                // 变形虫使用变形虫图片
+    this.organismImages.water_mold.src = waterMoldImage.src || '';          // 水霉菌使用水霉菌图片
+    this.organismImages.primitive_eukaryote.src = primitiveEukaryoteImage.src || ''; // 原始真核细胞使用原始真核细胞图片
     
     // 加载其他图片
     this.primordialSoupImage = new Image();
     this.primordialSoupImage.src = primordialSoupImage.src || '';
+    this.organicDebrisImage = new Image();
+    this.organicDebrisImage.src = organicDebrisImage.src || '';
     this.directionIndicatorImage = new Image();
     this.directionIndicatorImage.src = directionIndicatorImage.src || '';
     
@@ -180,8 +182,18 @@ export class EcosystemRenderer {
         if (food.isFlashing && food.flashTime) {
           ctx.globalAlpha = 1;
         }
+      } else if (food.isOrganicDebris) {
+        // 有机碎屑使用统一导入的图片渲染
+        const foodSize = food.size || 5;
+        ctx.drawImage(
+          this.organicDebrisImage,
+          Math.floor(food.x - foodSize / 2),
+          Math.floor(food.y - foodSize / 2),
+          foodSize,
+          foodSize
+        );
       } else {
-        // 非原始汤食物使用普通圆形
+        // 其他非原始汤食物使用普通圆形
         ctx.fillStyle = 'hsl(120, 100%, 40%)';
         ctx.beginPath();
         ctx.arc(food.x, food.y, food.size, 0, Math.PI * 2);
@@ -338,18 +350,17 @@ export class EcosystemRenderer {
           
           // 根据生物类型设置颜色
           switch (organism.type) {
-            case 'basic':
             case 'cyanobacteria':
-              this.ctx.fillStyle = '#4CAF50';
+              this.ctx.fillStyle = '#00BCD4'; // 蓝藻使用青色
               break;
-            case 'predator':
-              this.ctx.fillStyle = '#F44336';
+            case 'amoeba':
+              this.ctx.fillStyle = '#FF6600'; // 变形虫使用橙色
               break;
-            case 'scavenger':
-              this.ctx.fillStyle = '#FF9800';
+            case 'water_mold':
+              this.ctx.fillStyle = '#996633'; // 水霉菌使用棕色
               break;
             case 'primitive_eukaryote':
-              this.ctx.fillStyle = '#9C27B0';
+              this.ctx.fillStyle = '#9C27B0'; // 原始真核细胞使用紫色
               break;
             default:
               this.ctx.fillStyle = '#2196F3';
@@ -365,20 +376,17 @@ export class EcosystemRenderer {
         
         // 根据生物类型设置颜色
         switch (organism.type) {
-          case 'basic':
-            this.ctx.fillStyle = '#4CAF50';
-            break;
-          case 'predator':
-            this.ctx.fillStyle = '#F44336';
-            break;
-          case 'scavenger':
-            this.ctx.fillStyle = '#FF9800';
-            break;
           case 'cyanobacteria':
-            this.ctx.fillStyle = '#00BCD4';
+            this.ctx.fillStyle = '#00BCD4'; // 蓝藻使用青色
+            break;
+          case 'amoeba':
+            this.ctx.fillStyle = '#FF6600'; // 变形虫使用橙色
+            break;
+          case 'water_mold':
+            this.ctx.fillStyle = '#996633'; // 水霉菌使用棕色
             break;
           case 'primitive_eukaryote':
-            this.ctx.fillStyle = '#9C27B0';
+            this.ctx.fillStyle = '#9C27B0'; // 原始真核细胞使用紫色
             break;
           default:
             this.ctx.fillStyle = '#2196F3';
@@ -588,9 +596,13 @@ export class EcosystemRenderer {
   }
 
   // 计算生物类型统计
-  calculateOrganismStats(organisms: Organism[]): { basic: number; predator: number; scavenger: number; cyanobacteria: number; primitive_eukaryote: number } {
-    const stats = { basic: 0, predator: 0, scavenger: 0, cyanobacteria: 0, primitive_eukaryote: 0 };
-    organisms.forEach(org => stats[org.type]++);
+  calculateOrganismStats(organisms: Organism[]): { [key: string]: number } {
+    const stats = { basic: 0, predator: 0, scavenger: 0, cyanobacteria: 0, primitive_eukaryote: 0, amoeba: 0, water_mold: 0 };
+    organisms.forEach(org => {
+      if (stats.hasOwnProperty(org.type)) {
+        stats[org.type]++;
+      }
+    });
     return stats;
   }
 

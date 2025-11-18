@@ -51,7 +51,7 @@ export class EcosystemStageUI {
     document.body.appendChild(this.container);
   }
   
-  updateUI(stage: EcosystemStage, primordialSoupCount: number, primordialSoupThreshold: number, canAdvance: boolean) {
+  updateUI(stage: EcosystemStage, primordialSoupCount: number, primordialSoupThreshold: number, canAdvance: boolean, prokaryoticCount?: number, prokaryoticThreshold?: number) {
     // 更新阶段显示
     let stageName = '';
     switch (stage) {
@@ -81,7 +81,19 @@ export class EcosystemStageUI {
       this.primordialSoupCounter.style.background = `linear-gradient(to right, #00ffff ${progress}%, transparent ${progress}%)`;
       this.primordialSoupCounter.style.padding = '5px 10px';
       this.primordialSoupCounter.style.borderRadius = '4px';
-    } else {
+    } 
+    // 在第二阶段显示生物总数进度条
+    else if (stage === 'prokaryotic_eukaryotic' && prokaryoticCount !== undefined && prokaryoticThreshold !== undefined) {
+      this.primordialSoupCounter.textContent = `生物总数：${prokaryoticCount} / ${prokaryoticThreshold}`;
+      this.primordialSoupCounter.style.display = 'block';
+      
+      // 更新进度条样式
+      const progress = Math.min(100, (prokaryoticCount / prokaryoticThreshold) * 100);
+      this.primordialSoupCounter.style.background = `linear-gradient(to right, #00ff00 ${progress}%, transparent ${progress}%)`;
+      this.primordialSoupCounter.style.padding = '5px 10px';
+      this.primordialSoupCounter.style.borderRadius = '4px';
+    }
+    else {
       this.primordialSoupCounter.style.display = 'none';
     }
     
