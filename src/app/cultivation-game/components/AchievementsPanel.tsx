@@ -6,7 +6,6 @@ interface AchievementsPanelProps {
   onAchievementUnlock?: (description: string, reward: string) => void;
 }
 
-
 const AchievementsPanel: React.FC<AchievementsPanelProps> = ({ gameState }) => {
   return (
     <div className="achievements-panel">
