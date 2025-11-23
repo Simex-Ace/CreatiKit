@@ -1,0 +1,779 @@
+/* 修仙游戏全局样式 */
+.cultivation-game-container {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+  color: #e2e8f0;
+  font-family: 'Noto Serif SC', serif;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* 动态背景效果 */
+.dynamic-background {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 0;
+}
+
+.dynamic-background::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><circle cx="50" cy="50" r="1" fill="rgba(255,255,255,0.1)"/></svg>');
+  opacity: 0.3;
+  animation: floatStars 30s infinite linear;
+}
+
+/* 星星漂浮动画 */
+@keyframes floatStars {
+  0% {
+    transform: translateY(0);
+  }
+  100% {
+    transform: translateY(-100px);
+  }
+}
+
+/* 背景光晕效果 */
+.dynamic-background::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 800px;
+  height: 800px;
+  background: radial-gradient(circle, rgba(111, 144, 228, 0.1) 0%, transparent 70%);
+  filter: blur(60px);
+  animation: pulseGlow 8s infinite ease-in-out;
+}
+
+@keyframes pulseGlow {
+  0%, 100% {
+    opacity: 0.3;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  50% {
+    opacity: 0.5;
+    transform: translate(-50%, -50%) scale(1.1);
+  }
+}
+
+/* 游戏主内容区 */
+.game-content {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* 标题区域样式 */
+.header-section {
+  text-align: center;
+  margin-bottom: 2.5rem;
+  padding: 2rem 0;
+  position: relative;
+}
+
+.game-title {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+  position: relative;
+}
+
+.title-glow {
+  color: #f5d76e;
+  text-shadow: 0 0 15px rgba(245, 215, 110, 0.7), 0 0 30px rgba(245, 215, 110, 0.5);
+  position: relative;
+  display: inline-block;
+  animation: glowPulse 3s infinite ease-in-out;
+}
+
+@keyframes glowPulse {
+  0%, 100% {
+    text-shadow: 0 0 15px rgba(245, 215, 110, 0.7), 0 0 30px rgba(245, 215, 110, 0.5);
+  }
+  50% {
+    text-shadow: 0 0 25px rgba(245, 215, 110, 0.9), 0 0 40px rgba(245, 215, 110, 0.7);
+  }
+}
+
+.game-title::after {
+  content: '';
+  display: block;
+  width: 250px;
+  height: 4px;
+  background: linear-gradient(90deg, transparent, #f5d76e, transparent);
+  margin: 0.75rem auto;
+  border-radius: 2px;
+}
+
+.subtitle {
+  font-size: 1.1rem;
+  color: #94a3b8;
+  font-style: italic;
+  opacity: 0.9;
+}
+
+/* 面板样式 */
+.panel {
+  background: rgba(26, 32, 44, 0.85);
+  border: 1px solid rgba(245, 215, 110, 0.3);
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3), 0 0 10px rgba(245, 215, 110, 0.1);
+  backdrop-filter: blur(12px);
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.panel:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 25px rgba(0, 0, 0, 0.4), 0 0 15px rgba(245, 215, 110, 0.2);
+  border-color: rgba(245, 215, 110, 0.5);
+}
+
+/* 面板发光边框效果 */
+.panel::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(245, 215, 110, 0.6), transparent);
+}
+
+.panel-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.panel-icon {
+  width: 24px;
+  height: 24px;
+  margin-right: 0.75rem;
+  opacity: 0.8;
+}
+
+.panel-title {
+  font-size: 1.25rem;
+  font-weight: bold;
+  margin-bottom: 1rem;
+  color: #f5d76e;
+  display: flex;
+  align-items: center;
+  border-bottom: 1px solid rgba(245, 215, 110, 0.2);
+  padding-bottom: 0.5rem;
+}
+
+.panel-title::before {
+  content: '◈';
+  margin-right: 0.5rem;
+  color: #f5d76e;
+  opacity: 0.8;
+}
+
+/* 状态面板样式 */
+.status-info {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.status-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem;
+  border-radius: 4px;
+  background: rgba(30, 41, 59, 0.5);
+}
+
+.status-label {
+  color: #94a3b8;
+}
+
+.status-value {
+  font-weight: bold;
+  color: #e2e8f0;
+}
+
+/* 进度条样式 */
+.progress-bar {
+  width: 100%;
+  height: 12px;
+  background: rgba(30, 41, 59, 0.5);
+  border-radius: 6px;
+  overflow: hidden;
+  margin-top: 0.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #f5d76e, #f9f9f9);
+  border-radius: 6px;
+  transition: width 0.5s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.progress-fill::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+/* 按钮样式 */
+.btn {
+  background: linear-gradient(135deg, #f5d76e, #f9f9f9);
+  color: #1a202c;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: bold;
+  transition: all 0.3s ease;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+
+.btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(245, 215, 110, 0.4);
+}
+
+.btn:active {
+  transform: translateY(0);
+}
+
+.btn:disabled {
+  background: #4a5568;
+  color: #718096;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.btn-secondary {
+  background: linear-gradient(135deg, #4a5568, #2d3748);
+  color: #e2e8f0;
+}
+
+.btn-secondary:hover {
+  box-shadow: 0 4px 12px rgba(74, 85, 104, 0.4);
+}
+
+/* 技能和装备列表样式 */
+.skill-list, .equipment-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.skill-item, .equipment-item {
+  background: rgba(30, 41, 59, 0.5);
+  border-radius: 6px;
+  padding: 1rem;
+  border-left: 3px solid #f5d76e;
+}
+
+.skill-name, .equipment-name {
+  font-weight: bold;
+  color: #f5d76e;
+  margin-bottom: 0.5rem;
+}
+
+.skill-level, .equipment-level {
+  color: #94a3b8;
+  font-size: 0.9rem;
+  margin-bottom: 0.5rem;
+}
+
+.skill-effects, .equipment-effects {
+  color: #cbd5e0;
+  font-size: 0.9rem;
+}
+
+/* 操作面板样式 */
+.action-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.action-card {
+  background: rgba(30, 41, 59, 0.5);
+  border-radius: 6px;
+  padding: 1rem;
+  text-align: center;
+}
+
+.action-title {
+  font-weight: bold;
+  margin-bottom: 0.5rem;
+  color: #f5d76e;
+}
+
+.action-description {
+  color: #94a3b8;
+  font-size: 0.9rem;
+  margin-bottom: 1rem;
+}
+
+/* 资源面板样式 */
+.resource-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 1rem;
+}
+
+.resource-item {
+  background: rgba(30, 41, 59, 0.5);
+  border-radius: 6px;
+  padding: 1rem;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.resource-icon {
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
+  opacity: 0.8;
+}
+
+.resource-name {
+  font-weight: bold;
+  color: #f5d76e;
+  margin-bottom: 0.25rem;
+}
+
+.resource-value {
+  font-size: 1.5rem;
+  font-weight: bold;
+}
+
+/* 自动模式开关 */
+.auto-mode-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem;
+  background: rgba(30, 41, 59, 0.5);
+  border-radius: 6px;
+  margin-bottom: 0.5rem;
+}
+
+.toggle-switch {
+  position: relative;
+  display: inline-block;
+  width: 50px;
+  height: 24px;
+}
+
+.toggle-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.toggle-slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #4a5568;
+  transition: 0.4s;
+  border-radius: 24px;
+}
+
+.toggle-slider:before {
+  position: absolute;
+  content: "";
+  height: 18px;
+  width: 18px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  transition: 0.4s;
+  border-radius: 50%;
+}
+
+input:checked + .toggle-slider {
+  background-color: #f5d76e;
+}
+
+input:checked + .toggle-slider:before {
+  transform: translateX(26px);
+}
+
+/* 物品购买面板 */
+.shop-panel {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.item-card {
+  background: rgba(30, 41, 59, 0.5);
+  border-radius: 6px;
+  padding: 1rem;
+  text-align: center;
+}
+
+.item-icon {
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
+  color: #f5d76e;
+}
+
+.item-name {
+  font-weight: bold;
+  color: #f5d76e;
+  margin-bottom: 0.25rem;
+}
+
+.item-price {
+  color: #94a3b8;
+  margin-bottom: 0.5rem;
+}
+
+/* 事件通知样式 */
+.event-notification {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  background: rgba(26, 32, 44, 0.95);
+  border: 1px solid #f5d76e;
+  border-radius: 10px;
+  padding: 1rem;
+  box-shadow: 0 6px 25px rgba(0, 0, 0, 0.4);
+  animation: slideIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  z-index: 1000;
+  backdrop-filter: blur(12px);
+  position: relative;
+  overflow: hidden;
+  max-width: 350px;
+}
+
+.event-notification::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 4px;
+  height: 100%;
+  background: linear-gradient(180deg, #f5d76e, #f9f9f9);
+}
+
+.event-notification.success::before {
+  background: linear-gradient(180deg, #27ae60, #2ecc71);
+}
+
+.event-notification.warning::before {
+  background: linear-gradient(180deg, #f39c12, #e67e22);
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(120%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes fadeOut {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+}
+
+.event-notification.fade-out {
+  animation: fadeOut 0.3s ease forwards;
+}
+
+.event-title {
+  font-weight: bold;
+  color: #f5d76e;
+  margin-bottom: 0.5rem;
+  font-size: 1.1rem;
+}
+
+.event-message {
+  color: #e2e8f0;
+  line-height: 1.4;
+}
+
+/* 成就系统样式 */
+.achievements-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1.5rem;
+  margin-top: 1.5rem;
+}
+
+.achievement-card {
+  background: rgba(30, 41, 59, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  padding: 1.25rem;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.achievement-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.5);
+  border-color: rgba(245, 215, 110, 0.4);
+}
+
+.achievement-card.completed {
+  background: linear-gradient(135deg, rgba(26, 32, 44, 0.9), rgba(17, 24, 39, 0.9));
+  border-color: rgba(245, 215, 110, 0.6);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.5), 0 0 15px rgba(245, 215, 110, 0.15);
+}
+
+.achievement-card.completed::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 3px;
+  background: linear-gradient(90deg, #27ae60, #2ecc71);
+}
+
+.achievement-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.achievement-title {
+  color: #f5d76e;
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.achievement-icon {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 50%;
+  font-size: 14px;
+}
+
+.achievement-card.completed .achievement-icon {
+  background: rgba(39, 174, 96, 0.2);
+  color: #2ecc71;
+}
+
+.achievement-description {
+  color: #94a3b8;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  margin-bottom: 0.75rem;
+}
+
+.achievement-progress {
+  font-size: 0.85rem;
+  color: #cbd5e1;
+  text-align: right;
+}
+
+.achievement-card.completed .achievement-progress {
+  color: #2ecc71;
+  font-weight: 500;
+}
+
+/* 成就解锁动画 */
+@keyframes achievementUnlock {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+    box-shadow: 0 0 30px rgba(245, 215, 110, 0.5);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.achievement-card.unlock-animation {
+  animation: achievementUnlock 1s ease-out;
+}
+
+/* 底部信息栏样式 */
+.bottom-info-bar {
+  margin-top: auto;
+  padding: 1rem 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  text-align: center;
+  font-size: 0.85rem;
+  color: #64748b;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.auto-save-status {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.save-indicator {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #e74c3c;
+  transition: background 0.3s ease;
+}
+
+.save-indicator.saved {
+  background: #2ecc71;
+  animation: pulseSaved 2s infinite;
+}
+
+@keyframes pulseSaved {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(46, 204, 113, 0.4);
+  }
+  70% {
+    box-shadow: 0 0 0 8px rgba(46, 204, 113, 0);
+  }
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .game-content {
+    padding: 1rem;
+  }
+  
+  .game-title {
+    font-size: 2rem;
+  }
+  
+  .status-info, .action-grid, .resource-list, .skill-list, .equipment-list {
+    grid-template-columns: 1fr;
+  }
+  
+  .panel {
+    padding: 1rem;
+  }
+}
+
+/* 离线收益提示 */
+.offline-rewards {
+  background: rgba(245, 215, 110, 0.1);
+  border: 1px solid #f5d76e;
+  border-radius: 6px;
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+  text-align: center;
+}
+
+.offline-rewards h3 {
+  color: #f5d76e;
+  margin-bottom: 0.5rem;
+}
+
+.offline-rewards p {
+  color: #e2e8f0;
+}
+
+/* 灵气效果动画 */
+@keyframes qiPulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.7;
+  }
+  50% {
+    transform: scale(1.05);
+    opacity: 0.9;
+  }
+}
+
+.qi-effect {
+  animation: qiPulse 2s infinite ease-in-out;
+}
+
+/* 升级特效 */
+@keyframes levelUpEffect {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.level-up-animation {
+  animation: levelUpEffect 1s ease-out;
+}

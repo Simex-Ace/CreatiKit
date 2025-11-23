@@ -75,6 +75,10 @@ export default function Home() {
     router.push('/gif-tool');
   };
 
+  const handleCultivationGame = () => {
+    router.push('/cultivation-game');
+  };
+
   const handleWeatherTool = () => {
     router.push('/weather-tool');
   };
@@ -442,6 +446,33 @@ export default function Home() {
               <div className="mt-auto pt-4">
                 <Button className="w-full" onClick={handleGifTool}>
                   开始使用
+                </Button>
+              </div>
+            </div>
+          </Card>
+
+          {/* 修真模拟器卡片 */}
+          <Card className="relative min-h-[300px] flex flex-col transition-all duration-300 hover:shadow-lg border-2 border-purple-400 transform hover:-translate-y-1">
+            <div className="absolute -top-3 -right-3 bg-purple-500 text-white text-xs font-bold px-3 py-1 rounded-full">
+              新品
+            </div>
+            <div className="p-6 flex-grow flex flex-col space-y-4">
+              <div className="rounded-full bg-purple-100 p-3 w-fit">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-purple-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M8 3v4a1 1 0 0 1-1 1H3" />
+                  <path d="m21 17 2-2-2-2" />
+                  <path d="m16 10 2-2-2-2" />
+                  <path d="M4 11c0 4.4 2.9 8.2 6.9 9.5C15.1 21.2 19 17.4 19 13" />
+                  <path d="M12 17a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" />
+                </svg>
+              </div>
+              <h3 className="text-xl font-bold text-purple-700">🧙‍♂️ 修真模拟器</h3>
+              <p className="text-muted-foreground flex-grow">
+                修仙挂机文本游戏，体验修真进阶、灵气采集、技能修炼的修仙之旅
+              </p>
+              <div className="mt-auto pt-4">
+                <Button className="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold" onClick={handleCultivationGame}>
+                  开始修仙
                 </Button>
               </div>
             </div>

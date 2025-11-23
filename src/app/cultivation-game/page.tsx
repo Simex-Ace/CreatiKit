@@ -1,0 +1,254 @@
+'use client'
+
+import React, { useState, useEffect, useRef } from 'react';
+import { GameState } from './types';
+import { createNewGame, CultivationGame } from './game-core';
+import { StatusPanel } from './components/StatusPanel';
+import { ActionPanel } from './components/ActionPanel';
+import { InventoryPanel } from './components/InventoryPanel';
+import { CultivationPanel } from './components/CultivationPanel';
+import AchievementsPanel from './components/AchievementsPanel';
+import './globals.css';
+
+export default function CultivationGamePage() {
+  const [gameState, setGameState] = useState<GameState | null>(null);
+  const [notification, setNotification] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
+  const [isAutoSaved, setIsAutoSaved] = useState(true);
+  const gameRef = useRef<CultivationGame | null>(null);
+  const lastSaveRef = useRef<number>(Date.now());
+
+  // 初始化游戏
+  useEffect(() => {
+    const savedGame = localStorage.getItem('cultivationGame');
+    
+    if (savedGame) {
+      try {
+        const parsedGame = JSON.parse(savedGame);
+        // 计算离线收益
+        const offlineDuration = Math.floor((Date.now() - parsedGame.lastPlayTime) / 1000);
+        
+        // CultivationGame构造函数会自动处理离线收益
+        const game = new CultivationGame(parsedGame);
+        setGameState(game.getState());
+        gameRef.current = game;
+        
+        // 显示离线收益通知
+        if (offlineDuration > 60) {
+          const minutes = Math.floor(offlineDuration / 60);
+          showNotification(`您已离线 ${minutes} 分钟，获得了离线收益！`, 'success');
+        }
+      } catch (error) {
+        console.error('加载游戏失败，创建新游戏', error);
+        initializeNewGame();
+      }
+    } else {
+      initializeNewGame();
+    }
+  }, []);
+
+  // 初始化新游戏
+  const initializeNewGame = () => {
+    const newGameState = createNewGame('修仙者');
+    setGameState(newGameState);
+    gameRef.current = new CultivationGame(newGameState);
+  };
+
+  // 游戏主循环
+  useEffect(() => {
+    if (!gameRef.current) return;
+
+    // 启动游戏循环
+    gameRef.current.startGameLoop();
+
+    const gameLoop = setInterval(() => {
+      // 获取更新后的游戏状态
+      const newState = gameRef.current ? gameRef.current.getState() : null;
+      setGameState(newState);
+      setIsAutoSaved(false); // 状态变化时标记为未保存
+      
+      // 自动保存（每30秒）
+      const now = Date.now();
+      if (now - lastSaveRef.current > 30000) {
+        saveGame();
+        lastSaveRef.current = now;
+        setIsAutoSaved(true);
+      }
+    }, 1000); // 每秒更新一次
+
+    return () => {
+      clearInterval(gameLoop);
+      gameRef.current?.stopGameLoop();
+    };
+  }, []);
+
+  // 保存游戏
+  const saveGame = () => {
+    if (!gameRef.current) return;
+    
+    const gameStateToSave = gameRef.current.getState();
+    gameStateToSave.lastPlayTime = Date.now();
+    
+    localStorage.setItem('cultivationGame', JSON.stringify(gameStateToSave));
+    setIsAutoSaved(true);
+  };
+
+  // 游戏操作处理
+  const handleAction = (action: string, params?: any) => {
+    if (!gameRef.current) return;
+
+    switch (action) {
+      case 'cultivate':
+        gameRef.current.cultivate();
+        showNotification('开始修炼，增长修为！', 'info');
+        break;
+      case 'gatherQi':
+        gameRef.current.gatherQi();
+        showNotification('开始采集灵气！', 'info');
+        break;
+      case 'usePill':
+        if (gameRef.current.usePill()) {
+          showNotification('服用了培元丹，修为大涨！', 'success');
+        } else {
+          showNotification('培元丹不足！', 'error');
+        }
+        break;
+      case 'useFruit':
+        // 暂时移除灵果使用功能，需要在CultivationGame类中添加useFruit方法
+        showNotification('功能尚未实现！', 'error');
+        break;
+      case 'toggleAutoCultivate':
+        gameRef.current.toggleAutoCultivate();
+        const isAutoCultivating = gameRef.current.getState().autoCultivate;
+        showNotification(isAutoCultivating ? '开启自动修炼' : '关闭自动修炼', 'info');
+        break;
+      case 'toggleAutoGatherQi':
+        gameRef.current.toggleAutoGatherQi();
+        const isAutoGathering = gameRef.current.getState().autoGatherQi;
+        showNotification(isAutoGathering ? '开启自动采集灵气' : '关闭自动采集灵气', 'info');
+        break;
+      case 'buyPill':
+        if (gameRef.current.buyItem('pills')) {
+          showNotification('购买了培元丹！', 'success');
+        } else {
+          showNotification('灵石不足！', 'error');
+        }
+        break;
+      case 'buyFruit':
+        if (gameRef.current.buyItem('spiritFruit')) {
+          showNotification('购买了灵果！', 'success');
+        } else {
+          showNotification('灵石不足！', 'error');
+        }
+        break;
+      case 'upgradeSkill':
+        if (gameRef.current.upgradeSkill(params.skillId)) {
+          const skill = gameState?.skills.find(s => s.id === params.skillId);
+          showNotification(`成功升级技能「${skill?.name}」！`, 'success');
+        } else {
+          showNotification('升级条件不满足！', 'error');
+        }
+        break;
+      case 'resetGame':
+        if (window.confirm('确定要重新开始游戏吗？当前进度将会丢失！')) {
+          localStorage.removeItem('cultivationGame');
+          initializeNewGame();
+          showNotification('游戏已重置！', 'info');
+        }
+        break;
+      default:
+        console.warn('未知操作:', action);
+    }
+
+    // 更新游戏状态
+    setGameState(gameRef.current.getState());
+    // 立即保存
+    saveGame();
+  };
+
+  // 显示通知
+  const showNotification = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
+    setNotification({ message, type });
+    setTimeout(() => setNotification(null), 3000);
+  };
+  
+  // 显示成就解锁通知
+  const showAchievementNotification = (description: string, reward: string) => {
+    setNotification({
+      message: `🏆 成就解锁：${description}\n奖励：${reward}`,
+      type: 'success'
+    });
+    setTimeout(() => setNotification(null), 5000);
+  };
+
+  if (!gameState) {
+    return (
+      <div className="cultivation-container">
+        <div className="loading-screen">
+          <p>正在加载修仙世界...</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="cultivation-game-container">
+      {/* 背景动态效果 */}
+      <div className="dynamic-background"></div>
+      
+      <div className="game-content">
+        {/* 游戏标题区域 */}
+        <div className="header-section">
+          <h1 className="game-title">
+            <span className="title-glow">🧙‍♂️ 修真模拟器</span>
+          </h1>
+          <div className="subtitle">踏上修仙之路，突破境界，成就大道</div>
+        </div>
+        
+        {/* 控制面板 */}
+        <div className="game-main">
+          {/* 左侧面板 */}
+          <div className="left-panel">
+            <StatusPanel gameState={gameState} />
+            <ActionPanel gameState={gameState} onAction={handleAction} />
+            <CultivationPanel gameState={gameState} onAction={handleAction} />
+          </div>
+          
+          {/* 右侧面板 */}
+          <div className="right-panel">
+            <InventoryPanel gameState={gameState} />
+            
+            {/* 成就面板 */}
+            <AchievementsPanel gameState={gameState} onAchievementUnlock={showAchievementNotification} />
+          </div>
+        </div>
+
+        {/* 重置按钮 */}
+        <div className="reset-game-container">
+          <button 
+            className="btn btn-danger"
+            onClick={() => handleAction('resetGame')}
+          >
+            重新开始游戏
+          </button>
+        </div>
+        
+        {/* 底部信息栏 */}
+        <div className="footer-info">
+          <div className="version-info">
+            v1.0.1
+          </div>
+        </div>
+      </div>
+
+      {/* 增强的通知提示 */}
+      {notification && (
+        <div className={`notification notification-${notification.type} animate-fade-in`}>
+          <span className="notification-icon">
+            {notification.type === 'success' ? '✓' : notification.type === 'error' ? '!' : 'ℹ'}
+          </span>
+          <span className="notification-message">{notification.message}</span>
+        </div>
+      )}
+    </div>
+  );
+}

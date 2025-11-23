@@ -1,12 +1,9 @@
 import type { Metadata } from 'next';
-import { Inter } from 'next/font/google';
 import './globals.css';
 import { Header } from '@/components/header';
 import { Footer } from '@/components/footer';
 import { ThemeProvider } from '@/components/ui/theme-provider';
 import { PageTransition } from '@/components/ui/PageTransition';
-
-const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
   title: 'CreatiKit.io - 创意工具箱',
@@ -26,7 +23,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="zh-CN" suppressHydrationWarning>
-      <body className={inter.className}>
+      <body className="font-sans">
         <ThemeProvider>
           <div className="flex flex-col min-h-screen">
             <Header />
