@@ -1,6 +1,5 @@
 'use client'
 
-
 import React from 'react';
 import { GameState, Equipment } from '../types';
 
