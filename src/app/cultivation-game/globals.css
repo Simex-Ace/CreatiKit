@@ -130,6 +130,56 @@
   opacity: 0.9;
 }
 
+/* 标签页导航样式 */
+.tab-navigation {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+  background: rgba(26, 32, 44, 0.7);
+  padding: 0.5rem;
+  border-radius: 12px;
+  border: 1px solid rgba(245, 215, 110, 0.3);
+}
+
+.tab-button {
+  background: rgba(30, 41, 59, 0.8);
+  color: #94a3b8;
+  border: 1px solid rgba(245, 215, 110, 0.2);
+  border-radius: 8px;
+  padding: 0.75rem 1.25rem;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.3s ease;
+  flex: 1;
+  min-width: 100px;
+  text-align: center;
+}
+
+.tab-button:hover {
+  background: rgba(30, 41, 59, 0.9);
+  color: #e2e8f0;
+  border-color: rgba(245, 215, 110, 0.4);
+  transform: translateY(-1px);
+}
+
+.tab-button.active {
+  background: linear-gradient(135deg, #f5d76e, #f9f9f9);
+  color: #1a202c;
+  border-color: #f5d76e;
+  box-shadow: 0 2px 10px rgba(245, 215, 110, 0.3);
+}
+
+.tab-content {
+  background: rgba(26, 32, 44, 0.85);
+  border: 1px solid rgba(245, 215, 110, 0.3);
+  border-radius: 12px;
+  padding: 2rem;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3), 0 0 10px rgba(245, 215, 110, 0.1);
+  backdrop-filter: blur(12px);
+  min-height: 500px;
+}
+
 /* 面板样式 */
 .panel {
   background: rgba(26, 32, 44, 0.85);
@@ -805,6 +855,106 @@ input:checked + .toggle-slider:before {
     transform: scale(1);
     opacity: 1;
   }
+}
+
+/* 战斗动画 */
+@keyframes slash {
+  0% {
+    width: 0;
+    opacity: 1;
+  }
+  50% {
+    width: 100px;
+    opacity: 1;
+  }
+  100% {
+    width: 100px;
+    opacity: 0;
+  }
+}
+
+@keyframes floatUp {
+  0% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-50px);
+    opacity: 0;
+  }
+}
+
+/* 战斗面板增强样式 */
+.battle-panel {
+  position: relative;
+}
+
+.battle-area {
+  position: relative;
+  height: 300px;
+  background: linear-gradient(180deg, rgba(26, 32, 44, 0.8), rgba(17, 24, 39, 0.9));
+  border-radius: 12px;
+  margin-bottom: 2rem;
+  overflow: hidden;
+  border: 2px solid rgba(245, 215, 110, 0.3);
+}
+
+.battle-character {
+  position: absolute;
+  bottom: 20%;
+  width: 80px;
+  height: 120px;
+  border-radius: 50% 50% 10px 10px;
+  transition: transform 0.3s ease;
+  box-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
+  z-index: 2;
+}
+
+.player-character {
+  left: 15%;
+  background: linear-gradient(135deg, #3498db, #2980b9);
+  box-shadow: 0 0 20px rgba(52, 152, 219, 0.6);
+}
+
+.monster-character {
+  right: 15%;
+  background: linear-gradient(135deg, #e74c3c, #c0392b);
+  box-shadow: 0 0 20px rgba(231, 76, 60, 0.6);
+}
+
+.damage-number {
+  position: absolute;
+  font-weight: bold;
+  font-size: 20px;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+  animation: floatUp 2s ease-out;
+}
+
+.player-damage {
+  color: #e74c3c;
+}
+
+.monster-damage {
+  color: #27ae60;
+}
+
+.attack-animation {
+  position: absolute;
+  left: 100%;
+  top: 40%;
+  width: 100px;
+  height: 4px;
+  background: linear-gradient(90deg, #f5d76e, transparent);
+  animation: slash 0.5s ease-out;
+}
+
+.battle-log {
+  max-height: 150px;
+  overflow-y: auto;
+  padding: 1rem;
+  background: rgba(30, 41, 59, 0.8);
+  border-radius: 8px;
+  margin-top: 1.5rem;
 }
 
 .level-up-animation {

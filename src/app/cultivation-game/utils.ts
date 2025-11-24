@@ -2,21 +2,21 @@ import { CultivationLevel, GameState, Resources, Skill, OfflineRewards } from '.
 
 // 修真境界顺序和升级需求
 export const cultivationLevels: { level: CultivationLevel; maxExp: number; baseQiCapacity: number }[] = [
-  { level: '练气初期', maxExp: 100, baseQiCapacity: 100 },
-  { level: '练气中期', maxExp: 300, baseQiCapacity: 200 },
-  { level: '练气后期', maxExp: 600, baseQiCapacity: 350 },
-  { level: '筑基初期', maxExp: 1200, baseQiCapacity: 600 },
-  { level: '筑基中期', maxExp: 2400, baseQiCapacity: 1000 },
-  { level: '筑基后期', maxExp: 4800, baseQiCapacity: 1600 },
-  { level: '金丹初期', maxExp: 10000, baseQiCapacity: 2500 },
-  { level: '金丹中期', maxExp: 20000, baseQiCapacity: 4000 },
-  { level: '金丹后期', maxExp: 40000, baseQiCapacity: 6500 },
-  { level: '元婴初期', maxExp: 80000, baseQiCapacity: 10000 },
-  { level: '元婴中期', maxExp: 160000, baseQiCapacity: 15000 },
-  { level: '元婴后期', maxExp: 320000, baseQiCapacity: 22000 },
-  { level: '化神初期', maxExp: 640000, baseQiCapacity: 30000 },
-  { level: '化神中期', maxExp: 1280000, baseQiCapacity: 40000 },
-  { level: '化神后期', maxExp: 2560000, baseQiCapacity: 50000 }
+  { level: 'qi_refining_1', maxExp: 100, baseQiCapacity: 100 },
+  { level: 'qi_refining_2', maxExp: 300, baseQiCapacity: 200 },
+  { level: 'qi_refining_3', maxExp: 600, baseQiCapacity: 350 },
+  { level: 'foundation_1', maxExp: 1200, baseQiCapacity: 600 },
+  { level: 'foundation_2', maxExp: 2400, baseQiCapacity: 1000 },
+  { level: 'foundation_3', maxExp: 4800, baseQiCapacity: 1600 },
+  { level: 'golden_core_1', maxExp: 10000, baseQiCapacity: 2500 },
+  { level: 'golden_core_2', maxExp: 20000, baseQiCapacity: 4000 },
+  { level: 'golden_core_3', maxExp: 40000, baseQiCapacity: 6500 },
+  { level: 'nascent_soul_1', maxExp: 80000, baseQiCapacity: 10000 },
+  { level: 'nascent_soul_2', maxExp: 160000, baseQiCapacity: 15000 },
+  { level: 'nascent_soul_3', maxExp: 320000, baseQiCapacity: 22000 },
+  { level: 'spirit_transformation_1', maxExp: 640000, baseQiCapacity: 30000 },
+  { level: 'spirit_transformation_2', maxExp: 1280000, baseQiCapacity: 40000 },
+  { level: 'spirit_transformation_3', maxExp: 2560000, baseQiCapacity: 50000 }
 ];
 
 // 获取下一个境界
@@ -157,7 +157,7 @@ export function createInitialSkills(): Skill[] {
       description: '提高灵气采集速率',
       level: 1,
       maxLevel: 10,
-      unlockLevel: '练气初期',
+      unlockLevel: 'qi_refining_1',
       effects: {
         qiGatherRate: 0.5
       }
@@ -168,7 +168,7 @@ export function createInitialSkills(): Skill[] {
       description: '提高修炼速度',
       level: 1,
       maxLevel: 10,
-      unlockLevel: '练气初期',
+      unlockLevel: 'qi_refining_1',
       effects: {
         cultivationSpeed: 0.3
       }

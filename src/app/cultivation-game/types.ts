@@ -1,20 +1,44 @@
 // 修真境界类型
 export type CultivationLevel = 
-  | '练气初期'
-  | '练气中期'
-  | '练气后期'
-  | '筑基初期'
-  | '筑基中期'
-  | '筑基后期'
-  | '金丹初期'
-  | '金丹中期'
-  | '金丹后期'
-  | '元婴初期'
-  | '元婴中期'
-  | '元婴后期'
-  | '化神初期'
-  | '化神中期'
-  | '化神后期';
+  | 'qi_refining_1'
+  | 'qi_refining_2'
+  | 'qi_refining_3'
+  | 'qi_refining_4'
+  | 'qi_refining_5'
+  | 'qi_refining_6'
+  | 'qi_refining_7'
+  | 'qi_refining_8'
+  | 'qi_refining_9'
+  | 'foundation_1'
+  | 'foundation_2'
+  | 'foundation_3'
+  | 'foundation_4'
+  | 'foundation_5'
+  | 'foundation_6'
+  | 'foundation_7'
+  | 'foundation_8'
+  | 'foundation_9'
+  | 'golden_core_1'
+  | 'golden_core_2'
+  | 'golden_core_3'
+  | 'golden_core_4'
+  | 'golden_core_5'
+  | 'golden_core_6'
+  | 'golden_core_7'
+  | 'golden_core_8'
+  | 'golden_core_9'
+  | 'nascent_soul_1'
+  | 'nascent_soul_2'
+  | 'nascent_soul_3'
+  | 'nascent_soul_4'
+  | 'nascent_soul_5'
+  | 'nascent_soul_6'
+  | 'nascent_soul_7'
+  | 'nascent_soul_8'
+  | 'nascent_soul_9'
+  | 'spirit_transformation_1'
+  | 'spirit_transformation_2'
+  | 'spirit_transformation_3';
 
 // 资源类型
 export interface Resources {
@@ -54,6 +78,8 @@ export interface Skill {
     goldFindRate?: number; // 灵石发现率提升
     cultivationSpeed?: number; // 修炼速度提升
     expGain?: number; // 经验获得提升
+    attack?: number; // 攻击力提升
+    defense?: number; // 防御力提升
   };
 }
 
@@ -71,6 +97,52 @@ export interface Equipment {
   };
 }
 
+// 怪物接口
+export interface Monster {
+  id: string;
+  name: string;
+  description: string;
+  level: number;
+  image: string; // 怪物形象（使用emoji）
+  stats: {
+    health: number;
+    maxHealth: number;
+    attack: number;
+    defense: number;
+    expReward: number;
+    goldReward: number;
+    dropChance: {
+      pills?: number;
+      spiritFruit?: number;
+      spiritGrass?: number;
+    };
+  };
+  isBoss: boolean;
+  requiredLevel: CultivationLevel;
+}
+
+// 战斗状态接口
+export interface BattleState {
+  isInBattle: boolean;
+  currentMonster?: Monster;
+  playerHealth: number;
+  playerMaxHealth: number;
+  monsterHealth: number;
+  battleLog: string[];
+  battleWon?: boolean;
+  fleeSuccess?: boolean;
+  battleLost?: boolean;
+}
+
+// 战斗结果接口
+export interface BattleResult {
+  victory: boolean;
+  message: string;
+  expGained: number;
+  goldGained: number;
+  drops: Partial<Resources>;
+}
+
 // 游戏状态接口
 export interface GameState {
   playerName: string;
@@ -78,6 +150,7 @@ export interface GameState {
   resources: Resources;
   skills: Skill[];
   equipment: Equipment[];
+  monsters: Monster[]; // 可用怪物列表
   lastUpdateTime: number;
   lastPlayTime: number; // 最后游戏时间
   offlineTime: number; // 离线时间（毫秒）
@@ -86,13 +159,19 @@ export interface GameState {
   achievements: string[];
   quests: Quest[]; // 任务列表
   alchemy: AlchemyState; // 炼丹状态
+  forge: ForgeState; // 炼器状态
+  battle: BattleState; // 战斗状态
   // 统计数据（用于成就系统）
-  totalCultivations?: number; // 总修炼次数
-  totalQiGathered?: number; // 总灵气采集量
-  autoCultivationCount?: number; // 自动修炼次数
-  autoGatheringCount?: number; // 自动采集次数
-  rewardsReceived?: string[]; // 已领取的奖励ID列表
-  lastSave?: number; // 最后保存时间
+  totalCultivations: number; // 总修炼次数
+  totalQiGathered: number; // 总灵气采集量
+  autoCultivationCount: number; // 自动修炼次数
+  autoGatheringCount: number; // 自动采集次数
+  rewardsReceived: string[]; // 已领取的奖励ID列表
+  lastSave: number; // 最后保存时间
+  totalEventsEncountered: number; // 总遇到的事件数量
+  totalBattlesWon: number; // 总胜利次数
+  totalBattlesLost: number; // 总失败次数
+  unlockedAchievements: string[]; // 已解锁但未领取奖励的成就ID列表
 }
 
 // 离线奖励接口
@@ -104,22 +183,44 @@ export interface OfflineRewards {
   spiritFruit?: number;
 }
 
+// 任务类型
+export type QuestType = 'main' | 'side' | 'daily' | 'limited';
+
 // 任务接口
 export interface Quest {
   id: string;
   title: string;
   description: string;
+  type: QuestType; // 任务类型
+  difficulty: 'easy' | 'normal' | 'hard' | 'epic'; // 任务难度
   requirements: {
     level?: CultivationLevel;
     resources?: Partial<Resources>;
     skills?: { id: string; level: number }[];
+    alchemy?: {
+      successCount?: number;
+      failedCount?: number;
+    };
+    events?: {
+      encountered?: number;
+    };
+    totalCultivations?: number;
+    totalQiGathered?: number;
+    autoCultivationCount?: number;
+    autoGatheringCount?: number;
   };
   rewards: {
     resources?: Partial<Resources>;
     skills?: string[];
     exp?: number;
+    recipes?: string[]; // 炼丹配方奖励
+    equipment?: string[]; // 装备奖励
   };
   completed: boolean;
+  accepted: boolean; // 是否已接受
+  dueDate?: number; // 截止日期（用于限时任务）
+  questChain?: string; // 所属任务链ID
+  nextQuest?: string; // 后续任务ID
 }
 
 // 事件触发条件接口
@@ -130,10 +231,15 @@ export interface EventTriggers {
 
 // 事件结果接口
 export interface EventOutcome {
-  type: 'resource' | 'exp' | 'text' | 'skill';
-  target?: string;
-  amount?: number;
-  message?: string;
+  probability: number;
+  result: string;
+  effects: {
+    resources?: Partial<Resources>;
+    exp?: number;
+    cultivationSpeedBoost?: number;
+    breakthroughBonus?: boolean;
+    [key: string]: any;
+  };
 }
 
 // 事件选择接口
@@ -148,6 +254,29 @@ export interface EventChoice {
   outcomes: EventOutcome[];
 }
 
+// 成就接口
+export interface Achievement {
+  id: string;
+  name: string;
+  description: string;
+  requirements: {
+    level?: CultivationLevel;
+    resources?: Partial<Resources>;
+    totalCultivations?: number;
+    totalQiGathered?: number;
+    autoCultivationCount?: number;
+    autoGatheringCount?: number;
+    alchemySuccess?: number;
+    skillMaxLevel?: boolean;
+    eventHandled?: number;
+  };
+  reward: {
+    resources?: Partial<Resources>;
+    exp?: number;
+  };
+  unlocked: boolean;
+}
+
 // 事件接口
 export interface GameEvent {
   id: string;
@@ -157,6 +286,16 @@ export interface GameEvent {
   choices: EventChoice[];
 }
 
+// 随机事件接口
+export interface Event {
+  id: string;
+  title: string;
+  description: string;
+  triggerChance: number;
+  choices: EventChoice[];
+
+}
+
 // 丹药类型定义
 export type PillType = 
   | '培元丹'
@@ -164,44 +303,82 @@ export type PillType =
   | '筑基丹'
   | '金丹丹'
   | '元婴丹'
-  | '化神丹';
+  | '化神丹'
+  | '气血丹'
+  | '通灵丹'
+  | '避毒丹'
+  | '回春丹';
 
 // 丹药接口
 export interface Pill {
   id: string;
   name: string;
-  type: PillType;
   description: string;
-  effects: {
-    expGain?: number; // 经验增益
-    qiGain?: number; // 灵气增益
-    cultivationSpeedBoost?: number; // 修炼速度提升
-    duration?: number; // 效果持续时间（秒）
+  effect: {
+    cultivationSpeed?: number;
+    breakthroughChance?: number;
+    healthRegen?: number;
+    resourceGatheringSpeed?: number;
+    poisonResistance?: number;
   };
+  duration: number;
   rarity: 'common' | 'rare' | 'epic' | 'legendary';
+  value: number;
 }
 
 // 炼丹配方接口
 export interface AlchemyRecipe {
   id: string;
-  pillId: string;
   name: string;
+  description: string;
+  pills: string[];
   ingredients: {
-    material: string;
-    amount: number;
+    id: string;
+    quantity: number;
   }[];
-  requiredLevel: CultivationLevel; // 所需修真境界
-  successRate: number; // 成功率 (0-1)
-  expGain: number; // 炼丹获得的经验
+  duration: number;
+  requiredLevel: CultivationLevel;
+  successRate: number;
+  rarity: 'common' | 'rare' | 'epic' | 'legendary';
+  expGain?: number;
 }
 
 // 炼丹状态接口
 export interface AlchemyState {
   recipes: AlchemyRecipe[]; // 已解锁的炼丹配方
   currentPill?: string; // 当前正在炼制的丹药ID
+  currentRecipe?: AlchemyRecipe; // 当前正在使用的炼丹配方
   progress: number; // 炼丹进度 (0-100)
   isBrewing: boolean; // 是否正在炼丹
+  startTime?: number; // 开始炼丹的时间
   lastBrewTime: number; // 上次炼丹时间
   successCount: number; // 成功炼丹次数
   failedCount: number; // 失败炼丹次数
+}
+
+// 炼器系统相关接口
+// 炼器图谱接口
+export interface ForgeBlueprint {
+  id: string;
+  name: string;
+  description: string;
+  itemId: string; // 对应的装备ID
+  requiredLevel: CultivationLevel; // 所需境界
+  ingredients: {
+    materialId: string;
+    quantity: number;
+  }[];
+  successRate: number; // 成功概率
+  expGain: number; // 获得经验
+}
+
+// 炼器状态接口
+export interface ForgeState {
+  blueprints: ForgeBlueprint[]; // 已解锁的炼器图谱
+  currentItem?: string; // 当前正在炼制的装备ID
+  progress: number; // 炼器进度 (0-100)
+  isForging: boolean; // 是否正在炼器
+  lastForgeTime: number; // 上次炼器时间
+  successCount: number; // 成功炼器次数
+  failedCount: number; // 失败炼器次数
 }

@@ -1,6 +1,7 @@
 import React from 'react';
-import { GameState, AlchemyRecipe, Pill } from '../types';
+import { GameState, AlchemyRecipe, Pill, CultivationLevel } from '../types';
 import { pills } from '../data/pills';
+import { alchemyRecipes } from '../data/alchemy-recipes';
 import { getMaterialName } from '../utils';
 
 interface AlchemyPanelProps {
@@ -19,9 +20,25 @@ const AlchemyPanel: React.FC<AlchemyPanelProps> = ({ gameState, onStartAlchemy }
   // 检查玩家是否有足够的材料
   const hasEnoughMaterials = (recipe: AlchemyRecipe): boolean => {
     return recipe.ingredients.every(ingredient => {
-      const currentAmount = (resources as any)[ingredient.material] || 0;
-      return currentAmount >= ingredient.amount;
+      const currentAmount = resources[ingredient.id as keyof typeof resources] || 0;
+      return currentAmount >= ingredient.quantity;
     });
+  };
+
+  // 检查玩家是否达到炼丹所需的修真等级
+  const meetsLevelRequirement = (recipe: AlchemyRecipe): boolean => {
+    const levelOrder: CultivationLevel[] = [
+      'qi_refining_1', 'qi_refining_2', 'qi_refining_3',
+      'foundation_1', 'foundation_2', 'foundation_3',
+      'golden_core_1', 'golden_core_2', 'golden_core_3',
+      'nascent_soul_1', 'nascent_soul_2', 'nascent_soul_3',
+      'spirit_transformation_1', 'spirit_transformation_2', 'spirit_transformation_3'
+    ];
+
+    const playerLevelIndex = levelOrder.indexOf(cultivation.level);
+    const requiredLevelIndex = levelOrder.indexOf(recipe.requiredLevel);
+
+    return playerLevelIndex >= requiredLevelIndex;
   };
 
   return (
@@ -44,13 +61,13 @@ const AlchemyPanel: React.FC<AlchemyPanelProps> = ({ gameState, onStartAlchemy }
 
       {/* 炼丹配方列表 */}
       <div className="max-h-96 overflow-y-auto pr-2">
-        {alchemy && alchemy.recipes && alchemy.recipes.length > 0 ? (
+        {alchemyRecipes.filter(recipe => meetsLevelRequirement(recipe)).length > 0 ? (
           <div className="space-y-3">
-            {alchemy.recipes.map(recipe => {
-              const pillInfo = getPillInfo(recipe.pillId);
-              const canCraft = hasEnoughMaterials(recipe) && 
-                             cultivation.level === recipe.requiredLevel &&
-                             !(alchemy && alchemy.isBrewing);
+            {alchemyRecipes.filter(recipe => meetsLevelRequirement(recipe)).map(recipe => {
+              const pillInfo = getPillInfo(recipe.pills[0]);
+              const hasMaterials = hasEnoughMaterials(recipe);
+              const meetsLevel = meetsLevelRequirement(recipe);
+              const canCraft = hasMaterials && meetsLevel && !(alchemy && alchemy.isBrewing);
               
               return (
                 <div 
@@ -72,15 +89,15 @@ const AlchemyPanel: React.FC<AlchemyPanelProps> = ({ gameState, onStartAlchemy }
                     <p className="text-xs font-semibold text-gray-300 mb-1">材料需求:</p>
                     <div className="flex flex-wrap gap-2">
                       {recipe.ingredients.map((ingredient, idx) => {
-                        const currentAmount = (resources as any)[ingredient.material] || 0;
-                        const isEnough = currentAmount >= ingredient.amount;
+                        const currentAmount = resources[ingredient.id as keyof typeof resources] || 0;
+                        const isEnough = currentAmount >= ingredient.quantity;
                         
                         return (
                           <div 
                             key={idx} 
                             className={`px-2 py-1 rounded text-xs ${isEnough ? 'bg-gray-600 text-gray-200' : 'bg-gray-800 text-red-300'}`}
                           >
-                            {getMaterialName(ingredient.material)}: {currentAmount}/{ingredient.amount}
+                            {getMaterialName(ingredient.id)}: {currentAmount}/{ingredient.quantity}
                           </div>
                         );
                       })}
@@ -89,8 +106,8 @@ const AlchemyPanel: React.FC<AlchemyPanelProps> = ({ gameState, onStartAlchemy }
                   
                   {/* 其他信息 */}
                   <div className="flex justify-between items-center text-xs text-gray-400 mb-2">
-                    <span>经验值: +{recipe.expGain}</span>
-                    <span>等级要求: {recipe.requiredLevel}</span>
+                    <span>炼制时间: {recipe.duration}秒</span>
+                    <span>等级要求: {recipe.requiredLevel.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}</span>
                   </div>
                   
                   {/* 开始炼丹按钮 */}
@@ -100,7 +117,8 @@ const AlchemyPanel: React.FC<AlchemyPanelProps> = ({ gameState, onStartAlchemy }
                   className={`w-full py-2 rounded font-semibold transition-all ${canCraft ? 'bg-green-600 hover:bg-green-700' : 'bg-gray-600 cursor-not-allowed'}`}
                 >
                   {canCraft ? '开始炼丹' : (
-                    (alchemy && alchemy.isBrewing) ? '正在炼丹中' : '材料或等级不足'
+                    (alchemy && alchemy.isBrewing) ? '正在炼丹中' : 
+                    (!meetsLevel ? '等级不足' : '材料不足')
                   )}
                   </button>
                 </div>

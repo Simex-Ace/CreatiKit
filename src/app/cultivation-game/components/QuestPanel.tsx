@@ -60,12 +60,33 @@ export const QuestPanel: React.FC<QuestPanelProps> = ({ gameState, onAction }) =
                       const skill = gameState.skills.find(s => s.id === skillReq.id);
                       const currentLevel = skill ? skill.level : 0;
                       const skillName = skill ? skill.name : skillReq.id;
-                      
+                       
                       progressItems.push(`${skillName}: ${currentLevel}/${skillReq.level}`);
                     }
                   }
                   
-                  return progressItems.join(', ');
+                  // 渲染炼丹进度
+                  if (quest.requirements.alchemy) {
+                    if (quest.requirements.alchemy.successCount) {
+                      const currentSuccesses = gameState.alchemy ? gameState.alchemy.successCount : 0;
+                      progressItems.push(`成功炼丹: ${currentSuccesses}/${quest.requirements.alchemy!.successCount}`);
+                    }
+                    if (quest.requirements.alchemy.failedCount) {
+                      const currentFailures = gameState.alchemy ? gameState.alchemy.failedCount : 0;
+                      progressItems.push(`失败炼丹: ${currentFailures}/${quest.requirements.alchemy!.failedCount}`);
+                    }
+                  }
+                  
+                  // 渲染事件进度
+                  if (quest.requirements.events) {
+                    if (quest.requirements.events.encountered) {
+                      // 需要在gameState中添加事件统计
+                      const currentEncounters = 0; // 临时默认值，需要在游戏状态中实现
+                      progressItems.push(`经历事件: ${currentEncounters}/${quest.requirements.events!.encountered}`);
+                    }
+                  }
+                  
+                  return progressItems.length > 0 ? progressItems.join(', ') : '无进度要求';
                 };
 
                 // 渲染任务奖励

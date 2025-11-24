@@ -1,4 +1,6 @@
-import { GameState, Resources, Skill, Equipment, OfflineRewards, Quest, GameEvent } from './types';
+import { GameState, Resources, Skill, Equipment, OfflineRewards, Quest, GameEvent, Event, Achievement, Monster, BattleResult, CultivationLevel } from './types';
+import { monsters as initialMonsters } from './data/monsters';
+import { forgeBlueprints as initialForgeBlueprints } from './data/forge-blueprints';
 import {
   createInitialSkills,
   canLevelUp,
@@ -11,21 +13,22 @@ import {
 import { quests as initialQuests } from './data/quests';
 import { events as initialEvents } from './data/events';
 import { pills as initialPills } from './data/pills';
-import { alchemyRecipes as initialRecipes } from './data/recipes';
+import { achievements as initialAchievements } from './data/achievements';
+import { alchemyRecipes as initialRecipes } from './data/alchemy-recipes';
 
 // 创建新的游戏状态
 export function createNewGame(playerName: string = '修真者'): GameState {
   const initialSkills = createInitialSkills();
-  const initialLevelInfo = getCultivationLevelInfo('练气初期');
+  const initialLevelInfo = getCultivationLevelInfo('qi_refining_1');
   
   return {
     playerName,
     cultivation: {
-      level: '练气初期',
+      level: 'qi_refining_1',
       exp: 0,
       maxExp: initialLevelInfo?.maxExp || 100,
       qiCapacity: initialLevelInfo?.baseQiCapacity || 100,
-      cultivationSpeed: calculateCultivationSpeed({} as GameState, '练气初期')
+      cultivationSpeed: calculateCultivationSpeed({} as GameState, 'qi_refining_1')
     },
     resources: {
       qi: 0,
@@ -62,18 +65,30 @@ export function createNewGame(playerName: string = '修真者'): GameState {
         }
       }
     ],
+    monsters: initialMonsters,
     lastUpdateTime: Date.now(),
     lastPlayTime: Date.now(),
     offlineTime: 0,
     autoCultivate: false,
     autoGatherQi: false,
     achievements: [],
+    unlockedAchievements: [], // 已解锁但未领取奖励的成就
     quests: [...initialQuests], // 初始化任务列表
     alchemy: {
-      recipes: initialRecipes.filter(recipe => recipe.requiredLevel === '练气初期'), // 初始解锁基础配方
+      recipes: initialRecipes.filter(recipe => recipe.requiredLevel === 'qi_refining_1'), // 初始解锁基础配方
       progress: 0,
       isBrewing: false,
+      currentPill: undefined,
       lastBrewTime: Date.now(),
+      successCount: 0,
+      failedCount: 0
+    },
+    forge: {
+      blueprints: initialForgeBlueprints.filter(blueprint => blueprint.requiredLevel === 'qi_refining_1'), // 初始解锁基础图谱
+      progress: 0,
+      isForging: false,
+      currentItem: undefined,
+      lastForgeTime: Date.now(),
       successCount: 0,
       failedCount: 0
     },
@@ -82,7 +97,21 @@ export function createNewGame(playerName: string = '修真者'): GameState {
     totalQiGathered: 0,
     autoCultivationCount: 0,
     autoGatheringCount: 0,
-    rewardsReceived: []
+    rewardsReceived: [],
+    totalEventsEncountered: 0,
+    // 战斗系统相关
+    battle: {
+      isInBattle: false,
+      currentMonster: undefined,
+      playerHealth: 100,
+      playerMaxHealth: 100,
+      monsterHealth: 0,
+      battleLog: []
+    },
+    // 战斗统计
+    totalBattlesWon: 0,
+    totalBattlesLost: 0,
+    lastSave: Date.now()
   };
 }
 
@@ -91,10 +120,14 @@ export class CultivationGame {
   private gameState: GameState;
   private gameLoopInterval: number | null = null;
   private eventCallback: ((eventType: string, data: any) => void) | null = null;
-  private currentEvent: GameEvent | null = null;
+  private currentEvent: (GameEvent | Event) | null = null;
 
   constructor(savedState?: GameState) {
     this.gameState = savedState || createNewGame();
+    // 确保unlockedAchievements存在
+    if (!this.gameState.unlockedAchievements) {
+      this.gameState.unlockedAchievements = [];
+    }
     // 如果有离线时间，计算离线收益
     this.processOfflineRewards();
   }
@@ -103,85 +136,78 @@ export class CultivationGame {
   checkAndApplyAchievementRewards() {
     let hasChanges = false;
 
-    // 1. 初次修炼奖励
-    if ((this.gameState.totalCultivations || 0) > 0 && !this.gameState.rewardsReceived?.includes('first-cultivation')) {
-      hasChanges = true;
-      this.gameState.rewardsReceived = [...(this.gameState.rewardsReceived || []), 'first-cultivation'];
-      this.gameState.resources.pills += 3; // 奖励3颗丹药
-      this.notifyEvent('achievement_unlocked', { 
-        achievement: 'first-cultivation', 
-        description: '初次修炼 - 完成第一次修炼',
-        reward: '3颗丹药'
-      });
-    }
-
-    // 2. 灵气大师奖励（采集效率+10%）
-    if ((this.gameState.totalQiGathered || 0) >= 100 && !this.gameState.rewardsReceived?.includes('qi-master')) {
-      // 提升灵气采集速率
-      const gatherSkill = this.gameState.skills.find(s => s.effects.qiGatherRate);
-      if (gatherSkill) {
-        // 确保effects对象存在且有qiGatherRate属性
-        if (!gatherSkill.effects) {
-          gatherSkill.effects = {};
-        }
-        gatherSkill.effects.qiGatherRate = (gatherSkill.effects.qiGatherRate || 0) + 0.1;
+    // 遍历所有成就，检查条件并应用奖励
+    for (const achievement of initialAchievements) {
+      if (this.gameState.achievements.includes(achievement.id)) {
+        continue; // 成就已解锁
       }
-      hasChanges = true;
-      this.gameState.rewardsReceived = [...(this.gameState.rewardsReceived || []), 'qi-master'];
-      this.notifyEvent('achievement_unlocked', { 
-        achievement: 'qi-master', 
-        description: '灵气大师 - 已采集100点灵气',
-        reward: '灵气采集效率+10%'
-      });
-    }
 
-    // 3. 境界突破奖励（练气中期）
-    if (this.gameState.cultivation.level.includes('中期') && !this.gameState.rewardsReceived?.includes('breakthrough')) {
-      hasChanges = true;
-      this.gameState.rewardsReceived = [...(this.gameState.rewardsReceived || []), 'breakthrough'];
-      this.gameState.resources.spiritFruit += 2; // 奖励2个灵果
-      this.notifyEvent('achievement_unlocked', { 
-        achievement: 'breakthrough', 
-        description: '境界突破 - 达到练气中期',
-        reward: '2个灵果'
-      });
-    }
+      // 检查成就条件
+      let isUnlocked = true;
 
-    // 4. 自动化专家奖励（自动模式效率+10%）
-    if ((this.gameState.autoCultivationCount || 0) >= 100 && !this.gameState.rewardsReceived?.includes('auto-pro')) {
-      // 提升自动模式效率
-      hasChanges = true;
-      this.gameState.rewardsReceived = [...(this.gameState.rewardsReceived || []), 'auto-pro'];
-      this.notifyEvent('achievement_unlocked', { 
-        achievement: 'auto-pro', 
-        description: '自动化专家 - 自动修炼100次',
-        reward: '自动模式效率+10%'
-      });
-    }
+      if (achievement.requirements.level && this.gameState.cultivation.level !== achievement.requirements.level) {
+        isUnlocked = false;
+      }
 
-    // 5. 富有的修真者奖励
-    if (this.gameState.resources.gold >= 1000 && !this.gameState.rewardsReceived?.includes('rich-cultivator')) {
-      hasChanges = true;
-      this.gameState.rewardsReceived = [...(this.gameState.rewardsReceived || []), 'rich-cultivator'];
-      this.gameState.resources.materials += 50; // 奖励50材料
-      this.notifyEvent('achievement_unlocked', { 
-        achievement: 'rich-cultivator', 
-        description: '富有的修真者 - 积累1000灵石',
-        reward: '50材料'
-      });
-    }
+      if (achievement.requirements.resources) {
+        for (const [resource, amount] of Object.entries(achievement.requirements.resources)) {
+          if ((this.gameState.resources[resource as keyof Resources] || 0) < amount) {
+            isUnlocked = false;
+            break;
+          }
+        }
+      }
 
-    // 6. 技能精通奖励
-    const upgradedSkillsCount = this.gameState.skills.filter(s => s.level > 1).length;
-    if (upgradedSkillsCount >= 5 && !this.gameState.rewardsReceived?.includes('skill-master')) {
-      hasChanges = true;
-      this.gameState.rewardsReceived = [...(this.gameState.rewardsReceived || []), 'skill-master'];
-      this.gameState.resources.gold += 200; // 奖励200灵石
-      this.notifyEvent('achievement_unlocked', { 
-        achievement: 'skill-master', 
-        description: '技能精通 - 升级5个技能',
-        reward: '200灵石'
-      });
+      if (achievement.requirements.totalCultivations && 
+          (this.gameState.totalCultivations || 0) < achievement.requirements.totalCultivations) {
+        isUnlocked = false;
+      }
+
+      if (achievement.requirements.totalQiGathered && 
+          (this.gameState.totalQiGathered || 0) < achievement.requirements.totalQiGathered) {
+        isUnlocked = false;
+      }
+
+      if (achievement.requirements.autoCultivationCount && 
+          (this.gameState.autoCultivationCount || 0) < achievement.requirements.autoCultivationCount) {
+        isUnlocked = false;
+      }
+
+      if (achievement.requirements.autoGatheringCount && 
+          (this.gameState.autoGatheringCount || 0) < achievement.requirements.autoGatheringCount) {
+        isUnlocked = false;
+      }
+
+      if (achievement.requirements.alchemySuccess && 
+          (this.gameState.alchemy.successCount || 0) < achievement.requirements.alchemySuccess) {
+        isUnlocked = false;
+      }
+
+      if (achievement.requirements.skillMaxLevel) {
+        const hasMaxLevelSkill = this.gameState.skills.some(skill => skill.level >= skill.maxLevel);
+        if (!hasMaxLevelSkill) {
+          isUnlocked = false;
+        }
+      }
+
+      if (achievement.requirements.eventHandled && 
+          (this.gameState.totalEventsEncountered || 0) < achievement.requirements.eventHandled) {
+        isUnlocked = false;
+      }
+
+      // 如果所有条件都满足，解锁成就但不自动应用奖励
+      if (isUnlocked) {
+        hasChanges = true;
+        this.gameState.achievements.push(achievement.id);
+        this.gameState.unlockedAchievements.push(achievement.id);
+
+        // 发送成就解锁通知
+        this.notifyEvent('achievement_unlocked', { 
+          achievement: achievement.id, 
+          description: `${achievement.name} - ${achievement.description}`,
+          reward: `资源: ${JSON.stringify(achievement.reward.resources || {})}, 经验: ${achievement.reward.exp || 0}`
+        });
+      }
     }
 
     if (hasChanges) {
@@ -196,7 +222,11 @@ export class CultivationGame {
 
   // 获取当前游戏状态
   getState(): GameState {
-    return { ...this.gameState };
+    // 返回游戏状态的副本，并确保monsters字段是通过getAvailableMonsters方法过滤后的结果
+    return {
+      ...this.gameState,
+      monsters: this.getAvailableMonsters()
+    };
   }
 
   // 处理离线收益
@@ -276,6 +306,9 @@ export class CultivationGame {
     // 更新炼丹进度
     this.updateAlchemyProgress();
     
+    // 更新炼器进度
+    this.updateForgeProgress();
+    
     // 自动获得灵石（每10秒获得1点）
     if (Math.random() < 0.1) { // 10%概率每秒获得1点灵石
       this.gameState.resources.gold += 1;
@@ -328,7 +361,7 @@ export class CultivationGame {
     
     // 有20%几率触发随机事件
     if (!auto && Math.random() < 0.2) {
-      this.triggerRandomEvent();
+      this.triggerRandomEvent('cultivate');
     }
     
     this.notifyEvent('cultivated', { expGain, totalExp: this.gameState.cultivation.exp });
@@ -364,7 +397,7 @@ export class CultivationGame {
     
     // 有20%几率触发随机事件
     if (!auto && Math.random() < 0.2) {
-      this.triggerRandomEvent();
+      this.triggerRandomEvent('gatherQi');
     }
     
     if (!auto) {
@@ -484,6 +517,428 @@ export class CultivationGame {
     return true;
   }
 
+  // 战斗系统相关方法
+  getAvailableMonsters(): Monster[] {
+    if (!this.gameState) return [];
+    
+    // 根据当前境界过滤可用怪物
+    return initialMonsters.filter(monster => {
+      // 这里可以根据玩家的修炼境界来过滤怪物
+      return true; // 暂时返回所有怪物
+    });
+  }
+
+  startBattle(monsterId: string): boolean {
+    if (!this.gameState) {
+      this.notifyEvent('error', { message: '游戏状态未初始化' });
+      return false;
+    }
+    
+    // 确保battle属性存在，如果不存在则初始化
+    if (!this.gameState.battle) {
+      this.gameState.battle = {
+        isInBattle: false,
+        currentMonster: undefined,
+        playerHealth: 100,
+        playerMaxHealth: 100,
+        monsterHealth: 0,
+        battleLog: []
+      };
+    }
+    
+    if (this.gameState.battle.isInBattle) {
+      this.notifyEvent('error', { message: '当前正在战斗中' });
+      return false;
+    }
+    
+    const monster = initialMonsters.find(m => m.id === monsterId);
+    if (!monster) {
+      this.notifyEvent('error', { message: '怪物不存在' });
+      return false;
+    }
+    
+    // 开始战斗
+    this.gameState.battle.isInBattle = true;
+    this.gameState.battle.currentMonster = { ...monster };
+    this.gameState.battle.playerHealth = 100; // 重置玩家生命值
+    this.gameState.battle.playerMaxHealth = 100; // 确保玩家最大生命值已设置
+    this.gameState.battle.monsterHealth = monster.stats.maxHealth;
+    this.gameState.battle.battleLog = [`战斗开始！你遇到了${monster.name}！`]; // 初始化战斗日志
+    
+    this.notifyEvent('battle_started', { monster });
+    return true;
+  }
+
+  attackMonster(): BattleResult {
+    if (!this.gameState) {
+      return { victory: false, expGained: 0, goldGained: 0, drops: {}, message: '不在战斗中' };
+    }
+    
+    // 确保battle属性存在，如果不存在则初始化
+    if (!this.gameState.battle) {
+      this.gameState.battle = {
+        isInBattle: false,
+        currentMonster: undefined,
+        playerHealth: 100,
+        playerMaxHealth: 100,
+        monsterHealth: 0,
+        battleLog: []
+      };
+      return { victory: false, expGained: 0, goldGained: 0, drops: {}, message: '不在战斗中' };
+    }
+    
+    if (!this.gameState.battle.isInBattle || !this.gameState.battle.currentMonster) {
+      this.notifyEvent('error', { message: '不在战斗中或没有当前怪物' });
+      return { victory: false, expGained: 0, goldGained: 0, drops: {}, message: '不在战斗中或没有当前怪物' };
+    }
+    
+    // 检查战斗是否已经结束（胜利、逃跑成功或失败）
+    if (this.gameState.battle.battleWon || this.gameState.battle.fleeSuccess || this.gameState.battle.battleLost) {
+      this.notifyEvent('error', { message: '战斗已经结束' });
+      return { victory: false, expGained: 0, goldGained: 0, drops: {}, message: '战斗已经结束' };
+    }
+    
+    const monster = this.gameState.battle.currentMonster;
+    
+    // 计算玩家伤害
+    let playerAttack = 10; // 基础攻击力
+    // 可以根据技能、装备等增加攻击力
+    this.gameState.skills.forEach(skill => {
+      if (skill.effects.attack) {
+        playerAttack += skill.effects.attack * skill.level;
+      }
+    });
+    
+    // 计算怪物伤害
+    let monsterAttack = monster.stats.attack;
+    
+    // 玩家攻击怪物
+    let monsterDamage = Math.max(1, playerAttack - monster.stats.defense / 2);
+    this.gameState.battle.monsterHealth = Math.max(0, this.gameState.battle.monsterHealth - monsterDamage);
+    
+    // 添加战斗日志 - 玩家攻击
+    if (!Array.isArray(this.gameState.battle.battleLog)) {
+      this.gameState.battle.battleLog = [];
+    }
+    this.gameState.battle.battleLog.push(`你攻击了${monster.name}，造成了${Math.round(monsterDamage)}点伤害！`);
+    
+    // 计算玩家防御
+    let playerDefense = 5; // 基础防御
+    // 从技能中获取防御加成
+    this.gameState.skills.forEach(skill => {
+      if (skill.effects.defense) {
+        playerDefense += skill.effects.defense * skill.level;
+      }
+    });
+    // 从装备中获取防御加成
+    this.gameState.equipment.forEach(item => {
+      if (item.effects.defense) {
+        playerDefense += item.effects.defense;
+      }
+    });
+    
+    // 怪物攻击玩家
+    let playerDamage = Math.max(1, monsterAttack - playerDefense / 2); // 考虑玩家防御
+    this.gameState.battle.playerHealth = Math.max(0, this.gameState.battle.playerHealth - playerDamage);
+    
+    // 添加战斗日志 - 怪物攻击
+    if (!Array.isArray(this.gameState.battle.battleLog)) {
+      this.gameState.battle.battleLog = [];
+    }
+    this.gameState.battle.battleLog.push(`${monster.name}攻击了你，造成了${Math.round(playerDamage)}点伤害！`);
+    
+    // 检查战斗结果
+    if (this.gameState.battle.monsterHealth <= 0) {
+      // 玩家胜利
+      const expGained = monster.stats.expReward;
+      const goldGained = monster.stats.goldReward;
+      
+      // 应用奖励
+      this.gameState.cultivation.exp += expGained;
+      this.gameState.resources.gold += goldGained;
+      this.gameState.totalBattlesWon++;
+      
+      // 添加战斗胜利日志
+      this.gameState.battle.battleLog.push(`你击败了${monster.name}！`);
+      this.gameState.battle.battleLog.push(`获得了${expGained}点经验和${goldGained}金币！`);
+      this.gameState.battle.battleLog.push('点击「退出战斗」按钮返回地图。');
+      
+      // 战斗胜利但保持战斗状态，直到用户主动退出
+      this.gameState.battle.battleWon = true;
+      
+      this.notifyEvent('battle_victory', { expGained, goldGained, monster });
+      return { victory: true, expGained, goldGained, drops: {}, message: '战斗胜利' };
+    } else if (this.gameState.battle.playerHealth <= 0) {
+      // 玩家失败
+      this.gameState.totalBattlesLost++;
+      
+      // 确保生命值不会变成负数
+      this.gameState.battle.playerHealth = 0;
+      
+      // 添加战斗失败日志
+      this.gameState.battle.battleLog.push(`你被${monster.name}击败了！`);
+      this.gameState.battle.battleLog.push('战斗失败，点击「退出战斗」按钮返回地图。');
+      
+      // 战斗失败但保持战斗状态，直到用户主动退出
+      this.gameState.battle.battleLost = true;
+      
+      this.notifyEvent('battle_defeat', { monster });
+      return { victory: false, expGained: 0, goldGained: 0, drops: {}, message: '战斗失败' };
+    }
+    
+    // 战斗继续
+    this.notifyEvent('battle_round', { playerDamage, monsterDamage });
+    return { victory: false, expGained: 0, goldGained: 0, drops: {}, message: '战斗进行中' };
+  }
+
+  exitBattle(): void {
+    if (!this.gameState || !this.gameState.battle) {
+      return;
+    }
+    
+    // 重置战斗状态
+    this.gameState.battle.isInBattle = false;
+    this.gameState.battle.currentMonster = undefined;
+    this.gameState.battle.playerHealth = 100;
+    this.gameState.battle.playerMaxHealth = 100;
+    this.gameState.battle.monsterHealth = 0;
+    this.gameState.battle.battleLog = [];
+    this.gameState.battle.battleWon = false;
+    this.gameState.battle.fleeSuccess = false;
+    this.gameState.battle.battleLost = false;
+    
+    this.notifyEvent('battle_exited', {});
+  }
+
+  fleeBattle(): boolean {
+    if (!this.gameState) {
+      this.notifyEvent('error', { message: '不在战斗中' });
+      return false;
+    }
+    
+    // 确保battle属性存在，如果不存在则初始化
+    if (!this.gameState.battle) {
+      this.gameState.battle = {
+        isInBattle: false,
+        currentMonster: undefined,
+        playerHealth: 100,
+        playerMaxHealth: 100,
+        monsterHealth: 0,
+        battleLog: []
+      };
+      this.notifyEvent('error', { message: '不在战斗中' });
+      return false;
+    }
+    
+    if (!this.gameState.battle.isInBattle) {
+      this.notifyEvent('error', { message: '不在战斗中' });
+      return false;
+    }
+    
+    // 有一定概率逃跑成功
+    const fleeSuccess = Math.random() > 0.3; // 70%成功率
+    const monster = this.gameState.battle.currentMonster;
+    
+    if (fleeSuccess) {
+      // 添加战斗日志
+      if (!Array.isArray(this.gameState.battle.battleLog)) {
+        this.gameState.battle.battleLog = [];
+      }
+      this.gameState.battle.battleLog.push('你成功逃离了战斗！');
+      this.gameState.battle.battleLog.push('点击「退出战斗」按钮返回地图。');
+      
+      // 逃跑成功但保持战斗状态，直到用户主动退出
+      this.gameState.battle.fleeSuccess = true;
+      
+      this.notifyEvent('battle_flee', { success: true });
+      return true;
+    } else {
+      // 逃跑失败，怪物反击
+      if (monster) {
+        const monsterAttack = monster.stats.attack;
+        const playerDamage = Math.max(1, monsterAttack - 5);
+        this.gameState.battle.playerHealth = Math.max(0, this.gameState.battle.playerHealth - playerDamage);
+        
+        // 添加战斗日志
+        if (!Array.isArray(this.gameState.battle.battleLog)) {
+          this.gameState.battle.battleLog = [];
+        }
+        this.gameState.battle.battleLog.push('你尝试逃跑但失败了！');
+        this.gameState.battle.battleLog.push(`${monster.name}攻击了你，造成了${Math.round(playerDamage)}点伤害！`);
+        
+        // 检查玩家是否被击败
+        if (this.gameState.battle.playerHealth <= 0) {
+          this.gameState.totalBattlesLost++;
+          
+          // 确保生命值不会变成负数
+          this.gameState.battle.playerHealth = 0;
+          
+          // 添加战斗失败日志
+          this.gameState.battle.battleLog.push(`你被${monster.name}击败了！`);
+          this.gameState.battle.battleLog.push('战斗失败，点击「退出战斗」按钮返回地图。');
+          
+          // 战斗失败但保持战斗状态，直到用户主动退出
+          this.gameState.battle.battleLost = true;
+          
+          this.notifyEvent('battle_defeat', { monster });
+        } else {
+          this.notifyEvent('battle_flee', { success: false, playerDamage });
+        }
+      }
+      return false;
+    }
+  }
+
+  // 炼器系统相关方法
+  startForge(blueprintId: string): boolean {
+    if (!this.gameState) {
+      this.notifyEvent('error', { message: '游戏状态未初始化' });
+      return false;
+    }
+    
+    if (this.gameState.forge.isForging) {
+      this.notifyEvent('error', { message: '当前正在炼器中' });
+      return false;
+    }
+    
+    const blueprint = initialForgeBlueprints.find(b => b.id === blueprintId);
+    if (!blueprint) {
+      this.notifyEvent('error', { message: '炼器图谱不存在' });
+      return false;
+    }
+    
+    // 检查是否解锁该图谱
+    const unlockedBlueprint = this.gameState.forge.blueprints.find(b => b.id === blueprintId);
+    if (!unlockedBlueprint) {
+      this.notifyEvent('error', { message: '未解锁该炼器图谱' });
+      return false;
+    }
+    
+    // 检查材料是否足够
+    for (const ingredient of blueprint.ingredients) {
+      if (this.gameState.resources[ingredient.materialId as keyof Resources] < ingredient.quantity) {
+        this.notifyEvent('error', { message: `材料不足: ${ingredient.materialId}` });
+        return false;
+      }
+    }
+    
+    // 扣除材料
+    for (const ingredient of blueprint.ingredients) {
+      this.gameState.resources[ingredient.materialId as keyof Resources] -= ingredient.quantity;
+    }
+    
+    // 开始炼器
+    if (!this.gameState.forge) {
+      this.gameState.forge = {
+        blueprints: [],
+        progress: 0,
+        isForging: true,
+        currentItem: blueprint.itemId,
+        lastForgeTime: Date.now(),
+        successCount: 0,
+        failedCount: 0
+      };
+    } else {
+      this.gameState.forge.isForging = true;
+      this.gameState.forge.currentItem = blueprint.itemId;
+      this.gameState.forge.progress = 0;
+      this.gameState.forge.lastForgeTime = Date.now();
+    }
+    
+    this.notifyEvent('forge_started', { blueprint });
+    return true;
+  }
+
+  updateForgeProgress(): void {
+    if (!this.gameState || !this.gameState.forge || !this.gameState.forge.isForging) return;
+    
+    const now = Date.now();
+    const elapsedTime = now - this.gameState.forge.lastForgeTime;
+    
+    // 每100毫秒增加1%进度
+    const progressIncrease = (elapsedTime / 100) * 1;
+    this.gameState.forge.progress += progressIncrease;
+    this.gameState.forge.lastForgeTime = now;
+    
+    if (this.gameState.forge.progress >= 100) {
+      this.completeForge();
+    }
+    
+    this.notifyEvent('forge_progress_updated', { progress: this.gameState.forge.progress });
+  }
+
+  private completeForge(): void {
+    if (!this.gameState || !this.gameState.forge || !this.gameState.forge.isForging || !this.gameState.forge.currentItem) return;
+    
+    // 查找当前使用的图谱
+    const blueprint = initialForgeBlueprints.find(b => b.itemId === this.gameState.forge.currentItem);
+    if (!blueprint) {
+      this.notifyEvent('error', { message: '无法找到对应的炼器图谱' });
+      this.resetForgeState();
+      return;
+    }
+    
+    // 计算是否成功
+    const isSuccess = Math.random() < blueprint.successRate;
+    
+    if (isSuccess) {
+      // 炼器成功
+      this.gameState.cultivation.exp += blueprint.expGain;
+      this.gameState.forge.successCount++;
+      
+      // 这里可以添加获得装备的逻辑
+      this.notifyEvent('forge_success', { 
+        itemId: blueprint.itemId, 
+        expGained: blueprint.expGain 
+      });
+    } else {
+      // 炼器失败
+      this.gameState.forge.failedCount++;
+      this.notifyEvent('forge_failure', { itemId: blueprint.itemId });
+    }
+    
+    this.resetForgeState();
+  }
+
+  private resetForgeState(): void {
+    if (!this.gameState || !this.gameState.forge) return;
+    
+    this.gameState.forge.isForging = false;
+    this.gameState.forge.currentItem = undefined;
+    this.gameState.forge.progress = 0;
+  }
+
+  unlockForgeBlueprint(blueprintId: string): boolean {
+    if (!this.gameState) {
+      this.notifyEvent('error', { message: '游戏状态未初始化' });
+      return false;
+    }
+    
+    const blueprint = initialForgeBlueprints.find(b => b.id === blueprintId);
+    if (!blueprint) {
+      this.notifyEvent('error', { message: '炼器图谱不存在' });
+      return false;
+    }
+    
+    // 检查是否已经解锁
+    const alreadyUnlocked = this.gameState.forge.blueprints.some(b => b.id === blueprintId);
+    if (alreadyUnlocked) {
+      this.notifyEvent('error', { message: '该炼器图谱已经解锁' });
+      return false;
+    }
+    
+    // 检查境界是否达到要求
+    if (this.gameState.cultivation.level < blueprint.requiredLevel) {
+      this.notifyEvent('error', { message: '境界不足，无法解锁该图谱' });
+      return false;
+    }
+    
+    // 解锁图谱
+    this.gameState.forge.blueprints.push(blueprint);
+    this.notifyEvent('forge_blueprint_unlocked', { blueprint });
+    return true;
+  }
+
   // 购买物品
   // 出售资源获得灵石
   sellResource(resourceType: 'pills' | 'spiritFruit', quantity: number = 1): boolean {
@@ -558,8 +1013,16 @@ export class CultivationGame {
     if (!quest || quest.completed) return false;
     
     // 检查境界条件
-    if (quest.requirements?.level && this.gameState.cultivation.level !== quest.requirements.level) {
-      return false;
+    if (quest.requirements?.level) {
+      // 确保境界检查是兼容的，支持不同的命名格式
+      const playerLevel = this.gameState.cultivation.level;
+      const requiredLevel = quest.requirements.level;
+      
+      // 检查是否达到或超过要求的境界
+      const meetsLevel = this.meetsLevelRequirement(requiredLevel);
+      if (!meetsLevel) {
+        return false;
+      }
     }
     
     // 检查资源条件
@@ -576,6 +1039,33 @@ export class CultivationGame {
       for (const skillReq of quest.requirements.skills) {
         const skill = this.gameState.skills.find(s => s.id === skillReq.id);
         if (!skill || skill.level < skillReq.level) {
+          return false;
+        }
+      }
+    }
+    
+    // 检查炼丹条件
+    if (quest.requirements.alchemy) {
+      if (quest.requirements.alchemy.successCount) {
+        const currentSuccesses = this.gameState.alchemy ? this.gameState.alchemy.successCount : 0;
+        if (currentSuccesses < quest.requirements.alchemy.successCount) {
+          return false;
+        }
+      }
+      if (quest.requirements.alchemy.failedCount) {
+        const currentFailures = this.gameState.alchemy ? this.gameState.alchemy.failedCount : 0;
+        if (currentFailures < quest.requirements.alchemy.failedCount) {
+          return false;
+        }
+      }
+    }
+    
+    // 检查事件条件
+    if (quest.requirements.events) {
+      if (quest.requirements.events.encountered) {
+        // 在游戏状态中添加事件统计
+        const currentEncounters = this.gameState.totalEventsEncountered || 0;
+        if (currentEncounters < quest.requirements.events.encountered) {
           return false;
         }
       }
@@ -623,19 +1113,86 @@ export class CultivationGame {
     this.notifyEvent('quest_reward_claimed', { quest });
     return true;
   }
+
+  // 领取成就奖励
+  claimAchievementReward(achievementId: string): boolean {
+    if (!this.gameState || !this.gameState.unlockedAchievements || !this.gameState.cultivation) {
+      this.notifyEvent('error', { message: '游戏状态未初始化' });
+      return false;
+    }
+
+    // 检查成就是否存在
+    const achievement = initialAchievements.find(a => a.id === achievementId);
+    if (!achievement) {
+      this.notifyEvent('error', { message: '成就不存在' });
+      return false;
+    }
+
+    // 检查成就是否已解锁且未领取
+    if (!this.gameState.unlockedAchievements.includes(achievementId)) {
+      this.notifyEvent('error', { message: '成就奖励已领取或未解锁' });
+      return false;
+    }
+
+    // 从unlockedAchievements数组中移除
+    this.gameState.unlockedAchievements = this.gameState.unlockedAchievements.filter(id => id !== achievementId);
+
+    // 应用经验奖励
+    if (achievement.reward.exp) {
+      this.gameState.cultivation.exp += achievement.reward.exp;
+      // 检查是否可以升级
+      while (canLevelUp(this.gameState)) {
+        this.gameState = levelUp(this.gameState);
+        this.notifyEvent('level_up', { newLevel: this.gameState.cultivation.level });
+      }
+    }
+
+    // 应用资源奖励
+    if (achievement.reward.resources) {
+      for (const [resource, amount] of Object.entries(achievement.reward.resources)) {
+        if (resource === 'qi') {
+          this.gameState.resources.qi = Math.min(
+            this.gameState.resources.qi + amount,
+            this.gameState.cultivation.qiCapacity
+          );
+        } else {
+          (this.gameState.resources as any)[resource] += amount;
+        }
+      }
+    }
+
+    this.notifyEvent('achievement_reward_claimed', { achievementId });
+    return true;
+  }
   
   // 检查事件触发条件
-  private checkEventTrigger(event: GameEvent): boolean {
+  private checkEventTrigger(event: GameEvent | Event, actionType?: string): boolean {
+    // 处理Event类型（具有triggerChance属性）
+    if ('triggerChance' in event) {
+      // 使用类型断言来确保TypeScript知道这是Event类型
+      const eventWithTriggerChance = event as Event;
+      // 对于Event类型，我们只需要检查概率
+      return Math.random() < eventWithTriggerChance.triggerChance;
+    }
+    
+    // 处理GameEvent类型（具有triggers属性）
     if (!event.triggers) return false;
     
-    // 根据概率决定是否触发
-    return Math.random() < event.triggers.probability;
+    const triggers = event.triggers;
+    
+    // 检查actionType
+    if (triggers.actionType !== 'any' && triggers.actionType !== actionType) {
+      return false;
+    }
+    
+    // 检查概率
+    return Math.random() < triggers.probability;
   }
   
   // 触发随机事件
-  private triggerRandomEvent(): void {
+  private triggerRandomEvent(actionType?: string): void {
     // 过滤出符合触发条件的事件
-    const availableEvents = initialEvents.filter(event => this.checkEventTrigger(event));
+    const availableEvents = initialEvents.filter(event => this.checkEventTrigger(event, actionType));
     
     if (availableEvents.length === 0) return;
     
@@ -643,6 +1200,8 @@ export class CultivationGame {
     const randomIndex = Math.floor(Math.random() * availableEvents.length);
     this.currentEvent = availableEvents[randomIndex];
     
+    // 更新事件统计
+    this.gameState.totalEventsEncountered = (this.gameState.totalEventsEncountered || 0) + 1;
     this.notifyEvent('event_triggered', { event: this.currentEvent });
   }
   
@@ -670,8 +1229,8 @@ export class CultivationGame {
     if (choice.outcomes) {
       for (const outcome of choice.outcomes) {
         // 应用经验变化
-        if (outcome.type === 'exp' && outcome.amount) {
-          this.gameState.cultivation.exp += outcome.amount;
+        if (outcome.effects && outcome.effects.exp) {
+          this.gameState.cultivation.exp += outcome.effects.exp;
           // 检查是否可以升级
           while (canLevelUp(this.gameState)) {
             this.gameState = levelUp(this.gameState);
@@ -680,20 +1239,30 @@ export class CultivationGame {
         }
         
         // 应用资源变化
-        if (outcome.type === 'resource' && outcome.target && outcome.amount) {
-          if (outcome.target === 'qi') {
-            this.gameState.resources.qi = Math.min(
-              this.gameState.resources.qi + outcome.amount,
-              this.gameState.cultivation.qiCapacity
-            );
-          } else {
-            (this.gameState.resources as any)[outcome.target] += outcome.amount;
+        if (outcome.effects && outcome.effects.resources) {
+          for (const [resource, amount] of Object.entries(outcome.effects.resources)) {
+            if (resource === 'qi' && amount) {
+              this.gameState.resources.qi = Math.min(
+                this.gameState.resources.qi + amount,
+                this.gameState.cultivation.qiCapacity
+              );
+            } else if (amount) {
+              (this.gameState.resources as any)[resource] += amount;
+            }
           }
         }
         
-        // 应用文本效果
-        if (outcome.type === 'text' && outcome.message) {
-          // 文本效果可以用于记录事件日志等
+        // 应用其他效果
+        if (outcome.effects) {
+          // 应用修炼速度提升
+          if (outcome.effects.cultivationSpeedBoost) {
+            // 这里可以添加修炼速度提升的逻辑
+          }
+          
+          // 应用突破奖励
+          if (outcome.effects.breakthroughBonus) {
+            // 这里可以添加突破奖励的逻辑
+          }
         }
       }
     }
@@ -715,14 +1284,15 @@ export class CultivationGame {
       }
 
       // 检查修真境界是否达到要求
-      if (this.gameState.cultivation.level !== recipe.requiredLevel) {
+      const meetsLevel = this.meetsLevelRequirement(recipe.requiredLevel);
+      if (!meetsLevel) {
         this.notifyEvent('error', { message: '修真境界不足，无法炼制此丹药' });
         return false;
       }
 
       // 检查材料是否足够
       for (const ingredient of recipe.ingredients) {
-        if ((this.gameState.resources as any)[ingredient.material] < ingredient.amount) {
+        if ((this.gameState.resources as any)[ingredient.id] < ingredient.quantity) {
           this.notifyEvent('error', { message: '材料不足，无法炼制此丹药' });
           return false;
         }
@@ -730,14 +1300,14 @@ export class CultivationGame {
 
       // 扣除材料
       for (const ingredient of recipe.ingredients) {
-        (this.gameState.resources as any)[ingredient.material] -= ingredient.amount;
+        (this.gameState.resources as any)[ingredient.id] -= ingredient.quantity;
       }
 
       // 开始炼丹
-      this.gameState.alchemy.currentPill = recipe.pillId;
+      this.gameState.alchemy.currentRecipe = recipe;
       this.gameState.alchemy.progress = 0;
       this.gameState.alchemy.isBrewing = true;
-      this.gameState.alchemy.lastBrewTime = Date.now();
+      this.gameState.alchemy.startTime = Date.now();
 
       this.notifyEvent('alchemy_started', { recipe });
       return true;
@@ -745,17 +1315,17 @@ export class CultivationGame {
 
     // 更新炼丹进度
     private updateAlchemyProgress() {
-      if (!this.gameState.alchemy || !this.gameState.alchemy.isBrewing || !this.gameState.alchemy.currentPill) {
+      if (!this.gameState.alchemy || !this.gameState.alchemy.isBrewing || !this.gameState.alchemy.currentRecipe) {
         return;
       }
 
       const currentTime = Date.now();
-      const timeElapsed = currentTime - this.gameState.alchemy.lastBrewTime;
+      // 使用非空断言，因为我们已经检查了isBrewing和currentRecipe
+      const timeElapsed = currentTime - this.gameState.alchemy.startTime!;
       
-      // 每10秒增加10%的进度
-      const progressIncrease = (timeElapsed / 10000) * 10;
-      this.gameState.alchemy.progress = Math.min(this.gameState.alchemy.progress + progressIncrease, 100);
-      this.gameState.alchemy.lastBrewTime = currentTime;
+      // 根据配方持续时间计算进度
+      const progressIncrease = (timeElapsed / (this.gameState.alchemy.currentRecipe!.duration * 1000)) * 100;
+      this.gameState.alchemy.progress = Math.min(progressIncrease, 100);
 
       // 炼丹完成
       if (this.gameState.alchemy.progress >= 100) {
@@ -765,32 +1335,40 @@ export class CultivationGame {
 
     // 完成炼丹
     private completeAlchemy() {
-      if (!this.gameState.alchemy || !this.gameState.alchemy.currentPill) {
+      if (!this.gameState.alchemy || !this.gameState.alchemy.currentRecipe) {
         return;
       }
 
-      const recipe = this.gameState.alchemy.recipes.find(r => r.pillId === this.gameState.alchemy.currentPill);
-      if (!recipe) {
-        return;
-      }
-
+      const recipe = this.gameState.alchemy.currentRecipe;
+      
       // 检查成功率
       const success = Math.random() < recipe.successRate;
-      const pill = initialPills.find(p => p.id === recipe.pillId);
-
-      if (success && pill) {
+      
+      if (success && recipe.pills && recipe.pills.length > 0) {
         // 成功炼制，获得丹药
-        this.gameState.resources.pills++;
-        this.gameState.alchemy.successCount++;
-        this.gameState.cultivation.exp += recipe.expGain;
+        const pillId = recipe.pills[0];
+        const pill = initialPills.find(p => p.id === pillId);
         
-        // 检查是否可以升级
-        while (canLevelUp(this.gameState)) {
-          this.gameState = levelUp(this.gameState);
-          this.notifyEvent('level_up', { newLevel: this.gameState.cultivation.level });
-        }
+        if (pill) {
+          // 更新丹药数量
+          this.gameState.resources.pills++;
+          
+          // 更新统计数据
+          this.gameState.alchemy.successCount++;
+          
+          // 增加经验值
+          if (recipe.expGain) {
+            this.gameState.cultivation.exp += recipe.expGain;
+            
+            // 检查是否可以升级
+            while (canLevelUp(this.gameState)) {
+              this.gameState = levelUp(this.gameState);
+              this.notifyEvent('level_up', { newLevel: this.gameState.cultivation.level });
+            }
+          }
 
-        this.notifyEvent('alchemy_success', { pill, expGain: recipe.expGain });
+          this.notifyEvent('alchemy_success', { pill, expGain: recipe.expGain });
+        }
       } else {
         // 炼丹失败
         this.gameState.alchemy.failedCount++;
@@ -799,8 +1377,9 @@ export class CultivationGame {
 
       // 重置炼丹状态
       this.gameState.alchemy.isBrewing = false;
-      this.gameState.alchemy.currentPill = undefined;
+      this.gameState.alchemy.currentRecipe = undefined;
       this.gameState.alchemy.progress = 0;
+      this.gameState.alchemy.startTime = undefined;
     }
 
     // 解锁新的炼丹配方
@@ -820,7 +1399,8 @@ export class CultivationGame {
       }
 
       // 检查修真境界是否达到要求
-      if (this.gameState.cultivation.level !== recipe.requiredLevel) {
+      const meetsLevel = this.meetsLevelRequirement(recipe.requiredLevel);
+      if (!meetsLevel) {
         return false;
       }
 
@@ -828,6 +1408,25 @@ export class CultivationGame {
       this.gameState.alchemy.recipes.push(recipe);
       this.notifyEvent('recipe_unlocked', { recipe });
       return true;
+    }
+
+    // 检查玩家是否达到炼丹所需的修真等级
+    private meetsLevelRequirement(requiredLevel: CultivationLevel): boolean {
+      const levelOrder: CultivationLevel[] = [
+        'qi_refining_1', 'qi_refining_2', 'qi_refining_3', 'qi_refining_4', 'qi_refining_5',
+        'qi_refining_6', 'qi_refining_7', 'qi_refining_8', 'qi_refining_9',
+        'foundation_1', 'foundation_2', 'foundation_3', 'foundation_4', 'foundation_5',
+        'foundation_6', 'foundation_7', 'foundation_8', 'foundation_9',
+        'golden_core_1', 'golden_core_2', 'golden_core_3', 'golden_core_4', 'golden_core_5',
+        'golden_core_6', 'golden_core_7', 'golden_core_8', 'golden_core_9',
+        'nascent_soul_1', 'nascent_soul_2', 'nascent_soul_3', 'nascent_soul_4', 'nascent_soul_5',
+        'nascent_soul_6', 'nascent_soul_7', 'nascent_soul_8', 'nascent_soul_9'
+      ];
+
+      const playerLevelIndex = levelOrder.indexOf(this.gameState.cultivation.level);
+      const requiredLevelIndex = levelOrder.indexOf(requiredLevel);
+
+      return playerLevelIndex >= requiredLevelIndex;
     }
 
     // 通知事件

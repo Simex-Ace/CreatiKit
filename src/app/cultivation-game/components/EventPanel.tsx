@@ -1,9 +1,9 @@
 import React from 'react';
-import { GameEvent } from '../types';
+import { GameEvent, Event } from '../types';
 import { getMaterialName } from '../utils';
 
 interface EventPanelProps {
-  currentEvent: GameEvent | null;
+  currentEvent: (GameEvent | Event) | null;
   onEventChoice: (choiceIndex: number) => void;
 }
 
@@ -54,17 +54,15 @@ const EventPanel: React.FC<EventPanelProps> = ({ currentEvent, onEventChoice }) 
                 {/* 显示选择结果预览 */}
                 <div className="text-sm">
                   {choice.outcomes?.map((outcome, index) => (
-                    <span key={index} className={`inline-block mr-3 ${outcome.amount && outcome.amount > 0 ? 'text-green-400' : 'text-red-400'}`}>
-                      {outcome.type === 'exp' && outcome.amount && (
-                        <> {outcome.amount > 0 ? '+' : ''}{outcome.amount} 经验</>
+                    <span key={index} className={`inline-block mr-3 text-gray-300`}>
+                      {outcome.effects && outcome.effects.exp && (
+                        <> {outcome.effects.exp > 0 ? '+' : ''}{outcome.effects.exp} 经验</>
                       )}
-                      {outcome.type === 'resource' && outcome.target && outcome.amount && (
-                        <> {outcome.amount > 0 ? '+' : ''}{outcome.amount} {getMaterialName(outcome.target)}
-                        </>
-                      )}
-                      {outcome.type === 'text' && outcome.message && (
-                        <>{outcome.message}</>
-                      )}
+                      {outcome.effects && outcome.effects.resources && Object.entries(outcome.effects.resources).map(([resource, amount]) => (
+                        <span key={resource} className="inline-block mr-2">
+                          {amount && amount > 0 ? '+' : ''}{amount} {getMaterialName(resource)}
+                        </span>
+                      ))}
                     </span>
                   ))}
                 </div>

@@ -11,6 +11,9 @@ import { QuestPanel } from './components/QuestPanel';
 import AchievementsPanel from './components/AchievementsPanel';
 import EventPanel from './components/EventPanel';
 import AlchemyPanel from './components/AlchemyPanel';
+import { BattlePanel } from './components/BattlePanel';
+import { ForgePanel } from './components/ForgePanel';
+import { alchemyRecipes } from './data/alchemy-recipes';
 import './globals.css';
 
 export default function CultivationGamePage() {
@@ -118,6 +121,33 @@ export default function CultivationGamePage() {
           break;
         case 'recipe_unlocked':
           showNotification(`解锁新配方：${params.recipe.name}！`, 'success');
+          break;
+        case 'battle_started':
+          showNotification(`遇到了${params.monster.name}！`, 'info');
+          break;
+        case 'battle_victory':
+          showNotification(`击败了${params.monster.name}！获得经验：${params.expGained}，金币：${params.goldGained}`, 'success');
+          break;
+        case 'battle_defeat':
+          showNotification(`被${params.monster.name}击败了！`, 'error');
+          break;
+        case 'flee_success':
+          showNotification(`成功逃脱了战斗！`, 'success');
+          break;
+        case 'forge_started':
+          showNotification(`开始炼制装备！`, 'info');
+          break;
+        case 'forge_success':
+          showNotification(`炼器成功！获得装备，经验+${params.expGained}`, 'success');
+          break;
+        case 'forge_failure':
+          showNotification(`炼器失败！失去了所有材料。`, 'error');
+          break;
+        case 'forge_progress_updated':
+          // 可以添加进度更新通知，但通常不需要
+          break;
+        case 'blueprint_unlocked':
+          showNotification(`解锁新图谱：${params.blueprint.name}！`, 'success');
           break;
         default:
           console.warn('未知游戏事件:', eventName);
@@ -233,6 +263,13 @@ export default function CultivationGamePage() {
           showNotification('领取奖励失败！', 'error');
         }
         break;
+      case 'claimAchievementReward':
+        if (gameRef.current.claimAchievementReward(params.achievementId)) {
+          showNotification('成功领取成就奖励！', 'success');
+        } else {
+          showNotification('领取奖励失败！', 'error');
+        }
+        break;
       case 'resetGame':
         if (window.confirm('确定要重新开始游戏吗？当前进度将会丢失！')) {
           localStorage.removeItem('cultivationGame');
@@ -244,6 +281,31 @@ export default function CultivationGamePage() {
         if (gameRef.current) {
           gameRef.current.handleEventChoice(params);
           setCurrentEvent(null);
+        }
+        break;
+      case 'battleStart':
+        if (gameRef.current) {
+          gameRef.current.startBattle(params.monsterId);
+        }
+        break;
+      case 'battleAttack':
+        if (gameRef.current) {
+          gameRef.current.attackMonster();
+        }
+        break;
+      case 'battleFlee':
+        if (gameRef.current) {
+          gameRef.current.fleeBattle();
+        }
+        break;
+      case 'exitBattle':
+        if (gameRef.current) {
+          gameRef.current.exitBattle();
+        }
+        break;
+      case 'forgeStart':
+        if (gameRef.current) {
+          gameRef.current.startForge(params.blueprintId);
         }
         break;
       default:
@@ -282,36 +344,137 @@ export default function CultivationGamePage() {
 
   // 处理开始炼丹
   const handleStartAlchemy = (recipeId: string) => {
-    if (gameRef.current?.startAlchemy(recipeId)) {
-      showNotification('开始炼丹！', 'info');
-      // 更新游戏状态
-      setGameState(gameRef.current.getState());
-      // 立即保存
-      saveGame();
-    } else {
-      showNotification('炼丹条件不满足！', 'error');
-    }
+    const recipe = alchemyRecipes.find(r => r.id === recipeId);
+    if (!recipe || !gameState) return;
+
+    // 检查材料是否足够
+    const hasEnoughMaterials = recipe.ingredients.every(ingredient => {
+      const currentAmount = gameState.resources[ingredient.id as keyof typeof gameState.resources] || 0;
+      return currentAmount >= ingredient.quantity;
+    });
+
+    if (!hasEnoughMaterials) return;
+
+    // 扣除材料
+    const updatedResources = { ...gameState.resources };
+    recipe.ingredients.forEach(ingredient => {
+      updatedResources[ingredient.id as keyof typeof updatedResources] = 
+        (updatedResources[ingredient.id as keyof typeof updatedResources] || 0) - ingredient.quantity;
+    });
+
+    // 开始炼丹
+    setGameState({
+      ...gameState,
+      resources: updatedResources,
+      alchemy: {
+        ...gameState.alchemy,
+        isBrewing: true,
+        currentRecipe: recipe,
+        progress: 0,
+        startTime: Date.now()
+      }
+    });
+
+    // 设置定时器更新进度
+    const alchemyInterval = setInterval(() => {
+      setGameState(prev => {
+        if (!prev || !prev.alchemy.isBrewing || !prev.alchemy.currentRecipe) {
+          clearInterval(alchemyInterval);
+          return prev;
+        }
+
+        const elapsed = Date.now() - prev.alchemy.startTime!;
+        const progress = Math.min(100, (elapsed / (prev.alchemy.currentRecipe.duration * 1000)) * 100);
+
+        if (progress >= 100) {
+          clearInterval(alchemyInterval);
+          return finishAlchemy(prev);
+        }
+
+        return {
+          ...prev,
+          alchemy: {
+            ...prev.alchemy,
+            progress
+          }
+        };
+      });
+    }, 100);
   };
 
-  if (!gameState) {
-    return (
-      <div className="cultivation-container">
-        <div className="loading-screen">
-          <p>正在加载修仙世界...</p>
-        </div>
-      </div>
-    );
-  }
+  // 完成炼丹
+  const finishAlchemy = (prevState: GameState) => {
+    if (!prevState.alchemy.currentRecipe) return prevState;
 
-  // 如果gameState为null，显示加载状态
-  if (!gameState) {
+    // 获取炼制的丹药
+    const recipe = prevState.alchemy.currentRecipe;
+    
+    // 更新游戏状态
+    const updatedResources = { ...prevState.resources };
+    updatedResources.pills = (updatedResources.pills || 0) + 1;
+    
+    // 增加经验
+    const expGain = recipe.expGain || 0;
+    const updatedCultivation = { ...prevState.cultivation };
+    updatedCultivation.exp = prevState.cultivation.exp + expGain;
+    
+    // 显示通知
+    showNotification(`炼丹成功！获得${recipe.name}，经验+${expGain}`, 'success');
+    
+    // 重置炼丹状态
+    return {
+      ...prevState,
+      cultivation: updatedCultivation,
+      resources: updatedResources,
+      alchemy: {
+        ...prevState.alchemy,
+        isBrewing: false,
+        currentRecipe: undefined,
+        progress: 0,
+        startTime: undefined
+      }
+    };
+  };
+
+  // 游戏开始状态
+  const [gameStarted, setGameStarted] = useState(false);
+  
+  // 标签页状态
+  const [activeTab, setActiveTab] = useState('inventory');
+
+  // 开始新游戏
+  const handleStartGame = () => {
+    initializeNewGame();
+    setGameStarted(true);
+  };
+
+  // 如果gameState为null且游戏未开始，显示开始界面
+  if (!gameState && !gameStarted) {
     return (
       <div className="cultivation-game-container">
         <div className="loading-screen">
           <h1 className="game-title">
             <span className="title-glow">🧙‍♂️ 修真模拟器</span>
           </h1>
-          <div className="loading-text">正在加载游戏...</div>
+          <div className="loading-text">欢迎来到修真世界！</div>
+          <div className="start-button-container" style={{ marginTop: '2rem' }}>
+            <button 
+              className="btn btn-primary start-game-button"
+              onClick={handleStartGame}
+              style={{ 
+                padding: '1.5rem 3rem', 
+                fontSize: '1.5rem',
+                background: 'linear-gradient(135deg, #f5d76e, #f39c12)',
+                border: 'none',
+                borderRadius: '12px',
+                cursor: 'pointer',
+                boxShadow: '0 0 30px rgba(245, 215, 110, 0.6)',
+                transition: 'all 0.3s ease'
+              }}
+            >
+              🚀 开始修真之旅
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -335,24 +498,84 @@ export default function CultivationGamePage() {
         <div className="game-main">
           {/* 左侧面板 */}
           <div className="left-panel">
-            <StatusPanel gameState={gameState} />
-            <ActionPanel gameState={gameState} onAction={handleAction} />
-            <CultivationPanel gameState={gameState} onAction={handleAction} />
+            {gameState && <StatusPanel gameState={gameState} />}
+            {gameState && <ActionPanel gameState={gameState} onAction={handleAction} />}
+            {gameState && <CultivationPanel gameState={gameState} onAction={handleAction} />}
           </div>
           
           {/* 右侧面板 */}
-        <div className="right-panel">
-          <InventoryPanel gameState={gameState} />
-          
-          {/* 任务面板 */}
-          <QuestPanel gameState={gameState} onAction={handleAction} />
-          
-          {/* 成就面板 */}
-            <AchievementsPanel gameState={gameState} onAchievementUnlock={showAchievementNotification} />
+          <div className="right-panel">
+            {/* 标签页导航 */}
+            <div className="tab-navigation">
+              <button 
+                className={`tab-button ${activeTab === 'inventory' ? 'active' : ''}`}
+                onClick={() => setActiveTab('inventory')}
+              >
+                🧳 物品
+              </button>
+              <button 
+                className={`tab-button ${activeTab === 'quest' ? 'active' : ''}`}
+                onClick={() => setActiveTab('quest')}
+              >
+                📋 任务
+              </button>
+              <button 
+                className={`tab-button ${activeTab === 'achievements' ? 'active' : ''}`}
+                onClick={() => setActiveTab('achievements')}
+              >
+                🏆 成就
+              </button>
+              <button 
+                className={`tab-button ${activeTab === 'alchemy' ? 'active' : ''}`}
+                onClick={() => setActiveTab('alchemy')}
+              >
+                ⚗️ 炼丹
+              </button>
+              <button 
+                className={`tab-button ${activeTab === 'battle' ? 'active' : ''}`}
+                onClick={() => setActiveTab('battle')}
+              >
+                ⚔️ 战斗
+              </button>
+              <button 
+                className={`tab-button ${activeTab === 'forge' ? 'active' : ''}`}
+                onClick={() => setActiveTab('forge')}
+              >
+                ⚒️ 炼器
+              </button>
+            </div>
             
-           {/* 炼丹面板 */}
-           <AlchemyPanel gameState={gameState} onStartAlchemy={handleStartAlchemy} />
-        </div>
+            {/* 标签页内容 */}
+            <div className="tab-content">
+              {activeTab === 'inventory' && gameState && (
+                <InventoryPanel gameState={gameState} />
+              )}
+              {activeTab === 'quest' && gameState && (
+                <QuestPanel gameState={gameState} onAction={handleAction} />
+              )}
+              {activeTab === 'achievements' && gameState && (
+                <AchievementsPanel gameState={gameState} onAchievementUnlock={showAchievementNotification} onAction={handleAction} />
+              )}
+              {activeTab === 'alchemy' && gameState && (
+                <AlchemyPanel gameState={gameState} onStartAlchemy={handleStartAlchemy} />
+              )}
+              {activeTab === 'battle' && gameState && (
+                <BattlePanel 
+                  gameState={gameState} 
+                  onBattleStart={(monsterId) => handleAction('battleStart', { monsterId })} 
+                  onAttack={() => handleAction('battleAttack')} 
+                  onFlee={() => handleAction('battleFlee')} 
+                  onExitBattle={() => handleAction('exitBattle')} 
+                />
+              )}
+              {activeTab === 'forge' && gameState && (
+                <ForgePanel 
+                  gameState={gameState} 
+                  onStartForge={(blueprintId) => handleAction('forgeStart', { blueprintId })} 
+                />
+              )}
+            </div>
+          </div>
         
         {/* 事件面板 */}
         <EventPanel 
