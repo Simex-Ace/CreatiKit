@@ -123,37 +123,158 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({ gameState, onAction })
         </p>
       </div>
       
-      {/* 物品购买 */}
+      {/* 修真坊市 */}
       <div style={{ marginTop: '2rem' }}>
         <h3 style={{ color: '#f5d76e', marginBottom: '1rem' }}>修真坊市</h3>
+        <style jsx>{`
+          /* 横向布局样式 */
+          .shop-panel {
+            display: flex;
+            overflow-x: auto;
+            gap: 1rem;
+            padding: 0.5rem 0;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(245, 215, 110, 0.5) rgba(0, 0, 0, 0.3);
+          }
+          
+          .shop-panel::-webkit-scrollbar {
+            height: 6px;
+          }
+          
+          .shop-panel::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 3px;
+          }
+          
+          .shop-panel::-webkit-scrollbar-thumb {
+            background: rgba(245, 215, 110, 0.5);
+            border-radius: 3px;
+          }
+          
+          .item-card {
+            background-color: rgba(0, 0, 0, 0.5);
+            border: 1px solid #f5d76e;
+            border-radius: 8px;
+            min-width: 150px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            padding: 0.75rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+            transition: transform 0.2s ease;
+          }
+          
+          .item-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.4);
+          }
+          
+          .item-icon {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+          }
+          
+          .item-name {
+            color: #fff;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+          }
+          
+          .item-price {
+            color: #f5d76e;
+            margin-bottom: 1rem;
+            font-size: 0.9rem;
+          }
+          
+          .item-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            width: 100%;
+          }
+          
+          /* 按钮样式与其他板块保持一致 */
+          .btn-buy {
+            background: linear-gradient(135deg, #4caf50, #45a049);
+            color: white;
+            padding: 0.4rem 0.8rem;
+            font-size: 0.85rem;
+            border-radius: 4px;
+            transition: all 0.2s ease;
+          }
+          
+          .btn-buy:hover {
+            background: linear-gradient(135deg, #45a049, #388e3c);
+            box-shadow: 0 4px 12px rgba(76, 175, 80, 0.4);
+          }
+          
+          .btn-sell {
+            background: linear-gradient(135deg, #2196f3, #0b7dda);
+            color: white;
+            padding: 0.4rem 0.8rem;
+            font-size: 0.85rem;
+            border-radius: 4px;
+            transition: all 0.2s ease;
+          }
+          
+          .btn-sell:hover {
+            background: linear-gradient(135deg, #0b7dda, #0d47a1);
+            box-shadow: 0 4px 12px rgba(33, 150, 243, 0.4);
+          }
+          
+          /* 当前灵石卡片样式 */
+          .gold-card {
+            background-color: rgba(245, 215, 110, 0.1);
+            border-color: #ffd700;
+          }
+        `}</style>
         <div className="shop-panel">
           <div className="item-card">
             <div className="item-icon">⚗️</div>
             <div className="item-name">培元丹</div>
             <div className="item-price">20 灵石/个</div>
-            <button 
-              className="btn" 
-              onClick={() => handleAction('buyItem', { type: 'pills', quantity: 1 })}
-              disabled={gameState.resources.gold < 20}
-            >
-              购买
-            </button>
+            <div className="item-actions">
+              <button 
+                className="btn btn-buy"
+                onClick={() => handleAction('buyItem', { type: 'pills', quantity: 1 })}
+                disabled={gameState.resources.gold < 20}
+              >
+                购买
+              </button>
+              <button 
+                className="btn btn-sell"
+                onClick={() => handleAction('sellResource', { type: 'pills', quantity: 1 })}
+                disabled={!gameState.resources.pills || gameState.resources.pills < 1}
+              >
+                出售 (10)
+              </button>
+            </div>
           </div>
           
           <div className="item-card">
             <div className="item-icon">🍎</div>
             <div className="item-name">灵果</div>
             <div className="item-price">50 灵石/个</div>
-            <button 
-              className="btn" 
-              onClick={() => handleAction('buyItem', { type: 'spiritFruit', quantity: 1 })}
-              disabled={gameState.resources.gold < 50}
-            >
-              购买
-            </button>
+            <div className="item-actions">
+              <button 
+                className="btn btn-buy"
+                onClick={() => handleAction('buyItem', { type: 'spiritFruit', quantity: 1 })}
+                disabled={gameState.resources.gold < 50}
+              >
+                购买
+              </button>
+              <button 
+                className="btn btn-sell"
+                onClick={() => handleAction('sellResource', { type: 'spiritFruit', quantity: 1 })}
+                disabled={!gameState.resources.spiritFruit || gameState.resources.spiritFruit < 1}
+              >
+                出售 (25)
+              </button>
+            </div>
           </div>
           
-          <div className="item-card">
+          <div className="item-card gold-card">
             <div className="item-icon">💰</div>
             <div className="item-name">当前灵石</div>
             <div className="item-price">{gameState.resources.gold}</div>

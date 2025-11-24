@@ -185,6 +185,27 @@ export function saveGameState(state: GameState): void {
   }
 }
 
+// 材料名称映射表（英文到中文）
+export const materialNames: Record<string, string> = {
+  spiritGrass: '灵草',
+  spiritWater: '灵水',
+  spiritStone: '灵石',
+  spiritCrystal: '灵晶',
+  heavenlyHerb: '天材地宝',
+  immortalFruit: '仙果',
+  divineEssence: '神髓',
+  qi: '灵气',
+  gold: '金币',
+  pills: '丹药',
+  materials: '基础材料',
+  spiritFruit: '灵果'
+};
+
+// 获取材料的中文名称
+export function getMaterialName(material: string): string {
+  return materialNames[material] || material;
+}
+
 // 从本地存储加载游戏状态
 export function loadGameState(): GameState | null {
   try {

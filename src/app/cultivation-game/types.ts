@@ -21,8 +21,15 @@ export interface Resources {
   qi: number; // 灵气
   gold: number; // 灵石
   pills: number; // 丹药
-  materials: number; // 材料
+  materials: number; // 基础材料
   spiritFruit: number; // 灵果
+  spiritGrass: number; // 灵草
+  spiritWater: number; // 灵水
+  spiritStone: number; // 灵石
+  spiritCrystal: number; // 灵晶
+  heavenlyHerb: number; // 天材地宝
+  immortalFruit: number; // 仙果
+  divineEssence: number; // 神髓
 }
 
 // 修真信息接口
@@ -77,6 +84,8 @@ export interface GameState {
   autoCultivate: boolean; // 自动修炼
   autoGatherQi: boolean; // 自动采集灵气
   achievements: string[];
+  quests: Quest[]; // 任务列表
+  alchemy: AlchemyState; // 炼丹状态
   // 统计数据（用于成就系统）
   totalCultivations?: number; // 总修炼次数
   totalQiGathered?: number; // 总灵气采集量
@@ -113,24 +122,86 @@ export interface Quest {
   completed: boolean;
 }
 
+// 事件触发条件接口
+export interface EventTriggers {
+  actionType: string; // 触发的操作类型 (cultivate, gatherQi, any)
+  probability: number; // 触发概率 (0-1)
+}
+
+// 事件结果接口
+export interface EventOutcome {
+  type: 'resource' | 'exp' | 'text' | 'skill';
+  target?: string;
+  amount?: number;
+  message?: string;
+}
+
+// 事件选择接口
+export interface EventChoice {
+  id: string;
+  text: string;
+  requirements?: {
+    level?: CultivationLevel;
+    resources?: Partial<Resources>;
+    skills?: { id: string; level: number }[];
+  };
+  outcomes: EventOutcome[];
+}
+
 // 事件接口
 export interface GameEvent {
   id: string;
-  type: 'opportunity' | 'danger' | 'encounter';
   title: string;
   description: string;
-  choices: {
-    id: string;
-    text: string;
-    requirements?: {
-      level?: CultivationLevel;
-      resources?: Partial<Resources>;
-    };
-    outcomes: {
-      resources?: Partial<Resources>;
-      exp?: number;
-      message: string;
-    };
+  triggers: EventTriggers;
+  choices: EventChoice[];
+}
+
+// 丹药类型定义
+export type PillType = 
+  | '培元丹'
+  | '聚气丹'
+  | '筑基丹'
+  | '金丹丹'
+  | '元婴丹'
+  | '化神丹';
+
+// 丹药接口
+export interface Pill {
+  id: string;
+  name: string;
+  type: PillType;
+  description: string;
+  effects: {
+    expGain?: number; // 经验增益
+    qiGain?: number; // 灵气增益
+    cultivationSpeedBoost?: number; // 修炼速度提升
+    duration?: number; // 效果持续时间（秒）
+  };
+  rarity: 'common' | 'rare' | 'epic' | 'legendary';
+}
+
+// 炼丹配方接口
+export interface AlchemyRecipe {
+  id: string;
+  pillId: string;
+  name: string;
+  ingredients: {
+    material: string;
+    amount: number;
   }[];
-  probability: number;
+  requiredLevel: CultivationLevel; // 所需修真境界
+  successRate: number; // 成功率 (0-1)
+  expGain: number; // 炼丹获得的经验
+}
+
+// 炼丹状态接口
+export interface AlchemyState {
+  recipes: AlchemyRecipe[]; // 已解锁的炼丹配方
+  currentPill?: string; // 当前正在炼制的丹药ID
+  progress: number; // 炼丹进度 (0-100)
+  isBrewing: boolean; // 是否正在炼丹
+  lastBrewTime: number; // 上次炼丹时间
+  successCount: number; // 成功炼丹次数
+  failedCount: number; // 失败炼丹次数
 }

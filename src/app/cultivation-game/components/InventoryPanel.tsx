@@ -16,11 +16,13 @@ export const InventoryPanel: React.FC<InventoryPanelProps> = ({ gameState }) => 
       qiGatherRate: 0
     };
     
-    gameState.equipment.forEach(item => {
-      if (item.effects.qiCapacity) bonuses.qiCapacity += item.effects.qiCapacity;
-      if (item.effects.cultivationSpeed) bonuses.cultivationSpeed += item.effects.cultivationSpeed;
-      if (item.effects.qiGatherRate) bonuses.qiGatherRate += item.effects.qiGatherRate;
-    });
+    if (gameState.equipment) {
+      gameState.equipment.forEach(item => {
+        if (item.effects.qiCapacity) bonuses.qiCapacity += item.effects.qiCapacity;
+        if (item.effects.cultivationSpeed) bonuses.cultivationSpeed += item.effects.cultivationSpeed;
+        if (item.effects.qiGatherRate) bonuses.qiGatherRate += item.effects.qiGatherRate;
+      });
+    }
     
     return bonuses;
   };

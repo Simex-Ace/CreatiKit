@@ -10,7 +10,7 @@ const AchievementsPanel: React.FC<AchievementsPanelProps> = ({ gameState }) => {
   return (
     <div className="achievements-panel">
       <h3>🏆 成就系统</h3>
-      <p>成就组件正常工作</p>
+      {/* 成就列表将在此处显示 */}
     </div>
   );
 };
