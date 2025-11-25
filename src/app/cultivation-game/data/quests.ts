@@ -21,6 +21,7 @@ export const quests: Quest[] = [
     },
     completed: false,
     accepted: false,
+    rewardClaimed: false,
     questChain: 'main_story',
     nextQuest: 'main_2'
   },
@@ -44,6 +45,7 @@ export const quests: Quest[] = [
     },
     completed: false,
     accepted: false,
+    rewardClaimed: false,
     questChain: 'main_story',
     nextQuest: 'main_3'
   },
@@ -66,6 +68,7 @@ export const quests: Quest[] = [
     },
     completed: false,
     accepted: false,
+    rewardClaimed: false,
     questChain: 'main_story',
     nextQuest: 'main_4'
   },
@@ -88,6 +91,7 @@ export const quests: Quest[] = [
     },
     completed: false,
     accepted: false,
+    rewardClaimed: false,
     questChain: 'main_story',
     nextQuest: 'main_5'
   },
@@ -112,6 +116,7 @@ export const quests: Quest[] = [
     },
     completed: false,
     accepted: false,
+    rewardClaimed: false,
     questChain: 'main_story',
     nextQuest: 'main_6'
   },
@@ -135,6 +140,7 @@ export const quests: Quest[] = [
     },
     completed: false,
     accepted: false,
+    rewardClaimed: false,
     questChain: 'main_story',
     nextQuest: 'main_7'
   },
@@ -161,6 +167,7 @@ export const quests: Quest[] = [
     },
     completed: false,
     accepted: false,
+    rewardClaimed: false,
     questChain: 'main_story',
     nextQuest: 'main_8'
   },
@@ -183,6 +190,7 @@ export const quests: Quest[] = [
     },
     completed: false,
     accepted: false,
+    rewardClaimed: false,
     questChain: 'main_story'
   },
   // 支线任务
@@ -205,7 +213,8 @@ export const quests: Quest[] = [
       exp: 400
     },
     completed: false,
-    accepted: false
+    accepted: false,
+    rewardClaimed: false
   },
   {
     id: 'side_2',
@@ -228,7 +237,8 @@ export const quests: Quest[] = [
       recipes: ['recipe_3']
     },
     completed: false,
-    accepted: false
+    accepted: false,
+    rewardClaimed: false
   },
   {
     id: 'side_3',
@@ -247,7 +257,8 @@ export const quests: Quest[] = [
       exp: 300
     },
     completed: false,
-    accepted: false
+    accepted: false,
+    rewardClaimed: false
   },
   {
     id: 'side_4',
@@ -266,7 +277,8 @@ export const quests: Quest[] = [
       exp: 400
     },
     completed: false,
-    accepted: false
+    accepted: false,
+    rewardClaimed: false
   },
   // 日常任务
   {
@@ -287,6 +299,7 @@ export const quests: Quest[] = [
     },
     completed: false,
     accepted: false,
+    rewardClaimed: false,
     dueDate: Date.now() + 86400000 // 24小时后过期
   },
   {
@@ -307,6 +320,7 @@ export const quests: Quest[] = [
     },
     completed: false,
     accepted: false,
+    rewardClaimed: false,
     dueDate: Date.now() + 86400000
   },
   {
@@ -329,6 +343,7 @@ export const quests: Quest[] = [
     },
     completed: false,
     accepted: false,
+    rewardClaimed: false,
     dueDate: Date.now() + 86400000
   },
   // 限时任务（示例）
@@ -352,6 +367,7 @@ export const quests: Quest[] = [
     },
     completed: false,
     accepted: false,
+    rewardClaimed: false,
     dueDate: Date.now() + 86400000
   }
 ];

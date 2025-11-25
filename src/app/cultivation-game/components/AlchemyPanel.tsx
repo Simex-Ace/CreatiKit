@@ -2,7 +2,7 @@ import React from 'react';
 import { GameState, AlchemyRecipe, Pill, CultivationLevel } from '../types';
 import { pills } from '../data/pills';
 import { alchemyRecipes } from '../data/alchemy-recipes';
-import { getMaterialName } from '../utils';
+import { getMaterialName, getCultivationLevelName } from '../utils';
 
 interface AlchemyPanelProps {
   gameState: GameState;
@@ -107,7 +107,7 @@ const AlchemyPanel: React.FC<AlchemyPanelProps> = ({ gameState, onStartAlchemy }
                   {/* 其他信息 */}
                   <div className="flex justify-between items-center text-xs text-gray-400 mb-2">
                     <span>炼制时间: {recipe.duration}秒</span>
-                    <span>等级要求: {recipe.requiredLevel.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}</span>
+                    <span>等级要求: {getCultivationLevelName(recipe.requiredLevel)}</span>
                   </div>
                   
                   {/* 开始炼丹按钮 */}

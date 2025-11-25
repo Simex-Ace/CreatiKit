@@ -159,14 +159,16 @@ const AchievementsPanel: React.FC<AchievementsPanelProps> = ({ gameState, onActi
               <div className="achievement-reward">
                 <span className="reward-label">奖励:</span>
                 <span className="reward-text">{renderAchievementReward(achievement)}</span>
-                {isAchievementRewardUnclaimed(achievement.id) && (
+                {isAchievementRewardUnclaimed(achievement.id) ? (
                   <button 
                     className="claim-reward-btn"
                     onClick={() => handleClaimReward(achievement.id)}
                   >
                     领取奖励
                   </button>
-                )}
+                ) : (isAchievementUnlocked(achievement.id) && (
+                  <span className="reward-claimed-text">已领取</span>
+                ))}
               </div>
             </div>
           );
@@ -306,6 +308,13 @@ const AchievementsPanel: React.FC<AchievementsPanelProps> = ({ gameState, onActi
         
         .claim-reward-btn:active {
           transform: translateY(0);
+        }
+        
+        .reward-claimed-text {
+          margin-left: auto;
+          color: #ff6b6b;
+          font-weight: bold;
+          font-size: 0.8rem;
         }
       `}</style>
     </div>

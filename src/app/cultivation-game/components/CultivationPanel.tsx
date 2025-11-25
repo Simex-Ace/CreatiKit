@@ -38,15 +38,15 @@ export const CultivationPanel: React.FC<CultivationPanelProps> = ({ gameState, o
     const effects = [];
     
     if (skill.effects.cultivationSpeed) {
-      effects.push(`修炼速度 +${skill.effects.cultivationSpeed.toFixed(2)}x`);
+      effects.push(`修炼速度 +${Math.floor(skill.effects.cultivationSpeed * 100)}%`);
     }
     
     if (skill.effects.qiGatherRate) {
-      effects.push(`灵气采集 +${skill.effects.qiGatherRate.toFixed(2)}x`);
+      effects.push(`灵气采集 +${Math.floor(skill.effects.qiGatherRate * 100)}%`);
     }
     
     if (skill.effects.expGain) {
-      effects.push(`经验获得 +${skill.effects.expGain.toFixed(2)}x`);
+      effects.push(`经验获得 +${Math.floor(skill.effects.expGain * 100)}%`);
     }
     
     return effects.join(', ');

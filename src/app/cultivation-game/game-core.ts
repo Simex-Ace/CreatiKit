@@ -1,4 +1,4 @@
-import { GameState, Resources, Skill, Equipment, OfflineRewards, Quest, GameEvent, Event, Achievement, Monster, BattleResult, CultivationLevel } from './types';
+import { GameState, Resources, Skill, Equipment, OfflineRewards, Quest, GameEvent, Event, Achievement, Monster, BattleResult, CultivationLevel, Pet, Sect, SectTask } from './types';
 import { monsters as initialMonsters } from './data/monsters';
 import { forgeBlueprints as initialForgeBlueprints } from './data/forge-blueprints';
 import {
@@ -15,6 +15,8 @@ import { events as initialEvents } from './data/events';
 import { pills as initialPills } from './data/pills';
 import { achievements as initialAchievements } from './data/achievements';
 import { alchemyRecipes as initialRecipes } from './data/alchemy-recipes';
+import { petData } from './data/pets';
+import { sects } from './data/sects';
 
 // 创建新的游戏状态
 export function createNewGame(playerName: string = '修真者'): GameState {
@@ -28,7 +30,8 @@ export function createNewGame(playerName: string = '修真者'): GameState {
       exp: 0,
       maxExp: initialLevelInfo?.maxExp || 100,
       qiCapacity: initialLevelInfo?.baseQiCapacity || 100,
-      cultivationSpeed: calculateCultivationSpeed({} as GameState, 'qi_refining_1')
+      cultivationSpeed: calculateCultivationSpeed({} as GameState, 'qi_refining_1'),
+      sect: undefined // 初始化宗门为undefined
     },
     resources: {
       qi: 0,
@@ -66,6 +69,7 @@ export function createNewGame(playerName: string = '修真者'): GameState {
       }
     ],
     monsters: initialMonsters,
+    pets: [], // 初始化宠物数组
     lastUpdateTime: Date.now(),
     lastPlayTime: Date.now(),
     offlineTime: 0,
@@ -127,6 +131,10 @@ export class CultivationGame {
     // 确保unlockedAchievements存在
     if (!this.gameState.unlockedAchievements) {
       this.gameState.unlockedAchievements = [];
+    }
+    // 确保pets存在
+    if (!this.gameState.pets) {
+      this.gameState.pets = [];
     }
     // 如果有离线时间，计算离线收益
     this.processOfflineRewards();
@@ -195,17 +203,35 @@ export class CultivationGame {
         isUnlocked = false;
       }
 
+      if (achievement.requirements.petsCaught && 
+          (this.gameState.pets.length || 0) < achievement.requirements.petsCaught) {
+        isUnlocked = false;
+      }
+
+      if (achievement.requirements.petLevelMaxed) {
+        const hasMaxLevelPet = this.gameState.pets.some(pet => pet.level >= 10); // 假设最大等级为10
+        if (!hasMaxLevelPet) {
+          isUnlocked = false;
+        }
+      }
+
       // 如果所有条件都满足，解锁成就但不自动应用奖励
       if (isUnlocked) {
         hasChanges = true;
         this.gameState.achievements.push(achievement.id);
-        this.gameState.unlockedAchievements.push(achievement.id);
+        
+        // 检查成就是否已经在unlockedAchievements数组中，如果不在，则添加
+        if (!this.gameState.unlockedAchievements.includes(achievement.id)) {
+          this.gameState.unlockedAchievements.push(achievement.id);
+        }
 
         // 发送成就解锁通知
         this.notifyEvent('achievement_unlocked', { 
-          achievement: achievement.id, 
-          description: `${achievement.name} - ${achievement.description}`,
-          reward: `资源: ${JSON.stringify(achievement.reward.resources || {})}, 经验: ${achievement.reward.exp || 0}`
+          achievement: { 
+            id: achievement.id,
+            description: `${achievement.name} - ${achievement.description}`,
+            reward: achievement.reward
+          }
         });
       }
     }
@@ -229,6 +255,13 @@ export class CultivationGame {
     };
   }
 
+  // 设置游戏状态（用于测试和调试）
+  setState(newState: GameState): void {
+    this.gameState = newState;
+    // 触发游戏状态更新事件
+    this.notifyEvent('game_updated', { state: this.getState() });
+  }
+
   // 处理离线收益
   private processOfflineRewards() {
     const currentTime = Date.now();
@@ -241,11 +274,13 @@ export class CultivationGame {
       
       // 应用经验奖励
       if (rewards.exp) {
-        this.gameState.cultivation.exp += rewards.exp;
-        // 检查并执行升级
-        while (canLevelUp(this.gameState)) {
-          this.gameState = levelUp(this.gameState);
-          this.notifyEvent('level_up', { newLevel: this.gameState.cultivation.level });
+        // 经验满时不自动突破，只显示提示
+        const expAfterGain = this.gameState.cultivation.exp + rewards.exp;
+        if (expAfterGain >= this.gameState.cultivation.maxExp) {
+          this.gameState.cultivation.exp = this.gameState.cultivation.maxExp;
+          this.notifyEvent('info', { message: '经验已满，可以尝试突破境界' });
+        } else {
+          this.gameState.cultivation.exp = expAfterGain;
         }
       }
       
@@ -353,10 +388,9 @@ export class CultivationGame {
       this.gameState.autoCultivationCount = (this.gameState.autoCultivationCount || 0) + 1;
     }
     
-    // 检查是否可以升级
-    while (canLevelUp(this.gameState)) {
-      this.gameState = levelUp(this.gameState);
-      this.notifyEvent('level_up', { newLevel: this.gameState.cultivation.level });
+    // 经验满时不自动突破，只显示提示
+    if (canLevelUp(this.gameState)) {
+      this.notifyEvent('info', { message: '经验已满，可以尝试突破境界' });
     }
     
     // 有20%几率触发随机事件
@@ -366,6 +400,87 @@ export class CultivationGame {
     
     this.notifyEvent('cultivated', { expGain, totalExp: this.gameState.cultivation.exp });
     return true;
+  }
+
+  // 手动突破境界
+  breakthrough(): boolean {
+    try {
+      console.log('========= 突破方法开始 =========');
+      if (!this.gameState || !this.gameState.cultivation) {
+        console.error('游戏状态未初始化');
+        this.notifyEvent('error', { message: '游戏状态未初始化' });
+        return false;
+      }
+      
+      console.log('开始突破，当前经验:', this.gameState.cultivation.exp, '/', this.gameState.cultivation.maxExp);
+      console.log('当前境界:', this.gameState.cultivation.level);
+      
+      // 检查是否可以突破
+      const canBreakthrough = canLevelUp(this.gameState);
+      console.log('是否可以突破:', canBreakthrough);
+      
+      // 检查是否可以突破
+      if (!canBreakthrough) {
+        this.notifyEvent('error', { message: '经验不足，无法突破' });
+        return false;
+      }
+      
+      // 计算突破成功率
+      let successChance = 0.6; // 基础成功率60%
+      
+      // 如果有突破丹药，提高成功率
+      let usedPill = false;
+      if (this.gameState.resources.pills > 0) {
+        successChance += 0.2; // 使用丹药增加20%成功率
+        this.gameState.resources.pills--; // 消耗一颗丹药
+        usedPill = true;
+        console.log('使用了一颗突破丹药，成功率提升至', successChance * 100, '%');
+      }
+      
+      // 实际突破逻辑：根据成功率决定是否成功
+      const isSuccess = Math.random() < successChance;
+      console.log('突破结果:', isSuccess ? '成功' : '失败');
+      
+      if (isSuccess) {
+        // 突破成功
+        const oldLevel = this.gameState.cultivation.level;
+        const updatedState = levelUp(this.gameState);
+        const newLevel = updatedState.cultivation.level;
+        
+        // 更新游戏状态
+        this.gameState = updatedState;
+        
+        console.log('突破成功！从', oldLevel, '升级到', newLevel);
+        
+        // 确保状态正确更新
+        this.notifyEvent('breakthrough_success', { newLevel, oldLevel });
+        // 同时触发game_updated事件以确保界面更新
+        this.notifyEvent('game_updated', { state: updatedState });
+        return true;
+      } else {
+        // 突破失败
+        // 失败惩罚：损失一些经验
+        const oldExp = this.gameState.cultivation.exp;
+        const expLoss = this.gameState.cultivation.maxExp * 0.2;
+        this.gameState.cultivation.exp = Math.max(0, this.gameState.cultivation.exp - expLoss);
+        
+        console.log('突破失败，损失了', expLoss, '点经验');
+        
+        this.notifyEvent('breakthrough_failed', { 
+          message: '突破失败，损失了20%的经验',
+          oldExp,
+          newExp: this.gameState.cultivation.exp,
+          expLoss
+        });
+        // 同时触发game_updated事件以确保界面更新
+        this.notifyEvent('game_updated', { state: this.getState() });
+        return false;
+      }
+    } catch (error) {
+      console.error('突破功能出错:', error);
+      this.notifyEvent('error', { message: '突破功能出错' });
+      return false;
+    }
   }
 
   // 采集灵气
@@ -444,12 +559,14 @@ export class CultivationGame {
       this.gameState.resources.qi + 100,
       this.gameState.cultivation.qiCapacity
     );
-    this.gameState.cultivation.exp += 20;
     
-    // 检查是否可以升级
-    while (canLevelUp(this.gameState)) {
-      this.gameState = levelUp(this.gameState);
-      this.notifyEvent('level_up', { newLevel: this.gameState.cultivation.level });
+    // 经验满时不自动突破，只显示提示
+    const expAfterGain = this.gameState.cultivation.exp + 20;
+    if (expAfterGain >= this.gameState.cultivation.maxExp) {
+      this.gameState.cultivation.exp = this.gameState.cultivation.maxExp;
+      this.notifyEvent('info', { message: '经验已满，可以尝试突破境界' });
+    } else {
+      this.gameState.cultivation.exp = expAfterGain;
     }
     
     this.notifyEvent('spirit_fruit_used', { message: '你服用了一颗灵果，获得了100点灵气和20点经验！' });
@@ -1085,14 +1202,20 @@ export class CultivationGame {
       this.notifyEvent('error', { message: '任务未完成，无法领取奖励' });
       return false;
     }
+    if (quest.rewardClaimed) {
+      this.notifyEvent('error', { message: '奖励已经领取过了' });
+      return false;
+    }
     
     // 应用经验奖励
     if (quest.rewards.exp) {
-      this.gameState.cultivation.exp += quest.rewards.exp;
-      // 检查是否可以升级
-      while (canLevelUp(this.gameState)) {
-        this.gameState = levelUp(this.gameState);
-        this.notifyEvent('level_up', { newLevel: this.gameState.cultivation.level });
+      // 经验满时不自动突破，只显示提示
+      const expAfterGain = this.gameState.cultivation.exp + quest.rewards.exp;
+      if (expAfterGain >= this.gameState.cultivation.maxExp) {
+        this.gameState.cultivation.exp = this.gameState.cultivation.maxExp;
+        this.notifyEvent('info', { message: '经验已满，可以尝试突破境界' });
+      } else {
+        this.gameState.cultivation.exp = expAfterGain;
       }
     }
     
@@ -1109,6 +1232,9 @@ export class CultivationGame {
         }
       }
     }
+    
+    // 设置奖励已领取
+    quest.rewardClaimed = true;
     
     this.notifyEvent('quest_reward_claimed', { quest });
     return true;
@@ -1139,11 +1265,13 @@ export class CultivationGame {
 
     // 应用经验奖励
     if (achievement.reward.exp) {
-      this.gameState.cultivation.exp += achievement.reward.exp;
-      // 检查是否可以升级
-      while (canLevelUp(this.gameState)) {
-        this.gameState = levelUp(this.gameState);
-        this.notifyEvent('level_up', { newLevel: this.gameState.cultivation.level });
+      // 经验满时不自动突破，只显示提示
+      const expAfterGain = this.gameState.cultivation.exp + achievement.reward.exp;
+      if (expAfterGain >= this.gameState.cultivation.maxExp) {
+        this.gameState.cultivation.exp = this.gameState.cultivation.maxExp;
+        this.notifyEvent('info', { message: '经验已满，可以尝试突破境界' });
+      } else {
+        this.gameState.cultivation.exp = expAfterGain;
       }
     }
 
@@ -1230,11 +1358,13 @@ export class CultivationGame {
       for (const outcome of choice.outcomes) {
         // 应用经验变化
         if (outcome.effects && outcome.effects.exp) {
-          this.gameState.cultivation.exp += outcome.effects.exp;
-          // 检查是否可以升级
-          while (canLevelUp(this.gameState)) {
-            this.gameState = levelUp(this.gameState);
-            this.notifyEvent('level_up', { newLevel: this.gameState.cultivation.level });
+          // 经验满时不自动突破，只显示提示
+          const expAfterGain = this.gameState.cultivation.exp + outcome.effects.exp;
+          if (expAfterGain >= this.gameState.cultivation.maxExp) {
+            this.gameState.cultivation.exp = this.gameState.cultivation.maxExp;
+            this.notifyEvent('info', { message: '经验已满，可以尝试突破境界' });
+          } else {
+            this.gameState.cultivation.exp = expAfterGain;
           }
         }
         
@@ -1358,12 +1488,13 @@ export class CultivationGame {
           
           // 增加经验值
           if (recipe.expGain) {
-            this.gameState.cultivation.exp += recipe.expGain;
-            
-            // 检查是否可以升级
-            while (canLevelUp(this.gameState)) {
-              this.gameState = levelUp(this.gameState);
-              this.notifyEvent('level_up', { newLevel: this.gameState.cultivation.level });
+            // 经验满时不自动突破，只显示提示
+            const expAfterGain = this.gameState.cultivation.exp + recipe.expGain;
+            if (expAfterGain >= this.gameState.cultivation.maxExp) {
+              this.gameState.cultivation.exp = this.gameState.cultivation.maxExp;
+              this.notifyEvent('info', { message: '经验已满，可以尝试突破境界' });
+            } else {
+              this.gameState.cultivation.exp = expAfterGain;
             }
           }
 
@@ -1429,10 +1560,370 @@ export class CultivationGame {
       return playerLevelIndex >= requiredLevelIndex;
     }
 
+    // 捕捉宠物
+    catchPet(targetPetDataId: string): boolean {
+      const targetPetData = petData.find(p => p.id === targetPetDataId);
+      if (!targetPetData) {
+        return false;
+      }
+
+      // 检查是否达到解锁等级
+      if (!this.meetsLevelRequirement(targetPetData.unlockLevel)) {
+        return false;
+      }
+
+      // 尝试捕捉宠物
+      const success = Math.random() < targetPetData.catchChance;
+      if (success) {
+        // 创建宠物实例
+        const pet: Pet = {
+          id: `${targetPetData.id}_${Date.now()}`, // 确保每个宠物实例有唯一ID
+          name: targetPetData.name,
+          type: targetPetData.type,
+          image: targetPetData.image,
+          level: 1,
+          exp: 0,
+          maxExp: 100,
+          health: targetPetData.baseHealth,
+          maxHealth: targetPetData.baseHealth,
+          attack: targetPetData.baseAttack,
+          defense: targetPetData.baseDefense,
+          skills: targetPetData.skills.map(skill => ({
+            ...skill,
+            currentCooldown: 0
+          })),
+          loyalty: targetPetData.loyalty,
+          active: false,
+          specialBonus: { ...targetPetData.specialBonus }
+        };
+
+        // 添加到宠物列表
+        this.gameState.pets.push(pet);
+
+        // 更新成就进度
+        this.checkAndApplyAchievementRewards();
+
+        // 发送宠物捕捉成功事件
+        this.notifyEvent('pet_caught', { pet });
+        return true;
+      } else {
+        // 发送宠物捕捉失败事件
+        this.notifyEvent('pet_catch_failed', { petData: targetPetData });
+        return false;
+      }
+    }
+
+    // 训练宠物
+    trainPet(petId: string): boolean {
+      const pet = this.gameState.pets.find(p => p.id === petId);
+      if (!pet) {
+        return false;
+      }
+
+      // 训练消耗资源（可以根据游戏平衡调整）
+      const trainingCost = {
+        spiritGrass: 10 * pet.level,
+        spiritStone: 5 * pet.level
+      };
+
+      // 检查资源是否足够
+      for (const [resource, amount] of Object.entries(trainingCost)) {
+        if ((this.gameState.resources[resource as keyof Resources] || 0) < amount) {
+          return false;
+        }
+      }
+
+      // 扣除资源
+      for (const [resource, amount] of Object.entries(trainingCost)) {
+        (this.gameState.resources[resource as keyof Resources] as number) -= amount;
+      }
+
+      // 增加宠物经验
+      const expGained = 20 + Math.floor(Math.random() * 10);
+      pet.exp += expGained;
+
+      // 检查宠物升级
+      if (pet.exp >= pet.maxExp) {
+        pet.level++;
+        pet.exp -= pet.maxExp;
+        pet.maxExp = Math.floor(pet.maxExp * 1.5);
+        pet.maxHealth += 20;
+        pet.health = pet.maxHealth;
+        pet.attack += 3;
+        pet.defense += 2;
+
+        // 发送宠物升级事件
+        this.notifyEvent('pet_level_up', { pet });
+      }
+
+      // 更新成就进度
+      this.checkAndApplyAchievementRewards();
+
+      // 发送宠物训练成功事件
+      this.notifyEvent('pet_trained', { pet, expGained });
+      return true;
+    }
+
+    // 升级宠物技能
+    upgradePetSkill(petId: string, skillIndex: number): boolean {
+      const pet = this.gameState.pets.find(p => p.id === petId);
+      if (!pet || !pet.skills[skillIndex]) {
+        return false;
+      }
+
+      const skill = pet.skills[skillIndex];
+      if (skill.level >= skill.maxLevel) {
+        return false;
+      }
+
+      // 升级技能消耗资源
+      const upgradeCost = {
+        spiritCrystal: 1 + skill.level,
+        pills: 2 + skill.level
+      };
+
+      // 检查资源是否足够
+      for (const [resource, amount] of Object.entries(upgradeCost)) {
+        if ((this.gameState.resources[resource as keyof Resources] || 0) < amount) {
+          return false;
+        }
+      }
+
+      // 扣除资源
+      for (const [resource, amount] of Object.entries(upgradeCost)) {
+        (this.gameState.resources[resource as keyof Resources] as number) -= amount;
+      }
+
+      // 升级技能
+      skill.level++;
+
+      // 增强技能效果（可以根据技能类型调整）
+      if (skill.effect.damage) {
+        skill.effect.damage *= 1.2;
+      }
+      if (skill.effect.healing) {
+        skill.effect.healing *= 1.2;
+      }
+      if (skill.effect.defenseBoost) {
+        skill.effect.defenseBoost *= 1.2;
+      }
+      if (skill.effect.attackBoost) {
+        skill.effect.attackBoost *= 1.2;
+      }
+
+      // 发送宠物技能升级事件
+      this.notifyEvent('pet_skill_upgraded', { pet, skill });
+      return true;
+    }
+
+    // 切换宠物活跃状态
+    togglePetActive(petId: string): boolean {
+      const petIndex = this.gameState.pets.findIndex(p => p.id === petId);
+      if (petIndex === -1) {
+        return false;
+      }
+
+      // 如果宠物已经活跃，将其设置为非活跃
+      if (this.gameState.pets[petIndex].active) {
+        this.gameState.pets[petIndex].active = false;
+      } else {
+        // 将其他宠物设置为非活跃
+        this.gameState.pets.forEach(p => p.active = false);
+        // 将当前宠物设置为活跃
+        this.gameState.pets[petIndex].active = true;
+      }
+
+      // 发送宠物状态切换事件
+      this.notifyEvent('pet_active_toggled', { pet: this.gameState.pets[petIndex] });
+      return true;
+    }
+
+    // 喂食宠物（增加忠诚度）
+    feedPet(petId: string): boolean {
+      const pet = this.gameState.pets.find(p => p.id === petId);
+      if (!pet) {
+        return false;
+      }
+
+      // 检查忠诚度是否已满
+      if (pet.loyalty >= 100) {
+        return false;
+      }
+
+      // 喂食消耗资源
+      if (this.gameState.resources.pills <= 0) {
+        return false;
+      }
+
+      // 扣除资源
+      this.gameState.resources.pills--;
+
+      // 增加忠诚度
+      pet.loyalty = Math.min(pet.loyalty + 10, 100);
+
+      // 发送宠物喂食事件
+      this.notifyEvent('pet_fed', { pet });
+      return true;
+    }
+
+    // 获取活跃宠物
+    getActivePet(): Pet | null {
+      return this.gameState.pets.find(p => p.active) || null;
+    }
+
+    // 加入宗门
+    joinSect(sectId: string): boolean {
+      const sect = sects.find(s => s.id === sectId);
+      if (!sect) {
+        return false;
+      }
+
+      // 检查是否已经加入宗门
+      if (this.gameState.cultivation.sect) {
+        this.notifyEvent('error', { message: '你已经加入了一个宗门！' });
+        return false;
+      }
+
+      // 检查玩家境界是否满足要求
+      const requiredLevel = 'qi_refining_1';
+      const levelOrder: CultivationLevel[] = [
+        'qi_refining_1', 'qi_refining_2', 'qi_refining_3', 'qi_refining_4', 'qi_refining_5',
+        'qi_refining_6', 'qi_refining_7', 'qi_refining_8', 'qi_refining_9',
+        'foundation_1', 'foundation_2', 'foundation_3', 'foundation_4', 'foundation_5',
+        'foundation_6', 'foundation_7', 'foundation_8', 'foundation_9',
+        'golden_core_1', 'golden_core_2', 'golden_core_3', 'golden_core_4', 'golden_core_5',
+        'golden_core_6', 'golden_core_7', 'golden_core_8', 'golden_core_9',
+        'nascent_soul_1', 'nascent_soul_2', 'nascent_soul_3', 'nascent_soul_4', 'nascent_soul_5',
+        'nascent_soul_6', 'nascent_soul_7', 'nascent_soul_8', 'nascent_soul_9'
+      ];
+
+      const playerLevelIndex = levelOrder.indexOf(this.gameState.cultivation.level);
+      const requiredLevelIndex = levelOrder.indexOf(requiredLevel);
+
+      if (playerLevelIndex < requiredLevelIndex) {
+        this.notifyEvent('error', { message: '你的境界不足，无法加入宗门！' });
+        return false;
+      }
+
+      // 加入宗门
+      this.gameState.cultivation.sect = {
+        ...sect,
+        unlocked: true,
+        contribution: 0,
+        contributionToNextLevel: 1000
+      };
+
+      // 发送加入宗门事件
+      this.notifyEvent('sect_joined', { sect: this.gameState.cultivation.sect });
+      return true;
+    }
+
+    // 贡献资源给宗门
+    contributeToSect(amount: number): boolean {
+      if (!this.gameState.cultivation.sect || amount <= 0) {
+        return false;
+      }
+
+      // 检查资源是否足够
+      if (this.gameState.resources.spiritStone < amount) {
+        this.notifyEvent('error', { message: '灵石不足！' });
+        return false;
+      }
+
+      // 贡献资源
+      this.gameState.resources.spiritStone -= amount;
+      this.gameState.cultivation.sect.contribution += amount;
+      this.gameState.cultivation.sect.contributionToNextLevel = 1000 * Math.pow(1.5, this.gameState.cultivation.sect.level);
+
+      // 检查宗门是否升级
+      if (this.gameState.cultivation.sect.contribution >= this.gameState.cultivation.sect.contributionToNextLevel) {
+        this.levelUpSect();
+      }
+
+      // 发送贡献成功事件
+      this.notifyEvent('sect_contributed', { amount, contribution: this.gameState.cultivation.sect.contribution });
+      return true;
+    }
+
+    // 宗门升级
+    private levelUpSect(): void {
+      if (!this.gameState.cultivation.sect) {
+        return;
+      }
+
+      this.gameState.cultivation.sect.level++;
+      this.gameState.cultivation.sect.contribution -= this.gameState.cultivation.sect.contributionToNextLevel;
+      this.gameState.cultivation.sect.contributionToNextLevel = 1000 * Math.pow(1.5, this.gameState.cultivation.sect.level);
+      
+      // 提升宗门加成
+      this.gameState.cultivation.sect.benefits.resourceBoost += 0.05;
+      this.gameState.cultivation.sect.benefits.expBoost += 0.05;
+      this.gameState.cultivation.sect.benefits.cultivationSpeedBoost += 0.05;
+
+      // 发送宗门升级事件
+      this.notifyEvent('sect_level_up', { sect: this.gameState.cultivation.sect });
+    }
+
+    // 完成宗门任务
+    completeSectTask(taskId: string): boolean {
+      if (!this.gameState.cultivation.sect) {
+        return false;
+      }
+
+      const task = this.gameState.cultivation.sect.tasks.find(t => t.id === taskId);
+      if (!task || task.completed || task.claimed) {
+        return false;
+      }
+
+      // 检查任务是否完成（这里只是示例，实际逻辑需要根据任务类型实现）
+      // 这里简化处理，直接标记为完成
+      task.completed = true;
+
+      // 发送任务完成事件
+      this.notifyEvent('sect_task_completed', { task });
+      return true;
+    }
+
+    // 领取宗门任务奖励
+    claimSectTaskReward(taskId: string): boolean {
+      if (!this.gameState.cultivation.sect) {
+        return false;
+      }
+
+      const task = this.gameState.cultivation.sect.tasks.find(t => t.id === taskId);
+      if (!task || !task.completed || task.claimed) {
+        return false;
+      }
+
+      // 领取奖励
+      task.claimed = true;
+      this.gameState.cultivation.sect.contribution += task.rewards.contribution;
+
+      // 领取资源奖励
+      if (task.rewards.resources) {
+        Object.entries(task.rewards.resources).forEach(([key, value]) => {
+          if (key in this.gameState.resources) {
+            (this.gameState.resources[key as keyof Resources] as number) += value;
+          }
+        });
+      }
+
+
+
+      // 检查宗门是否升级
+      if (this.gameState.cultivation.sect.contribution >= this.gameState.cultivation.sect.contributionToNextLevel) {
+        this.levelUpSect();
+      }
+
+      // 发送奖励领取事件
+      this.notifyEvent('sect_task_reward_claimed', { task });
+      return true;
+    }
+
     // 通知事件
     private notifyEvent(eventType: string, data: any) {
-    if (this.eventCallback) {
-      this.eventCallback(eventType, data);
+      if (this.eventCallback) {
+        this.eventCallback(eventType, data);
+      }
     }
   }
-}

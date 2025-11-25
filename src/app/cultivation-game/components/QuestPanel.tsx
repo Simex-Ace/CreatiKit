@@ -1,5 +1,6 @@
 import React from 'react';
 import { GameState, Quest } from '../types';
+import { getCultivationLevelName } from '../utils';
 
 interface QuestPanelProps {
   gameState: GameState;
@@ -35,19 +36,28 @@ export const QuestPanel: React.FC<QuestPanelProps> = ({ gameState, onAction }) =
                   // 渲染境界进度
                   if (quest.requirements.level) {
                     const isCompleted = gameState.cultivation.level === quest.requirements.level;
-                    progressItems.push(`境界: ${isCompleted ? '✓' : '✗'}`);
+                    const requiredLevel = quest.requirements.level;
+                    const levelName = getCultivationLevelName(requiredLevel);
+                    progressItems.push(`境界: ${isCompleted ? '✓' : levelName}`);
                   }
                   
                   // 渲染资源进度
                   if (quest.requirements.resources) {
                     for (const [resource, amount] of Object.entries(quest.requirements.resources)) {
-                      const currentAmount = (gameState.resources as any)[resource] || 0;
+                      const currentAmount = Math.floor((gameState.resources as any)[resource] || 0);
                       const resourceName = {
                         qi: '灵气',
                         gold: '灵石',
                         pills: '丹药',
-                        materials: '材料',
-                        spiritFruit: '灵果'
+                        materials: '基础材料',
+                        spiritFruit: '灵果',
+                        spiritGrass: '灵草',
+                        spiritWater: '灵水',
+                        spiritStone: '灵石',
+                        spiritCrystal: '灵晶',
+                        heavenlyHerb: '天材地宝',
+                        immortalFruit: '仙果',
+                        divineEssence: '神髓'
                       }[resource] || resource;
                       
                       progressItems.push(`${resourceName}: ${currentAmount}/${amount}`);
@@ -59,8 +69,13 @@ export const QuestPanel: React.FC<QuestPanelProps> = ({ gameState, onAction }) =
                     for (const skillReq of quest.requirements.skills) {
                       const skill = gameState.skills.find(s => s.id === skillReq.id);
                       const currentLevel = skill ? skill.level : 0;
-                      const skillName = skill ? skill.name : skillReq.id;
-                       
+                      const skillName = {
+                        qiGather: '灵气采集',
+                        cultivation: '修炼',
+                        gathering: '材料采集',
+                        alchemy: '炼丹'
+                      }[skillReq.id] || (skill ? skill.name : skillReq.id);
+                        
                       progressItems.push(`${skillName}: ${currentLevel}/${skillReq.level}`);
                     }
                   }
@@ -103,14 +118,21 @@ export const QuestPanel: React.FC<QuestPanelProps> = ({ gameState, onAction }) =
                         qi: '灵气',
                         gold: '灵石',
                         pills: '丹药',
-                        materials: '材料',
-                        spiritFruit: '灵果'
+                        materials: '基础材料',
+                        spiritFruit: '灵果',
+                        spiritGrass: '灵草',
+                        spiritWater: '灵水',
+                        spiritStone: '灵石',
+                        spiritCrystal: '灵晶',
+                        heavenlyHerb: '天材地宝',
+                        immortalFruit: '仙果',
+                        divineEssence: '神髓'
                       }[resource] || resource;
                       rewardItems.push(`${resourceName}: +${amount}`);
                     }
                   }
                   
-                  return rewardItems.join(', ');
+                  return rewardItems.length > 0 ? rewardItems.join(', ') : '无奖励';
                 };
 
                 return (
@@ -129,15 +151,19 @@ export const QuestPanel: React.FC<QuestPanelProps> = ({ gameState, onAction }) =
                       {renderQuestRewards()}
                     </td>
                     <td className="quest-actions">
-                      {quest.completed && (
-                        <button 
-                          className="btn btn-success btn-small"
-                          onClick={handleClaimReward}
-                        >
-                          领取奖励
-                        </button>
-                      )}
-                    </td>
+              {quest.completed && (
+                quest.rewardClaimed ? (
+                  <div className="reward-claimed">已领取</div>
+                ) : (
+                  <button 
+                    className="btn btn-success btn-small"
+                    onClick={handleClaimReward}
+                  >
+                    领取奖励
+                  </button>
+                )
+              )}
+            </td>
                   </tr>
                 );
               })
@@ -166,13 +192,16 @@ export const QuestPanel: React.FC<QuestPanelProps> = ({ gameState, onAction }) =
             border: 1px solid rgba(245, 215, 110, 0.3);
             border-radius: 8px;
             overflow: hidden;
+            table-layout: fixed;
           }
           
           .quest-table th,
           .quest-table td {
             padding: 1rem;
             text-align: left;
+            vertical-align: middle;
             border-bottom: 1px solid rgba(245, 215, 110, 0.2);
+            display: table-cell;
           }
           
           .quest-table th {
@@ -182,6 +211,32 @@ export const QuestPanel: React.FC<QuestPanelProps> = ({ gameState, onAction }) =
             text-transform: uppercase;
             font-size: 0.9rem;
             letter-spacing: 0.5px;
+          }
+          
+          /* 表格列宽度设置 */
+          .quest-table th:nth-child(1),
+          .quest-table td:nth-child(1) {
+            width: 40%; /* 任务名称和描述 */
+          }
+          
+          .quest-table th:nth-child(2),
+          .quest-table td:nth-child(2) {
+            width: 8%; /* 状态 */
+          }
+          
+          .quest-table th:nth-child(3),
+          .quest-table td:nth-child(3) {
+            width: 22%; /* 进度 */
+          }
+          
+          .quest-table th:nth-child(4),
+          .quest-table td:nth-child(4) {
+            width: 20%; /* 奖励 */
+          }
+          
+          .quest-table th:nth-child(5),
+          .quest-table td:nth-child(5) {
+            width: 10%; /* 操作 */
           }
           
           .quest-table th:first-child {
@@ -194,6 +249,8 @@ export const QuestPanel: React.FC<QuestPanelProps> = ({ gameState, onAction }) =
           
           .quest-item {
             transition: all 0.3s ease;
+            display: table-row;
+            height: auto;
           }
           
           .quest-item:nth-child(even) {
@@ -250,6 +307,13 @@ export const QuestPanel: React.FC<QuestPanelProps> = ({ gameState, onAction }) =
             line-height: 1.4;
           }
           
+          .quest-actions {
+            text-align: center;
+            vertical-align: middle;
+            padding: 0.5rem;
+            width: 10%;
+          }
+          
           .no-quests td {
             text-align: center;
             color: #94a3b8;
@@ -276,6 +340,17 @@ export const QuestPanel: React.FC<QuestPanelProps> = ({ gameState, onAction }) =
           
           .btn-small:active {
             transform: translateY(0);
+          }
+          
+          .reward-claimed {
+            color: #ff6b6b;
+            font-weight: bold;
+            font-size: 0.9rem;
+            padding: 0.25rem 0.5rem;
+            background-color: transparent;
+            border: none;
+            display: inline;
+            white-space: normal;
           }
           
           /* 响应式设计 */

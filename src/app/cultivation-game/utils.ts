@@ -33,6 +33,61 @@ export function getCultivationLevelInfo(level: CultivationLevel) {
   return cultivationLevels.find(info => info.level === level);
 }
 
+// 将境界标识符转换为中文名称
+export function getCultivationLevelName(level: CultivationLevel): string {
+  const levelMap: Partial<Record<CultivationLevel, string>> = {
+    // 练气期
+    'qi_refining_1': '练气期一层',
+    'qi_refining_2': '练气期二层',
+    'qi_refining_3': '练气期三层',
+    'qi_refining_4': '练气期四层',
+    'qi_refining_5': '练气期五层',
+    'qi_refining_6': '练气期六层',
+    'qi_refining_7': '练气期七层',
+    'qi_refining_8': '练气期八层',
+    'qi_refining_9': '练气期九层',
+    
+    // 筑基期
+    'foundation_1': '筑基期一层',
+    'foundation_2': '筑基期二层',
+    'foundation_3': '筑基期三层',
+    'foundation_4': '筑基期四层',
+    'foundation_5': '筑基期五层',
+    'foundation_6': '筑基期六层',
+    'foundation_7': '筑基期七层',
+    'foundation_8': '筑基期八层',
+    'foundation_9': '筑基期九层',
+    
+    // 金丹期
+    'golden_core_1': '金丹期一层',
+    'golden_core_2': '金丹期二层',
+    'golden_core_3': '金丹期三层',
+    'golden_core_4': '金丹期四层',
+    'golden_core_5': '金丹期五层',
+    'golden_core_6': '金丹期六层',
+    'golden_core_7': '金丹期七层',
+    'golden_core_8': '金丹期八层',
+    'golden_core_9': '金丹期九层',
+    
+    // 元婴期
+    'nascent_soul_1': '元婴期一层',
+    'nascent_soul_2': '元婴期二层',
+    'nascent_soul_3': '元婴期三层',
+    'nascent_soul_4': '元婴期四层',
+    'nascent_soul_5': '元婴期五层',
+    'nascent_soul_6': '元婴期六层',
+    'nascent_soul_7': '元婴期七层',
+    'nascent_soul_8': '元婴期八层',
+    'nascent_soul_9': '元婴期九层',
+    
+    // 化神期
+    'spirit_transformation_1': '化神期一层',
+    'spirit_transformation_2': '化神期二层',
+    'spirit_transformation_3': '化神期三层'
+  };
+  return levelMap[level] || level;
+}
+
 // 检查是否可以升级
 export function canLevelUp(state: GameState): boolean {
   const nextLevel = getNextCultivationLevel(state.cultivation.level);
@@ -42,11 +97,24 @@ export function canLevelUp(state: GameState): boolean {
 
 // 执行升级
 export function levelUp(state: GameState): GameState {
+  console.log('========= levelUp 函数开始 =========');
+  console.log('当前状态:', state.cultivation.level, '当前经验:', state.cultivation.exp);
+  
   const nextLevel = getNextCultivationLevel(state.cultivation.level);
-  if (!nextLevel) return state;
+  console.log('下一个境界:', nextLevel);
+  
+  if (!nextLevel) {
+    console.log('已经是最高境界，无法再升级');
+    return state;
+  }
 
   const nextLevelInfo = getCultivationLevelInfo(nextLevel);
-  if (!nextLevelInfo) return state;
+  console.log('下一个境界信息:', nextLevelInfo);
+  
+  if (!nextLevelInfo) {
+    console.log('找不到下一个境界的信息');
+    return state;
+  }
 
   const newState = { ...state };
   newState.cultivation = {
@@ -64,6 +132,9 @@ export function levelUp(state: GameState): GameState {
     qi: 0
   };
 
+  console.log('升级完成，新状态:', newState.cultivation.level, '新经验:', newState.cultivation.exp);
+  console.log('========= levelUp 函数结束 =========');
+  
   return newState;
 }
 
@@ -111,9 +182,9 @@ export function calculateQiGatherRate(state: GameState): number {
 // 格式化数字（如 1000 -> 1K）
 export function formatNumber(num: number): string {
   if (num >= 1000000) {
-    return (num / 1000000).toFixed(1) + 'M';
+    return Math.floor(num / 1000000) + 'M';
   } else if (num >= 1000) {
-    return (num / 1000).toFixed(1) + 'K';
+    return Math.floor(num / 1000) + 'K';
   }
   return Math.floor(num).toString();
 }
@@ -152,8 +223,8 @@ export function calculateOfflineRewards(state: GameState, offlineTimeMs: number)
 export function createInitialSkills(): Skill[] {
   return [
     {
-      id: 'basic_qi_gather',
-      name: '基础聚灵',
+      id: 'qiGather',
+      name: '灵气采集',
       description: '提高灵气采集速率',
       level: 1,
       maxLevel: 10,
@@ -163,14 +234,36 @@ export function createInitialSkills(): Skill[] {
       }
     },
     {
-      id: 'basic_cultivation',
-      name: '基础修炼',
+      id: 'cultivation',
+      name: '修炼',
       description: '提高修炼速度',
       level: 1,
       maxLevel: 10,
       unlockLevel: 'qi_refining_1',
       effects: {
         cultivationSpeed: 0.3
+      }
+    },
+    {
+      id: 'gathering',
+      name: '材料采集',
+      description: '提高材料采集效率',
+      level: 1,
+      maxLevel: 10,
+      unlockLevel: 'qi_refining_1',
+      effects: {
+        gatheringRate: 0.5
+      }
+    },
+    {
+      id: 'alchemy',
+      name: '炼丹',
+      description: '提高炼丹成功率',
+      level: 1,
+      maxLevel: 10,
+      unlockLevel: 'qi_refining_2',
+      effects: {
+        alchemySuccessRate: 0.1
       }
     }
   ];

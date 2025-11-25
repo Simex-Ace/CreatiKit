@@ -9,18 +9,9 @@ interface ActionPanelProps {
 }
 
 export const ActionPanel: React.FC<ActionPanelProps> = ({ gameState, onAction }) => {
-  const [notification, setNotification] = useState<{message: string, type: 'success' | 'error'} | null>(null);
-
   const handleAction = (action: string, params?: any) => {
+    console.log(`ActionPanel handleAction called: ${action}`, params);
     onAction(action, params);
-  };
-
-  // 显示通知
-  const showNotification = (message: string, type: 'success' | 'error' = 'success') => {
-    setNotification({ message, type });
-    setTimeout(() => {
-      setNotification(null);
-    }, 3000);
   };
 
   return (
@@ -85,6 +76,23 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({ gameState, onAction })
               disabled={gameState.resources.spiritFruit <= 0}
             >
               服用灵果
+            </button>
+          </div>
+        </div>
+        
+        <div className="action-card" style={{ display: 'flex', flexDirection: 'column', minHeight: '150px' }}>
+          <div className="action-title">突破境界</div>
+          <div className="action-description">尝试突破当前境界，需要足够经验</div>
+          <div style={{ marginBottom: '0.5rem', color: '#f5d76e' }}>
+            当前经验: {Math.floor(gameState.cultivation.exp)} / {gameState.cultivation.maxExp}
+          </div>
+          <div style={{ marginTop: 'auto', paddingBottom: '16px' }}>
+            <button 
+              className="btn" 
+              onClick={() => handleAction('breakthrough')}
+              style={{ background: 'linear-gradient(135deg, #ff9800, #f57c00)' }}
+            >
+              突破境界
             </button>
           </div>
         </div>
@@ -282,23 +290,7 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({ gameState, onAction })
         </div>
       </div>
       
-      {/* 通知提示 */}
-      {notification && (
-        <div 
-          className="event-notification"
-          style={{ 
-            borderColor: notification.type === 'success' ? '#48bb78' : '#f56565',
-            backgroundColor: notification.type === 'success' ? 'rgba(72, 187, 120, 0.1)' : 'rgba(245, 101, 101, 0.1)'
-          }}
-        >
-          <div className="event-title">
-            {notification.type === 'success' ? '成功' : '错误'}
-          </div>
-          <div className="event-message">
-            {notification.message}
-          </div>
-        </div>
-      )}
+
     </div>
   );
 };

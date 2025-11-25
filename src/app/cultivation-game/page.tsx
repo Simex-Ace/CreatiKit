@@ -1,7 +1,8 @@
 'use client'
 
 import React, { useState, useEffect, useRef } from 'react';
-import { GameState, GameEvent } from './types';
+import { GameState, GameEvent, Pet, Sect, Resources } from './types';
+import { getCultivationLevelName, getNextCultivationLevel, levelUp } from './utils';
 import { createNewGame, CultivationGame } from './game-core';
 import { StatusPanel } from './components/StatusPanel';
 import { ActionPanel } from './components/ActionPanel';
@@ -13,6 +14,8 @@ import EventPanel from './components/EventPanel';
 import AlchemyPanel from './components/AlchemyPanel';
 import { BattlePanel } from './components/BattlePanel';
 import { ForgePanel } from './components/ForgePanel';
+import PetPanel from './components/PetPanel';
+import SectPanel from './components/SectPanel';
 import { alchemyRecipes } from './data/alchemy-recipes';
 import './globals.css';
 
@@ -93,7 +96,28 @@ export default function CultivationGamePage() {
     const handleGameEvent = (eventName: string, params: any) => {
       switch (eventName) {
         case 'level_up':
-          showNotification(`恭喜突破到${params.newLevel}！`, 'success');
+          // 使用中文名称显示突破结果
+          const levelUpNewLevelName = getCultivationLevelName(params.newLevel);
+          showNotification(`恭喜突破到${levelUpNewLevelName}！`, 'success');
+          // 确保状态更新
+          setGameState(gameRef.current?.getState() || gameState);
+          break;
+        case 'breakthrough_success':
+          // 使用中文名称显示突破结果
+          const newLevelName = getCultivationLevelName(params.newLevel);
+          showNotification(`恭喜突破到${newLevelName}！`, 'success');
+          // 确保状态更新
+          setGameState(gameRef.current?.getState() || gameState);
+          break;
+        case 'breakthrough_failed':
+          showNotification(params.message, 'error');
+          break;
+        case 'error':
+          showNotification(params.message, 'error');
+          break;
+        case 'game_updated':
+          // 确保界面更新
+          setGameState(gameRef.current?.getState() || gameState);
           break;
         case 'quest_updated':
           setGameState(gameRef.current?.getState() || gameState);
@@ -148,6 +172,16 @@ export default function CultivationGamePage() {
           break;
         case 'blueprint_unlocked':
           showNotification(`解锁新图谱：${params.blueprint.name}！`, 'success');
+          break;
+        case 'pet_caught':
+          showNotification(`成功捕捉了${params.pet.name}！`, 'success');
+          break;
+        case 'pet_catch_failed':
+          showNotification(`捕捉${params.petData.name}失败了，继续努力！`, 'error');
+          break;
+        case 'game_updated':
+          // 当游戏状态更新时，更新界面
+          setGameState(params.state);
           break;
         default:
           console.warn('未知游戏事件:', eventName);
@@ -217,6 +251,19 @@ export default function CultivationGamePage() {
         gameRef.current.toggleAutoGatherQi();
         const isAutoGathering = gameRef.current.getState().autoGatherQi;
         showNotification(isAutoGathering ? '开启自动采集灵气' : '关闭自动采集灵气', 'info');
+        break;
+      case 'breakthrough':
+        // 直接调用突破方法，结果由事件处理函数处理
+        console.log('Breakthrough action received, calling breakthrough method...');
+        if (gameRef.current) {
+          const result = gameRef.current.breakthrough();
+          console.log('Breakthrough method returned:', result);
+          // 手动更新状态，确保界面显示最新状态
+          setGameState(gameRef.current?.getState() || gameState);
+          if (!result) {
+            showNotification('突破条件不足！', 'error');
+          }
+        }
         break;
       case 'buyPill':
         if (gameRef.current.buyItem('pills')) {
@@ -308,6 +355,51 @@ export default function CultivationGamePage() {
           gameRef.current.startForge(params.blueprintId);
         }
         break;
+      case 'catchPet':
+        if (gameRef.current) {
+          gameRef.current.catchPet(params.petDataId);
+        }
+        break;
+      case 'trainPet':
+        if (gameRef.current) {
+          gameRef.current.trainPet(params.petId);
+        }
+        break;
+      case 'upgradePetSkill':
+        if (gameRef.current) {
+          gameRef.current.upgradePetSkill(params.petId, params.skillIndex);
+        }
+        break;
+      case 'togglePetActive':
+        if (gameRef.current) {
+          gameRef.current.togglePetActive(params.petId);
+        }
+        break;
+      case 'feedPet':
+        if (gameRef.current) {
+          gameRef.current.feedPet(params.petId);
+        }
+        break;
+      case 'joinSect':
+        if (gameRef.current) {
+          gameRef.current.joinSect(params.sectId);
+        }
+        break;
+      case 'contributeToSect':
+        if (gameRef.current) {
+          gameRef.current.contributeToSect(params.amount);
+        }
+        break;
+      case 'completeSectTask':
+        if (gameRef.current) {
+          gameRef.current.completeSectTask(params.taskId);
+        }
+        break;
+      case 'claimSectTaskReward':
+        if (gameRef.current) {
+          gameRef.current.claimSectTaskReward(params.taskId);
+        }
+        break;
       default:
         console.warn('未知操作:', action);
     }
@@ -327,19 +419,74 @@ export default function CultivationGamePage() {
     saveGame();
   };
 
+  // 通知定时器引用
+  const notificationTimerRef = useRef<NodeJS.Timeout | null>(null);
+
   // 显示通知
   const showNotification = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
+    // 清除现有的定时器，防止冲突
+    if (notificationTimerRef.current) {
+      clearTimeout(notificationTimerRef.current);
+    }
+    
     setNotification({ message, type });
-    setTimeout(() => setNotification(null), 3000);
+    
+    // 设置新的定时器
+    notificationTimerRef.current = setTimeout(() => {
+      setNotification(null);
+      notificationTimerRef.current = null;
+    }, 3000);
   };
-  
+
+  // 获取资源的中文名称
+  const getResourceName = (resource: keyof Resources): string => {
+    const resourceNames: Record<keyof Resources, string> = {
+      qi: '灵气',
+      gold: '灵石',
+      pills: '丹药',
+      materials: '基础材料',
+      spiritFruit: '灵果',
+      spiritGrass: '灵草',
+      spiritWater: '灵水',
+      spiritStone: '灵石',
+      spiritCrystal: '灵晶',
+      heavenlyHerb: '天材地宝',
+      immortalFruit: '仙果',
+      divineEssence: '神髓'
+    };
+    
+    return resourceNames[resource] || resource;
+  };
+
   // 显示成就解锁通知
-  const showAchievementNotification = (description: string, reward: string) => {
+  const showAchievementNotification = (description: string, reward: any) => {
+    // 构建奖励描述
+    let rewardText = '';
+    if (reward) {
+      if (reward.exp) rewardText += `经验: +${reward.exp} `;
+      if (reward.resources) {
+        for (const [resource, amount] of Object.entries(reward.resources)) {
+          const resourceName = getResourceName(resource as keyof Resources);
+          rewardText += `${resourceName}: +${amount} `;
+        }
+      }
+    }
+    
+    // 清除现有的定时器，防止冲突
+    if (notificationTimerRef.current) {
+      clearTimeout(notificationTimerRef.current);
+    }
+    
     setNotification({
-      message: `🏆 成就解锁：${description}\n奖励：${reward}`,
+      message: `🏆 成就解锁：${description}\n奖励：${rewardText}`,
       type: 'success'
     });
-    setTimeout(() => setNotification(null), 5000);
+    
+    // 设置新的定时器
+    notificationTimerRef.current = setTimeout(() => {
+      setNotification(null);
+      notificationTimerRef.current = null;
+    }, 5000);
   };
 
   // 处理开始炼丹
@@ -543,6 +690,18 @@ export default function CultivationGamePage() {
               >
                 ⚒️ 炼器
               </button>
+              <button 
+                className={`tab-button ${activeTab === 'pets' ? 'active' : ''}`}
+                onClick={() => setActiveTab('pets')}
+              >
+                🐾 宠物
+              </button>
+              <button 
+                className={`tab-button ${activeTab === 'sect' ? 'active' : ''}`}
+                onClick={() => setActiveTab('sect')}
+              >
+                🏛️ 宗门
+              </button>
             </div>
             
             {/* 标签页内容 */}
@@ -572,6 +731,25 @@ export default function CultivationGamePage() {
                 <ForgePanel 
                   gameState={gameState} 
                   onStartForge={(blueprintId) => handleAction('forgeStart', { blueprintId })} 
+                />
+              )}
+              {activeTab === 'pets' && gameState && (
+                <PetPanel
+                  gameState={gameState}
+                  onCatchPet={(petDataId) => handleAction('catchPet', { petDataId })}
+                  onTrainPet={(petId) => handleAction('trainPet', { petId })}
+                  onUpgradePetSkill={(petId, skillIndex) => handleAction('upgradePetSkill', { petId, skillIndex })}
+                  onTogglePetActive={(petId) => handleAction('togglePetActive', { petId })}
+                  onFeedPet={(petId) => handleAction('feedPet', { petId })}
+                />
+              )}
+              {activeTab === 'sect' && gameState && (
+                <SectPanel
+                  gameState={gameState}
+                  onJoinSect={(sectId) => handleAction('joinSect', { sectId })}
+                  onContributeToSect={(amount) => handleAction('contributeToSect', { amount })}
+                  onCompleteSectTask={(taskId) => handleAction('completeSectTask', { taskId })}
+                  onClaimSectTaskReward={(taskId) => handleAction('claimSectTaskReward', { taskId })}
                 />
               )}
             </div>
@@ -604,11 +782,15 @@ export default function CultivationGamePage() {
 
       {/* 增强的通知提示 */}
       {notification && (
-        <div className={`notification notification-${notification.type} animate-fade-in`}>
-          <span className="notification-icon">
-            {notification.type === 'success' ? '✓' : notification.type === 'error' ? '!' : 'ℹ'}
-          </span>
-          <span className="notification-message">{notification.message}</span>
+        <div className={`event-notification ${notification.type}`}>
+          <div className="notification-content">
+            <div className="notification-icon">
+              {notification.type === 'success' && '✅'}
+              {notification.type === 'error' && '❌'}
+              {notification.type === 'info' && 'ℹ️'}
+            </div>
+            <div className="notification-message">{notification.message}</div>
+          </div>
         </div>
       )}
     </div>

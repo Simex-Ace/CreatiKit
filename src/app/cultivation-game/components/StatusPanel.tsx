@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { GameState } from '../types';
+import { getCultivationLevelName } from '../utils';
 
 interface StatusPanelProps {
   gameState: GameState;
@@ -46,7 +47,7 @@ export const StatusPanel: React.FC<StatusPanelProps> = ({ gameState }) => {
         
         <div className="status-item">
           <span className="status-label">修真境界</span>
-          <span className="status-value">{gameState.cultivation.level}</span>
+          <span className="status-value">{getCultivationLevelName(gameState.cultivation.level)}</span>
         </div>
         
         <div className="status-item">
@@ -61,7 +62,7 @@ export const StatusPanel: React.FC<StatusPanelProps> = ({ gameState }) => {
         
         <div className="status-item">
           <span className="status-label">修炼速度</span>
-          <span className="status-value">{gameState.cultivation.cultivationSpeed.toFixed(2)}/秒</span>
+          <span className="status-value">{Math.floor(gameState.cultivation.cultivationSpeed)}/秒</span>
         </div>
       </div>
       
@@ -69,12 +70,12 @@ export const StatusPanel: React.FC<StatusPanelProps> = ({ gameState }) => {
       <div style={{ marginTop: '1rem' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
           <span>经验进度</span>
-          <span>{cultivationProgress.toFixed(1)}%</span>
+          <span>{Math.floor(cultivationProgress)}%</span>
         </div>
         <div className="progress-bar">
           <div 
             className="progress-fill"
-            style={{ width: `${cultivationProgress}%` }}
+            style={{ width: `${Math.floor(cultivationProgress)}%` }}
           ></div>
         </div>
       </div>
@@ -83,13 +84,13 @@ export const StatusPanel: React.FC<StatusPanelProps> = ({ gameState }) => {
       <div style={{ marginTop: '1rem' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
           <span>灵气储存</span>
-          <span>{qiProgress.toFixed(1)}%</span>
+          <span>{Math.floor(qiProgress)}%</span>
         </div>
         <div className="progress-bar">
           <div 
             className="progress-fill qi-effect"
             style={{ 
-              width: `${qiProgress}%`,
+              width: `${Math.floor(qiProgress)}%`,
               background: 'linear-gradient(90deg, #4fc3f7, #0288d1)'
             }}
           ></div>

@@ -56,6 +56,44 @@ export interface Resources {
   divineEssence: number; // 神髓
 }
 
+// 宗门接口
+export interface Sect {
+  id: string;
+  name: string;
+  level: number;
+  description: string;
+  contribution: number;
+  contributionToNextLevel: number;
+  members: number;
+  benefits: {
+    resourceBoost: number;
+    expBoost: number;
+    cultivationSpeedBoost: number;
+  };
+  tasks: SectTask[];
+  unlocked: boolean;
+}
+
+// 宗门任务接口
+export interface SectTask {
+  id: string;
+  name: string;
+  description: string;
+  requirements: {
+    monstersDefeated?: number;
+    resourcesGathered?: number;
+    pillsCrafted?: number;
+    itemsForged?: number;
+    petLevel?: number;
+  };
+  rewards: {
+    contribution: number;
+    resources?: Partial<Resources>;
+  };
+  completed: boolean;
+  claimed: boolean;
+}
+
 // 修真信息接口
 export interface CultivationInfo {
   level: CultivationLevel;
@@ -63,6 +101,7 @@ export interface CultivationInfo {
   maxExp: number;
   qiCapacity: number; // 灵气容量
   cultivationSpeed: number; // 修炼速度
+  sect?: Sect;
 }
 
 // 技能接口
@@ -80,6 +119,8 @@ export interface Skill {
     expGain?: number; // 经验获得提升
     attack?: number; // 攻击力提升
     defense?: number; // 防御力提升
+    gatheringRate?: number; // 材料采集速率提升
+    alchemySuccessRate?: number; // 炼丹成功率提升
   };
 }
 
@@ -150,6 +191,7 @@ export interface GameState {
   resources: Resources;
   skills: Skill[];
   equipment: Equipment[];
+  pets: Pet[];
   monsters: Monster[]; // 可用怪物列表
   lastUpdateTime: number;
   lastPlayTime: number; // 最后游戏时间
@@ -218,6 +260,7 @@ export interface Quest {
   };
   completed: boolean;
   accepted: boolean; // 是否已接受
+  rewardClaimed: boolean; // 是否已领取奖励
   dueDate?: number; // 截止日期（用于限时任务）
   questChain?: string; // 所属任务链ID
   nextQuest?: string; // 后续任务ID
@@ -254,11 +297,72 @@ export interface EventChoice {
   outcomes: EventOutcome[];
 }
 
+// 宠物接口
+export interface Pet {
+  id: string;
+  name: string;
+  type: 'spiritual_animal' | 'demonic_beast' | 'divine_creature';
+  image: string;
+  level: number;
+  exp: number;
+  maxExp: number;
+  health: number;
+  maxHealth: number;
+  attack: number;
+  defense: number;
+  skills: PetSkill[];
+  loyalty: number; // 忠诚度 0-100
+  active: boolean; // 是否处于活跃状态
+  specialBonus: {
+    cultivationSpeed?: number;
+    resourceGatheringSpeed?: number;
+    battleDamage?: number;
+    defenseBonus?: number;
+  };
+}
+
+// 宠物技能接口
+export interface PetSkill {
+  id: string;
+  name: string;
+  description: string;
+  level: number;
+  maxLevel: number;
+  effect: {
+    damage?: number;
+    healing?: number;
+    defenseBoost?: number;
+    attackBoost?: number;
+    buffDuration?: number;
+  };
+  cooldown: number;
+  currentCooldown: number;
+}
+
+// 宠物数据接口（用于初始化）
+export interface PetData {
+  id: string;
+  name: string;
+  type: 'spiritual_animal' | 'demonic_beast' | 'divine_creature';
+  image: string;
+  baseHealth: number;
+  baseAttack: number;
+  baseDefense: number;
+  skills: Omit<PetSkill, 'currentCooldown'>[];
+  loyalty: number;
+  specialBonus: Pet['specialBonus'];
+  unlockLevel: CultivationLevel;
+  catchChance: number; // 捕捉几率 0-1
+}
+
 // 成就接口
 export interface Achievement {
   id: string;
   name: string;
   description: string;
+  unlocked: boolean;
+  completed: boolean;
+  progress: number;
   requirements: {
     level?: CultivationLevel;
     resources?: Partial<Resources>;
@@ -269,12 +373,15 @@ export interface Achievement {
     alchemySuccess?: number;
     skillMaxLevel?: boolean;
     eventHandled?: number;
+    petsCaught?: number;
+    petLevelMaxed?: boolean;
+    sectContribution?: number;
+    sectLevel?: number;
   };
   reward: {
     resources?: Partial<Resources>;
     exp?: number;
   };
-  unlocked: boolean;
 }
 
 // 事件接口

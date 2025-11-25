@@ -16,7 +16,9 @@ export const achievements: Achievement[] = [
       },
       exp: 50
     },
-    unlocked: false
+    unlocked: false,
+    completed: false,
+    progress: 0
   },
   {
     id: 'qi_master',
@@ -32,7 +34,9 @@ export const achievements: Achievement[] = [
       },
       exp: 200
     },
-    unlocked: false
+    unlocked: false,
+    completed: false,
+    progress: 0
   },
   {
     id: 'cultivation_master',
@@ -48,7 +52,9 @@ export const achievements: Achievement[] = [
       },
       exp: 500
     },
-    unlocked: false
+    unlocked: false,
+    completed: false,
+    progress: 0
   },
   {
     id: 'wealthy_cultivator',
@@ -65,7 +71,9 @@ export const achievements: Achievement[] = [
       },
       exp: 1000
     },
-    unlocked: false
+    unlocked: false,
+    completed: false,
+    progress: 0
   },
   {
     id: 'breakthrough_expert',
@@ -81,7 +89,9 @@ export const achievements: Achievement[] = [
       },
       exp: 800
     },
-    unlocked: false
+    unlocked: false,
+    completed: false,
+    progress: 0
   },
   {
     id: 'alchemy_apprentice',
@@ -96,7 +106,9 @@ export const achievements: Achievement[] = [
       },
       exp: 300
     },
-    unlocked: false
+    unlocked: false,
+    completed: false,
+    progress: 0
   },
   {
     id: 'alchemy_master',
@@ -112,7 +124,9 @@ export const achievements: Achievement[] = [
       },
       exp: 2000
     },
-    unlocked: false
+    unlocked: false,
+    completed: false,
+    progress: 0
   },
   {
     id: 'skill_master',
@@ -128,7 +142,9 @@ export const achievements: Achievement[] = [
       },
       exp: 1500
     },
-    unlocked: false
+    unlocked: false,
+    completed: false,
+    progress: 0
   },
   {
     id: 'auto_cultivator',
@@ -143,7 +159,9 @@ export const achievements: Achievement[] = [
       },
       exp: 600
     },
-    unlocked: false
+    unlocked: false,
+    completed: false,
+    progress: 0
   },
   {
     id: 'event_protagonist',
@@ -159,7 +177,9 @@ export const achievements: Achievement[] = [
       },
       exp: 700
     },
-    unlocked: false
+    unlocked: false,
+    completed: false,
+    progress: 0
   },
   {
     id: 'alchemy_master_new',
@@ -176,7 +196,9 @@ export const achievements: Achievement[] = [
       },
       exp: 1000
     },
-    unlocked: false
+    unlocked: false,
+    completed: false,
+    progress: 0
   },
   {
     id: 'event_handler',
@@ -192,7 +214,9 @@ export const achievements: Achievement[] = [
       },
       exp: 800
     },
-    unlocked: false
+    unlocked: false,
+    completed: false,
+    progress: 0
   },
   {
     id: 'skill_max_level',
@@ -208,7 +232,9 @@ export const achievements: Achievement[] = [
       },
       exp: 1500
     },
-    unlocked: false
+    unlocked: false,
+    completed: false,
+    progress: 0
   },
   {
     id: 'foundation_building',
@@ -225,6 +251,8 @@ export const achievements: Achievement[] = [
       },
       exp: 2000
     },
-    unlocked: false
+    unlocked: false,
+    completed: false,
+    progress: 0
   }
 ];

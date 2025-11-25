@@ -104,11 +104,11 @@ export const InventoryPanel: React.FC<InventoryPanelProps> = ({ gameState }) => 
           </div>
           <div className="status-item">
             <span className="status-label">修炼速度加成</span>
-            <span className="status-value" style={{ color: '#4fc3f7' }}>+{totalBonuses.cultivationSpeed.toFixed(2)}x</span>
+            <span className="status-value" style={{ color: '#4fc3f7' }}>+{Math.floor(totalBonuses.cultivationSpeed * 100)}%</span>
           </div>
           <div className="status-item">
             <span className="status-label">灵气采集加成</span>
-            <span className="status-value" style={{ color: '#4fc3f7' }}>+{totalBonuses.qiGatherRate.toFixed(2)}x</span>
+            <span className="status-value" style={{ color: '#4fc3f7' }}>+{Math.floor(totalBonuses.qiGatherRate * 100)}%</span>
           </div>
         </div>
       </div>
