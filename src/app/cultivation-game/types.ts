@@ -54,6 +54,7 @@ export interface Resources {
   heavenlyHerb: number; // 天材地宝
   immortalFruit: number; // 仙果
   divineEssence: number; // 神髓
+  items: any[]; // 物品列表
 }
 
 // 宗门接口
@@ -210,6 +211,7 @@ export interface GameState {
   alchemy: AlchemyState; // 炼丹状态
   forge: ForgeState; // 炼器状态
   battle: BattleState; // 战斗状态
+  exploration: ExplorationState; // 探险状态
   // 统计数据（用于成就系统）
   totalCultivations: number; // 总修炼次数
   totalQiGathered: number; // 总灵气采集量
@@ -481,7 +483,10 @@ export type PillType =
   | '青冥丹'
   | '紫极丹'
   | '玄元丹'
-  | '混元丹';
+  | '混元丹'
+  | '灵光丹'
+  | '神息丹'
+  | '金刚丹';
 
 // 丹药品质类型
 export type PillQuality = 'low' | 'normal' | 'high' | 'perfect' | 'celestial';
@@ -591,4 +596,97 @@ export interface ForgeState {
   lastForgeTime: number; // 上次炼器时间
   successCount: number; // 成功炼器次数
   failedCount: number; // 失败炼器次数
+}
+
+// 探险系统相关接口
+
+// 探险区域类型
+export type ExplorationAreaType = 'mountain' | 'forest' | 'cave' | 'ruins' | 'lake' | 'desert' | 'sky' | 'hell';
+
+// 探险资源范围接口
+export interface ExplorationResourceRange {
+  min: number;
+  max: number;
+}
+
+// 探险区域接口
+export interface ExplorationArea {
+  id: string;
+  name: string;
+  description: string;
+  type: ExplorationAreaType;
+  requiredLevel: CultivationLevel;
+  duration: number; // 探险时间（秒）
+  baseSuccessRate: number; // 基础成功率
+  rewards: {
+    resources?: Record<string, ExplorationResourceRange>;
+    pills?: { id: string; quantity: number; chance: number }[];
+    equipment?: { id: string; quantity: number; chance: number }[];
+    exp: number;
+    reputation?: number;
+  };
+  encounters: {
+    monster?: { id: string; chance: number }[];
+    event?: { id: string; chance: number }[];
+    pet?: { id: string; chance: number }[];
+    treasure?: { chance: number };
+  };
+  difficulty: 'easy' | 'normal' | 'hard' | 'epic' | 'legendary';
+  cooldown: number; // 冷却时间（秒）
+  unlockRequirements?: {
+    quests?: string[];
+    achievements?: string[];
+    level?: CultivationLevel;
+  };
+  recommendedLevel: CultivationLevel;
+}
+
+// 探险奖励类型
+export interface ExplorationRewards {
+  resources?: Resources;
+  pills?: Pill[];
+  equipment?: Equipment[];
+  items?: any[];
+  exp: number;
+  reputation: number;
+}
+
+// 探险结果接口
+export interface ExplorationResult {
+  success: boolean;
+  areaId: string;
+  areaName: string;
+  timestamp: number;
+  rewards?: ExplorationRewards;
+  encounterType?: 'monster' | 'event' | 'pet' | 'treasure' | 'none';
+  encounterId?: string;
+  message: string;
+  eventText?: string; // 探险过程中的事件文本
+  difficulty: string;
+}
+
+// 探险状态接口
+export interface ExplorationState {
+  areas: ExplorationArea[]; // 已解锁的探险区域
+  currentExploration?: {
+    areaId: string;
+    startTime: number;
+    duration: number;
+    difficulty: string;
+    eventText?: string;
+  } | null; // 当前正在进行的探险
+  isExploring: boolean; // 是否正在探险
+  lastExploreTime: number; // 上次探险时间
+  lastEventUpdate: number; // 上次事件更新时间
+  progress: number; // 探险进度
+  totalExplorations: number; // 总探险次数
+  successfulExplorations: number; // 成功探险次数
+  failedExplorations: number; // 失败探险次数
+  explorationSkillLevel: number; // 探险技能等级
+  explorationSkillExp: number; // 探险技能经验
+  maxExplorationSkillExp: number; // 升级所需经验
+  areaCooldowns: Record<string, number>; // 各区域的冷却时间（时间戳）
+  explorationHistory: ExplorationResult[]; // 探险历史记录
+  explorationCount: number; // 探险次数计数
+  skillLevel: number; // 探险技能等级（备用属性）
 }

@@ -264,5 +264,275 @@ export const alchemyRecipes: AlchemyRecipe[] = [
     },
     rarity: 'epic',
     expGain: 150
+  },
+  // 新增丹药配方
+  {
+    id: 'recipe_11',
+    name: '洗髓丹',
+    description: '洗经伐髓，去除体内杂质，提升修炼资质。',
+    pills: ['pill_11'],
+    ingredients: [
+      { id: 'heavenlyHerb', quantity: 1 },
+      { id: 'spiritGrass', quantity: 5 },
+      { id: 'spiritStone', quantity: 3 },
+      { id: 'spiritWater', quantity: 2 }
+    ],
+    duration: 40,
+    requiredLevel: 'foundation_1',
+    baseSuccessRate: 0.6,
+    qualityChances: {
+      celestial: 0.002,
+      perfect: 0.01,
+      high: 0.05,
+      normal: 0.4,
+      low: 1.0
+    },
+    failurePenalty: {
+      resourceLossRatio: 0.6
+    },
+    rarity: 'rare',
+    expGain: 180
+  },
+  {
+    id: 'recipe_12',
+    name: '破障丹',
+    description: '打破修炼瓶颈，提高突破成功率。',
+    pills: ['pill_12'],
+    ingredients: [
+      { id: 'heavenlyHerb', quantity: 2 },
+      { id: 'spiritCrystal', quantity: 3 },
+      { id: 'spiritGrass', quantity: 6 }
+    ],
+    duration: 30,
+    requiredLevel: 'foundation_3',
+    baseSuccessRate: 0.5,
+    qualityChances: {
+      celestial: 0.005,
+      perfect: 0.02,
+      high: 0.1,
+      normal: 0.5,
+      low: 1.0
+    },
+    failurePenalty: {
+      resourceLossRatio: 0.7
+    },
+    rarity: 'epic',
+    expGain: 250
+  },
+  {
+    id: 'recipe_13',
+    name: '固元丹',
+    description: '稳固真元，防止走火入魔。',
+    pills: ['pill_13'],
+    ingredients: [
+      { id: 'spiritGrass', quantity: 4 },
+      { id: 'spiritStone', quantity: 3 },
+      { id: 'spiritWater', quantity: 3 },
+      { id: 'spiritFruit', quantity: 2 }
+    ],
+    duration: 25,
+    requiredLevel: 'qi_refining_4',
+    baseSuccessRate: 0.65,
+    qualityChances: {
+      celestial: 0.002,
+      perfect: 0.01,
+      high: 0.05,
+      normal: 0.4,
+      low: 1.0
+    },
+    failurePenalty: {
+      resourceLossRatio: 0.5
+    },
+    rarity: 'rare',
+    expGain: 120
+  },
+  {
+    id: 'recipe_14',
+    name: '青冥丹',
+    description: '蕴含青冥之气，提升灵气容量。',
+    pills: ['pill_14'],
+    ingredients: [
+      { id: 'heavenlyHerb', quantity: 2 },
+      { id: 'spiritCrystal', quantity: 4 },
+      { id: 'spiritFruit', quantity: 3 },
+      { id: 'spiritWater', quantity: 2 }
+    ],
+    duration: 50,
+    requiredLevel: 'foundation_2',
+    baseSuccessRate: 0.6,
+    qualityChances: {
+      celestial: 0.003,
+      perfect: 0.015,
+      high: 0.07,
+      normal: 0.45,
+      low: 1.0
+    },
+    failurePenalty: {
+      resourceLossRatio: 0.6
+    },
+    rarity: 'epic',
+    expGain: 200
+  },
+  {
+    id: 'recipe_15',
+    name: '紫极丹',
+    description: '紫色极品丹药，大幅提升修炼速度。',
+    pills: ['pill_15'],
+    ingredients: [
+      { id: 'heavenlyHerb', quantity: 4 },
+      { id: 'spiritCrystal', quantity: 6 },
+      { id: 'immortalFruit', quantity: 2 },
+      { id: 'divineEssence', quantity: 1 }
+    ],
+    duration: 80,
+    requiredLevel: 'golden_core_2',
+    baseSuccessRate: 0.4,
+    qualityChances: {
+      celestial: 0.01,
+      perfect: 0.05,
+      high: 0.2,
+      normal: 0.6,
+      low: 1.0
+    },
+    failurePenalty: {
+      resourceLossRatio: 0.8
+    },
+    rarity: 'legendary',
+    expGain: 600
+  },
+  {
+    id: 'recipe_16',
+    name: '玄元丹',
+    description: '蕴含玄元之气，提升各方面能力。',
+    pills: ['pill_16'],
+    ingredients: [
+      { id: 'heavenlyHerb', quantity: 3 },
+      { id: 'spiritCrystal', quantity: 5 },
+      { id: 'spiritStone', quantity: 4 },
+      { id: 'spiritFruit', quantity: 3 }
+    ],
+    duration: 60,
+    requiredLevel: 'golden_core_1',
+    baseSuccessRate: 0.45,
+    qualityChances: {
+      celestial: 0.008,
+      perfect: 0.04,
+      high: 0.15,
+      normal: 0.55,
+      low: 1.0
+    },
+    failurePenalty: {
+      resourceLossRatio: 0.7
+    },
+    rarity: 'legendary',
+    expGain: 450
+  },
+  {
+    id: 'recipe_17',
+    name: '混元丹',
+    description: '传说中的混元丹药，拥有强大的全能效果。',
+    pills: ['pill_17'],
+    ingredients: [
+      { id: 'heavenlyHerb', quantity: 5 },
+      { id: 'immortalFruit', quantity: 4 },
+      { id: 'spiritCrystal', quantity: 10 },
+      { id: 'divineEssence', quantity: 3 }
+    ],
+    duration: 180,
+    requiredLevel: 'nascent_soul_2',
+    baseSuccessRate: 0.2,
+    qualityChances: {
+      celestial: 0.15,
+      perfect: 0.25,
+      high: 0.3,
+      normal: 0.25,
+      low: 0.05
+    },
+    failurePenalty: {
+      resourceLossRatio: 0.9
+    },
+    rarity: 'legendary',
+    expGain: 1500
+  },
+  {
+    id: 'recipe_18',
+    name: '灵光丹',
+    description: '散发灵光，提升灵气吸收效率。',
+    pills: ['pill_18'],
+    ingredients: [
+      { id: 'heavenlyHerb', quantity: 2 },
+      { id: 'spiritCrystal', quantity: 4 },
+      { id: 'spiritGrass', quantity: 5 },
+      { id: 'spiritWater', quantity: 3 }
+    ],
+    duration: 50,
+    requiredLevel: 'foundation_3',
+    baseSuccessRate: 0.55,
+    qualityChances: {
+      celestial: 0.005,
+      perfect: 0.02,
+      high: 0.1,
+      normal: 0.5,
+      low: 1.0
+    },
+    failurePenalty: {
+      resourceLossRatio: 0.7
+    },
+    rarity: 'epic',
+    expGain: 300
+  },
+  {
+    id: 'recipe_19',
+    name: '神息丹',
+    description: '蕴含神息之力，提升精神感知。',
+    pills: ['pill_19'],
+    ingredients: [
+      { id: 'heavenlyHerb', quantity: 3 },
+      { id: 'spiritCrystal', quantity: 5 },
+      { id: 'immortalFruit', quantity: 2 },
+      { id: 'spiritWater', quantity: 2 }
+    ],
+    duration: 60,
+    requiredLevel: 'golden_core_1',
+    baseSuccessRate: 0.5,
+    qualityChances: {
+      celestial: 0.008,
+      perfect: 0.03,
+      high: 0.15,
+      normal: 0.55,
+      low: 1.0
+    },
+    failurePenalty: {
+      resourceLossRatio: 0.75
+    },
+    rarity: 'epic',
+    expGain: 400
+  },
+  {
+    id: 'recipe_20',
+    name: '金刚丹',
+    description: '金刚不坏，提升防御力和抗打击能力。',
+    pills: ['pill_20'],
+    ingredients: [
+      { id: 'heavenlyHerb', quantity: 2 },
+      { id: 'spiritCrystal', quantity: 4 },
+      { id: 'spiritStone', quantity: 5 },
+      { id: 'spiritGrass', quantity: 4 }
+    ],
+    duration: 45,
+    requiredLevel: 'foundation_2',
+    baseSuccessRate: 0.6,
+    qualityChances: {
+      celestial: 0.005,
+      perfect: 0.02,
+      high: 0.1,
+      normal: 0.5,
+      low: 1.0
+    },
+    failurePenalty: {
+      resourceLossRatio: 0.65
+    },
+    rarity: 'epic',
+    expGain: 280
   }
 ];

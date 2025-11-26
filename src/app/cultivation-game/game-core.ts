@@ -1,6 +1,7 @@
-import { GameState, Resources, Skill, Equipment, OfflineRewards, Quest, GameEvent, Event, Achievement, Monster, BattleResult, CultivationLevel, Pet, Sect, SectTask, PillQuality, Pill, AlchemyRecipe } from './types';
+import { GameState, Resources, Skill, Equipment, OfflineRewards, Quest, GameEvent, Event, Achievement, Monster, BattleResult, CultivationLevel, Pet, Sect, SectTask, PillQuality, Pill, AlchemyRecipe, ExplorationArea, ExplorationRewards } from './types';
 import { monsters as initialMonsters } from './data/monsters';
 import { forgeBlueprints as initialForgeBlueprints } from './data/forge-blueprints';
+import { explorationAreas as initialExplorationAreas } from './data/exploration-areas';
 import {
   createInitialSkills,
   canLevelUp,
@@ -8,7 +9,8 @@ import {
   calculateCultivationSpeed,
   calculateQiGatherRate,
   calculateOfflineRewards,
-  getCultivationLevelInfo
+  getCultivationLevelInfo,
+  saveGameState
 } from './utils';
 import { quests as initialQuests } from './data/quests';
 import { events as initialEvents } from './data/events';
@@ -44,6 +46,7 @@ export function createNewGame(playerName: string = '修真者'): GameState {
       qi: 0,
       gold: 100,
       pills: [],
+      items: [],
       materials: 20,
       spiritFruit: 2,
       spiritGrass: 10,
@@ -111,6 +114,24 @@ export function createNewGame(playerName: string = '修真者'): GameState {
       successCount: 0,
       failedCount: 0
     },
+    exploration: {
+      areas: initialExplorationAreas.filter(area => area.requiredLevel === 'qi_refining_1'), // 初始解锁基础探险区域
+      isExploring: false,
+      lastExploreTime: Date.now(),
+      lastEventUpdate: 0,
+      currentExploration: null,
+      progress: 0,
+      totalExplorations: 0,
+      successfulExplorations: 0,
+      failedExplorations: 0,
+      explorationSkillLevel: 1,
+      explorationSkillExp: 0,
+      maxExplorationSkillExp: 100,
+      areaCooldowns: {},
+      explorationHistory: [],
+      explorationCount: 0,
+      skillLevel: 1
+    },
     // 统计数据（用于成就系统）
     totalCultivations: 0,
     totalQiGathered: 0,
@@ -150,6 +171,27 @@ export class CultivationGame {
     // 确保pets存在
     if (!this.gameState.pets) {
       this.gameState.pets = [];
+    }
+    // 确保exploration存在
+    if (!this.gameState.exploration) {
+      this.gameState.exploration = {
+        areas: initialExplorationAreas.filter(area => area.requiredLevel === 'qi_refining_1'),
+        currentExploration: null,
+        isExploring: false,
+        lastExploreTime: Date.now(),
+        lastEventUpdate: 0,
+        progress: 0,
+        totalExplorations: 0,
+        successfulExplorations: 0,
+        failedExplorations: 0,
+        explorationSkillLevel: 1,
+        explorationSkillExp: 0,
+        maxExplorationSkillExp: 100,
+        areaCooldowns: {},
+        explorationHistory: [],
+        explorationCount: 0,
+        skillLevel: 1
+      };
     }
     // 确保alchemy和alchemy.activePills存在
     if (!this.gameState.alchemy) {
@@ -405,6 +447,9 @@ export class CultivationGame {
     
     // 更新炼器进度
     this.updateForgeProgress();
+    
+    // 更新探险进度
+    this.updateExplorationProgress();
     
     // 检查和移除过期的丹药效果
     this.checkExpiredPills(currentTime);
@@ -1579,9 +1624,9 @@ export class CultivationGame {
                     maxStacks: 99,
                     rarity: 'common',
                     value: 10
-                  });
-                }
-              } else if (Array.isArray(amount)) {
+                });
+              }
+            } else if (Array.isArray(amount)) {
                 // 如果是数组类型，直接添加到丹药列表
                 this.gameState.resources.pills.push(...amount);
               }
@@ -1797,6 +1842,104 @@ export class CultivationGame {
       this.gameState.alchemy.currentRecipe = undefined;
       this.gameState.alchemy.progress = 0;
       this.gameState.alchemy.startTime = undefined;
+    }
+
+    // 开始探险
+    public startExploration(areaId: string): boolean {
+      if (!this.gameState.exploration) {
+        this.notifyEvent('error', { message: '探险系统未初始化' });
+        return false;
+      }
+      
+      // 检查是否已经在探险
+      if (this.gameState.exploration.isExploring) {
+        this.notifyEvent('error', { message: '正在探险中，无法同时进行多次探险' });
+        return false;
+      }
+      
+      // 检查冷却时间
+      if (this.gameState.exploration.areaCooldowns[areaId] && this.gameState.exploration.areaCooldowns[areaId] > Date.now()) {
+        const remainingTime = Math.ceil((this.gameState.exploration.areaCooldowns[areaId] - Date.now()) / 1000);
+        this.notifyEvent('error', { message: `该区域正在冷却中，剩余时间: ${remainingTime}秒` });
+        return false;
+      }
+      
+      const area = this.gameState.exploration.areas.find(a => a.id === areaId);
+      if (!area) {
+        this.notifyEvent('error', { message: '未知的探险区域' });
+        return false;
+      }
+      
+      // 检查修真境界是否达到要求
+      const meetsLevel = this.meetsLevelRequirement(area.requiredLevel);
+      if (!meetsLevel) {
+        this.notifyEvent('error', { message: '修真境界不足，无法探索此区域' });
+        return false;
+      }
+      
+      // 开始探险
+      const now = Date.now();
+      this.gameState.exploration.currentExploration = {
+        areaId: area.id,
+        startTime: now,
+        duration: area.duration * 1000, // 将秒转换为毫秒
+        difficulty: 'normal'
+      };
+      this.gameState.exploration.progress = 0;
+      this.gameState.exploration.isExploring = true;
+      
+      // 更新最后探险时间
+      this.gameState.exploration.lastExploreTime = now;
+      
+      // 保存到localStorage
+      saveGameState(this.gameState);
+      
+      this.notifyEvent('exploration_started', { area });
+      return true;
+    }
+    
+    // 更新探险进度
+    private updateExplorationProgress() {
+      if (!this.gameState.exploration || !this.gameState.exploration.isExploring || !this.gameState.exploration.currentExploration) {
+        return;
+      }
+      
+      const now = Date.now();
+      const exploration = this.gameState.exploration.currentExploration;
+      const elapsed = now - exploration.startTime;
+      
+      if (elapsed >= exploration.duration) {
+        // 探险完成
+        this.completeExploration();
+      } else {
+        // 更新进度
+        const progress = Math.min((elapsed / exploration.duration) * 100, 100);
+        this.gameState.exploration.progress = progress;
+        
+        // 随机更新探险过程文本（每2-5秒）
+        const lastEventUpdate = this.gameState.exploration.lastEventUpdate || 0;
+        if (now - lastEventUpdate > Math.random() * 3000 + 2000) {
+          const eventText = this.explorationEvents[Math.floor(Math.random() * this.explorationEvents.length)];
+          exploration.eventText = eventText;
+          this.gameState.exploration.lastEventUpdate = now;
+        }
+      }
+    }
+    public cancelExploration(): boolean {
+      if (!this.gameState.exploration || !this.gameState.exploration.isExploring) {
+        return false;
+      }
+      
+      // 重置探险状态
+      this.gameState.exploration.currentExploration = null;
+      this.gameState.exploration.progress = 0;
+      this.gameState.exploration.isExploring = false;
+      
+      // 保存到localStorage
+      saveGameState(this.gameState);
+      
+      this.notifyEvent('exploration_canceled', {});
+      return true;
     }
 
     // 获取品质倍数
@@ -2236,6 +2379,276 @@ export class CultivationGame {
     // 获取活跃宠物
     getActivePet(): Pet | null {
       return this.gameState.pets.find(p => p.active) || null;
+    }
+
+    // 探险系统核心逻辑
+
+
+
+
+    // 探险过程事件文本
+    private explorationEvents = [
+      '你踏上了探险之旅，周围的环境变得陌生而神秘...',
+      '你小心地探索着，留意着周围的动静...',
+      '前方似乎有什么东西在发光，你决定过去看看...',
+      '你遇到了一些弱小的野兽，轻松地将它们驱赶...',
+      '你发现了一处灵气浓郁的地方，感到修为有所提升...',
+      '你在地上找到了一些有用的材料，小心地收集起来...',
+      '突然，一只妖兽出现了！你准备好战斗...',
+      '经过一番激战，你成功击败了妖兽，获得了一些战利品...',
+      '你继续深入探索，发现了一个隐藏的洞穴...',
+      '在洞穴中，你发现了一些珍贵的宝物，感到非常幸运...',
+      '你在溪流边发现了一些罕见的灵草，小心地采摘起来...',
+      '一阵清风吹过，你闻到了远处传来的花香...',
+      '你在一块岩石下发现了一个古老的储物袋...',
+      '你遇到了一位迷路的修士，帮助他找到了正确的方向...',
+      '你发现了一处废弃的修炼场所，从中获得了一些修炼心得...',
+      '你在树林中发现了一只受伤的小动物，为它治疗后获得了它的信任...',
+      '你遭遇了一场突如其来的暴雨，不得不寻找避雨的地方...',
+      '在避雨的山洞里，你发现了一些古老的壁画，讲述着远古的故事...',
+      '雨过天晴后，你看到了一道美丽的彩虹...',
+      '你在山顶上俯瞰整个山脉，感到心旷神怡...',
+      '你发现了一条隐藏的小径，沿着它走下去发现了一个秘密的山谷...',
+      '你遇到了一群友好的野兽，它们引导你找到了一处宝藏...',
+      '你在湖边钓鱼，意外地钓到了一只修炼成精的鱼...',
+      '你在一棵古老的树下休息，突然从树上掉落了一颗灵果...',
+      '你发现了一个古老的祭坛，在祭坛上你感受到了强大的灵气波动...',
+      '你在探索过程中迷路了，但最终凭借着直觉找到了正确的方向...',
+      '你遇到了一位神秘的老者，他传授给你一些修炼的秘诀...',
+      '你在一处瀑布后面发现了一个秘密的洞穴，里面藏有大量的灵石...',
+      '你在森林中遇到了一只巨大的妖兽，经过一番苦战，你成功地将它驯服...',
+      '你发现了一处温泉，在温泉中修炼，感到修为有了显著的提升...',
+      '你在探索过程中发现了一些古老的符文，研究后获得了一些神秘的力量...',
+      '你在一片开阔的草地上发现了一群修炼中的蝴蝶，它们环绕着你飞舞...',
+      '你遇到了一位正在采药的医师，他送给你一些珍贵的草药...',
+      '你在一个古老的神庙中发现了一本尘封的修炼秘籍...',
+      '你在探索过程中遇到了一场流星雨，许下了一个心愿...',
+      '你在一个神秘的池塘边发现了一只会说话的乌龟，它给了你一些智慧的建议...',
+      '你发现了一个隐藏的矿脉，从中挖掘出了一些珍贵的矿石...',
+      '你在森林深处遇到了一位隐居的高人，他邀请你到他的小屋中做客...',
+      '你在一个废弃的村庄中发现了一些有用的工具和装备...',
+      '你遇到了一只受伤的神兽，帮助它治疗后，它送给你一份珍贵的礼物...',
+      '你在探索过程中发现了一个时空裂缝，从中获得了一些来自未来的物品...',
+      '你在一个神秘的花园中发现了一朵会发光的花，采摘后感到修为有所提升...',
+      '你遇到了一位正在寻找灵感的诗人，他为你写了一首赞美诗...',
+      '你在一个古老的墓地中发现了一些陪葬品，其中有一些珍贵的宝物...',
+      '你在探索过程中遇到了一场沙尘暴，幸运地找到了一个避风的地方...',
+      '你发现了一个隐藏的图书馆，从中阅读了一些古老的书籍，获得了一些知识...',
+      '你遇到了一位正在寻找失踪弟子的门派长老，帮助他找到了弟子...',
+      '你在一个神秘的湖泊中发现了一颗发光的珍珠，据说它有神奇的力量...',
+      '你在探索过程中发现了一个隐藏的传送阵，它将你传送到了一个神秘的地方...'
+    ];
+
+    // 完成探险
+    completeExploration() {
+      if (!this.gameState.exploration || !this.gameState.exploration.currentExploration) {
+        return;
+      }
+
+      const exploration = this.gameState.exploration.currentExploration;
+      const area = this.gameState.exploration.areas.find(a => a.id === exploration.areaId);
+
+      if (!area) {
+        return;
+      }
+
+      // 生成奖励
+      const rewards = this.generateExplorationRewards(area, exploration.difficulty);
+
+      // 生成探险过程文本
+      const eventText = this.explorationEvents[Math.floor(Math.random() * this.explorationEvents.length)];
+
+      // 更新状态
+      this.gameState.exploration.isExploring = false;
+      this.gameState.exploration.currentExploration = null;
+      this.gameState.exploration.progress = 0;
+
+      // 保存到历史记录
+      this.gameState.exploration.explorationHistory.push({
+        areaId: area.id,
+        areaName: area.name,
+        timestamp: Date.now(),
+        rewards,
+        difficulty: exploration.difficulty,
+        eventText: eventText,
+        success: true,
+        message: '探险成功'
+      });
+
+      // 通知探险完成事件
+      this.notifyEvent('exploration_completed', { 
+        area, 
+        rewards, 
+        eventText 
+      });
+
+      // 检查技能升级
+      this.gameState.exploration.explorationCount++;
+      if (this.gameState.exploration.explorationCount % 5 === 0) { // 每5次探险有机会升级技能
+        this.gameState.exploration.skillLevel++;
+        this.notifyEvent('exploration_skill_level_up', { newLevel: this.gameState.exploration.skillLevel });
+      }
+
+      // 保存到localStorage
+      saveGameState(this.gameState);
+
+      // 通知事件
+      this.notifyEvent('exploration_completed', { area, rewards });
+    }
+
+    // 取消探险功能已在1920行定义，此处不再重复定义
+
+    // 生成探险奖励
+    private generateExplorationRewards(area: ExplorationArea, difficulty: string): ExplorationRewards {
+      const baseRewards = area.rewards;
+      // 从正确的位置获取基础奖励值
+      const baseExp = baseRewards.exp || 0;
+      // 从resources中获取金币和灵气的随机值
+      const baseGold = baseRewards.resources?.gold ? 
+        Math.floor(Math.random() * (baseRewards.resources.gold.max - baseRewards.resources.gold.min + 1)) + baseRewards.resources.gold.min : 0;
+      const baseQi = baseRewards.resources?.qi ? 
+        Math.floor(Math.random() * (baseRewards.resources.qi.max - baseRewards.resources.qi.min + 1)) + baseRewards.resources.qi.min : 0;
+      
+      // 初始化奖励对象
+      const rewards: ExplorationRewards = {
+        exp: 0,
+        reputation: 0,
+        resources: {
+          gold: 0,
+          qi: 0,
+          pills: [],
+          items: [],
+          materials: 0,
+          spiritFruit: 0,
+          spiritGrass: 0,
+          spiritWater: 0,
+          spiritStone: 0,
+          spiritCrystal: 0,
+          heavenlyHerb: 0,
+          immortalFruit: 0,
+          divineEssence: 0
+        },
+        pills: [],
+        equipment: []
+      };
+
+      // 根据难度调整奖励
+      let difficultyMultiplier = 1;
+      switch (difficulty) {
+        case 'easy':
+          difficultyMultiplier = 0.8;
+          break;
+        case 'hard':
+          difficultyMultiplier = 1.2;
+          break;
+      }
+
+      // 计算并设置奖励值，应用技能等级和难度加成
+      rewards.exp = Math.floor(baseExp * (1 + this.gameState.exploration.skillLevel * 0.1) * difficultyMultiplier);
+      if (rewards.resources) {
+        rewards.resources.gold = Math.floor(baseGold * (1 + this.gameState.exploration.skillLevel * 0.1) * difficultyMultiplier);
+        rewards.resources.qi = Math.floor(baseQi * (1 + this.gameState.exploration.skillLevel * 0.1) * difficultyMultiplier);
+      }
+
+      // 随机添加遭遇事件的逻辑暂时注释，因为ExplorationRewards接口中没有encounters属性
+      // const encounterChance = 0.3; // 30%概率遇到事件
+      // if (Math.random() < encounterChance && area.encounters.length > 0) {
+      //   const randomEncounter = area.encounters[Math.floor(Math.random() * area.encounters.length)];
+      //   // 这里需要处理遭遇事件，但ExplorationRewards接口中没有encounters属性
+      // }
+
+      // 生成装备奖励 - 暂时注释，因为需要先定义装备数据结构
+      // if (baseRewards.equipment && baseRewards.equipment.length > 0) {
+      //   baseRewards.equipment.forEach((equipConfig: { id: string; quantity: number; chance: number }) => {
+      //     if (Math.random() < equipConfig.chance) {
+      //       // 读取配置的装备数量
+      //       const quantity = equipConfig.quantity || 1;
+      //       
+      //       // 这里需要查找对应的装备配置
+      //       // const equipment = initialEquipment.find(e => e.id === equipConfig.id);
+      //       // if (equipment) {
+      //       //   // 添加到奖励数组
+      //       //   for (let i = 0; i < quantity; i++) {
+      //       //     if (rewards.resources) {
+      //       //       rewards.resources.items.push(equipment);
+      //       //     }
+      //       //   }
+      //       // }
+      //     }
+      //   });
+      // }
+
+      // 生成丹药奖励
+      if (baseRewards.pills && baseRewards.pills.length > 0) {
+        baseRewards.pills.forEach((pillConfig: { id: string; quantity: number; chance: number }) => {
+          if (Math.random() < pillConfig.chance) {
+            // 读取配置的丹药数量
+            const quantity = pillConfig.quantity || 1;
+            
+            // 查找对应的丹药配置
+            const pill = initialPills.find(p => p.id === pillConfig.id);
+            if (pill) {
+              // 添加到奖励数组
+              for (let i = 0; i < quantity; i++) {
+                if (rewards.resources) {
+                  rewards.resources.pills.push(pill);
+                }
+              }
+            }
+          }
+        });
+      }
+
+      // 应用奖励到玩家
+      this.gameState.cultivation.exp += rewards.exp;
+      
+      // 处理资源奖励
+      if (rewards.resources) {
+        this.gameState.resources.gold += rewards.resources.gold;
+        this.gameState.resources.qi += rewards.resources.qi;
+        
+        // 处理物品和丹药奖励
+        if (rewards.resources.items && rewards.resources.items.length > 0) {
+          this.gameState.resources.items = [...this.gameState.resources.items, ...rewards.resources.items];
+        }
+        
+        if (rewards.resources.pills && rewards.resources.pills.length > 0) {
+          this.gameState.resources.pills = [...this.gameState.resources.pills, ...rewards.resources.pills];
+        }
+      }
+
+      // 处理其他资源奖励
+      if (baseRewards.resources) {
+        Object.entries(baseRewards.resources).forEach(([resourceName, range]) => {
+          // 跳过已经处理过的金币和灵气
+          if (resourceName === 'gold' || resourceName === 'qi') return;
+          
+          // 检查资源是否是范围对象
+          if (typeof range === 'object' && range !== null && 'min' in range && 'max' in range) {
+            const amount = Math.floor(Math.random() * ((range.max as number) - (range.min as number) + 1)) + (range.min as number);
+            
+            // 检查玩家是否有这个资源，如果没有则根据资源类型初始化为0或空数组
+            // 只处理数值类型的资源
+            if (resourceName !== 'pills' && resourceName !== 'items') {
+              if (!(resourceName in this.gameState.resources)) {
+                // 其他资源初始化为0
+                (this.gameState.resources as any)[resourceName] = 0;
+              }
+              
+              // 增加资源数量
+              (this.gameState.resources as any)[resourceName] += amount;
+            }
+            
+            // 将资源奖励添加到返回的rewards对象中
+            const resources = rewards.resources as any;
+            if (resources && typeof resources[resourceName] === 'number') {
+              resources[resourceName] = amount;
+            }
+          }
+        });
+      }
+
+      return rewards;
     }
 
     // 加入宗门

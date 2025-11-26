@@ -16,6 +16,7 @@ import { BattlePanel } from './components/BattlePanel';
 import { ForgePanel } from './components/ForgePanel';
 import PetPanel from './components/PetPanel';
 import SectPanel from './components/SectPanel';
+import ExplorationPanel from './components/ExplorationPanel';
 import { alchemyRecipes } from './data/alchemy-recipes';
 import './globals.css';
 
@@ -382,6 +383,16 @@ export default function CultivationGamePage() {
           gameRef.current.feedPet(params.petId);
         }
         break;
+      case 'startExploration':
+        if (gameRef.current) {
+          gameRef.current.startExploration(params.areaId);
+        }
+        break;
+      case 'cancelExploration':
+        if (gameRef.current) {
+          gameRef.current.cancelExploration();
+        }
+        break;
       case 'joinSect':
         if (gameRef.current) {
           gameRef.current.joinSect(params.sectId);
@@ -454,7 +465,8 @@ export default function CultivationGamePage() {
       spiritCrystal: '灵晶',
       heavenlyHerb: '天材地宝',
       immortalFruit: '仙果',
-      divineEssence: '神髓'
+      divineEssence: '神髓',
+      items: '物品'
     };
     
     return resourceNames[resource] || resource;
@@ -636,6 +648,12 @@ export default function CultivationGamePage() {
               >
                 🏛️ 宗门
               </button>
+              <button 
+                className={`tab-button ${activeTab === 'exploration' ? 'active' : ''}`}
+                onClick={() => setActiveTab('exploration')}
+              >
+                🏔️ 探险
+              </button>
             </div>
             
             {/* 标签页内容 */}
@@ -684,6 +702,13 @@ export default function CultivationGamePage() {
                   onContributeToSect={(amount) => handleAction('contributeToSect', { amount })}
                   onCompleteSectTask={(taskId) => handleAction('completeSectTask', { taskId })}
                   onClaimSectTaskReward={(taskId) => handleAction('claimSectTaskReward', { taskId })}
+                />
+              )}
+              {activeTab === 'exploration' && gameState && (
+                <ExplorationPanel
+                  gameState={gameState}
+                  onStartExploration={(areaId) => handleAction('startExploration', { areaId })}
+                  onCancelExploration={() => handleAction('cancelExploration')}
                 />
               )}
             </div>
