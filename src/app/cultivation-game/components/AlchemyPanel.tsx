@@ -1,7 +1,6 @@
 import React from 'react';
 import { GameState, AlchemyRecipe, Pill, CultivationLevel } from '../types';
 import { pills } from '../data/pills';
-import { alchemyRecipes } from '../data/alchemy-recipes';
 import { getMaterialName, getCultivationLevelName } from '../utils';
 
 interface AlchemyPanelProps {
@@ -20,7 +19,9 @@ const AlchemyPanel: React.FC<AlchemyPanelProps> = ({ gameState, onStartAlchemy }
   // 检查玩家是否有足够的材料
   const hasEnoughMaterials = (recipe: AlchemyRecipe): boolean => {
     return recipe.ingredients.every(ingredient => {
-      const currentAmount = resources[ingredient.id as keyof typeof resources] || 0;
+      const resource = resources[ingredient.id as keyof typeof resources] || 0;
+      // 如果资源是pills数组，则使用长度，否则使用数值
+      const currentAmount = ingredient.id === 'pills' && Array.isArray(resource) ? resource.length : Number(resource);
       return currentAmount >= ingredient.quantity;
     });
   };
@@ -46,28 +47,30 @@ const AlchemyPanel: React.FC<AlchemyPanelProps> = ({ gameState, onStartAlchemy }
       <h2 className="text-xl font-bold mb-4 text-center text-yellow-400">炼丹系统</h2>
       
       {/* 炼丹进度 */}
-      {alchemy && alchemy.isBrewing && alchemy.currentPill && (
+      {alchemy && alchemy.isBrewing && (
         <div className="mb-4 p-3 bg-gray-700 rounded-lg">
           <h3 className="font-semibold mb-2">炼丹中</h3>
           <div className="w-full bg-gray-600 rounded-full h-2.5 mb-2">
             <div 
               className="bg-green-500 h-2.5 rounded-full transition-all duration-300 ease-in-out" 
-              style={{ width: `${alchemy.progress}%` }}
+              style={{ width: `${alchemy.progress || 0}%` }}
             ></div>
           </div>
-          <p className="text-sm text-gray-300">进度: {Math.round(alchemy.progress)}%</p>
+          <p className="text-sm text-gray-300">进度: {Math.round(alchemy.progress || 0)}%</p>
         </div>
       )}
 
       {/* 炼丹配方列表 */}
       <div className="max-h-96 overflow-y-auto pr-2">
-        {alchemyRecipes.filter(recipe => meetsLevelRequirement(recipe)).length > 0 ? (
+        {alchemy?.recipes && alchemy.recipes.filter(recipe => meetsLevelRequirement(recipe)).length > 0 ? (
           <div className="space-y-3">
-            {alchemyRecipes.filter(recipe => meetsLevelRequirement(recipe)).map(recipe => {
+            {alchemy?.recipes && alchemy.recipes.filter(recipe => meetsLevelRequirement(recipe)).map(recipe => {
               const pillInfo = getPillInfo(recipe.pills[0]);
+              const isCurrentlyBrewing = alchemy?.isBrewing || false;
+              const isThisRecipeBrewing = isCurrentlyBrewing && alchemy?.currentRecipe?.id === recipe.id;
               const hasMaterials = hasEnoughMaterials(recipe);
-              const meetsLevel = meetsLevelRequirement(recipe);
-              const canCraft = hasMaterials && meetsLevel && !(alchemy && alchemy.isBrewing);
+              // 直接使用meetsLevelRequirement的结果，避免重复定义变量
+              const canCraft = hasMaterials && meetsLevelRequirement(recipe) && (!isCurrentlyBrewing || isThisRecipeBrewing);
               
               return (
                 <div 
@@ -79,8 +82,8 @@ const AlchemyPanel: React.FC<AlchemyPanelProps> = ({ gameState, onStartAlchemy }
                       <h3 className="font-semibold text-green-400">{pillInfo?.name}</h3>
                       <p className="text-xs text-gray-400">{pillInfo?.description}</p>
                     </div>
-                    <span className={`px-2 py-1 rounded text-xs font-bold ${recipe.successRate > 0.7 ? 'bg-green-700' : recipe.successRate > 0.4 ? 'bg-yellow-700' : 'bg-red-700'}`}>
-                      {Math.round(recipe.successRate * 100)}% 成功率
+                    <span className={`px-2 py-1 rounded text-xs font-bold ${recipe.baseSuccessRate > 0.7 ? 'bg-green-700' : recipe.baseSuccessRate > 0.4 ? 'bg-yellow-700' : 'bg-red-700'}`}>
+                      {Math.round(recipe.baseSuccessRate * 100)}% 成功率
                     </span>
                   </div>
                   
@@ -89,7 +92,9 @@ const AlchemyPanel: React.FC<AlchemyPanelProps> = ({ gameState, onStartAlchemy }
                     <p className="text-xs font-semibold text-gray-300 mb-1">材料需求:</p>
                     <div className="flex flex-wrap gap-2">
                       {recipe.ingredients.map((ingredient, idx) => {
-                        const currentAmount = resources[ingredient.id as keyof typeof resources] || 0;
+                        const resource = resources[ingredient.id as keyof typeof resources] || 0;
+                        // 如果资源是pills数组，则使用长度，否则使用数值
+                        const currentAmount = ingredient.id === 'pills' && Array.isArray(resource) ? resource.length : Number(resource);
                         const isEnough = currentAmount >= ingredient.quantity;
                         
                         return (
@@ -114,12 +119,12 @@ const AlchemyPanel: React.FC<AlchemyPanelProps> = ({ gameState, onStartAlchemy }
                   <button
                     onClick={() => onStartAlchemy(recipe.id)}
                     disabled={!canCraft}
-                  className={`w-full py-2 rounded font-semibold transition-all ${canCraft ? 'bg-green-600 hover:bg-green-700' : 'bg-gray-600 cursor-not-allowed'}`}
-                >
-                  {canCraft ? '开始炼丹' : (
-                    (alchemy && alchemy.isBrewing) ? '正在炼丹中' : 
-                    (!meetsLevel ? '等级不足' : '材料不足')
-                  )}
+                    className={`w-full py-2 rounded font-semibold transition-all ${canCraft ? 'bg-green-600 hover:bg-green-700' : 'bg-gray-600 cursor-not-allowed'}`}
+                  >
+                    {(alchemy && alchemy.isBrewing && alchemy.currentRecipe && alchemy.currentRecipe.id === recipe.id) ? '正在炼制中' : 
+                    (alchemy && alchemy.isBrewing) ? '丹炉正在使用中' : 
+                    (canCraft ? '开始炼丹' : 
+                    (!hasMaterials ? '材料不足' : '无法炼制'))}
                   </button>
                 </div>
               );

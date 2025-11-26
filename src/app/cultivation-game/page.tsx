@@ -61,6 +61,8 @@ export default function CultivationGamePage() {
     const newGameState = createNewGame('修仙者');
     setGameState(newGameState);
     gameRef.current = new CultivationGame(newGameState);
+    // 启动新游戏实例的游戏循环
+    gameRef.current.startGameLoop();
   };
 
   // 游戏主循环
@@ -491,96 +493,28 @@ export default function CultivationGamePage() {
 
   // 处理开始炼丹
   const handleStartAlchemy = (recipeId: string) => {
-    const recipe = alchemyRecipes.find(r => r.id === recipeId);
-    if (!recipe || !gameState) return;
+    if (!gameRef.current) return;
 
-    // 检查材料是否足够
-    const hasEnoughMaterials = recipe.ingredients.every(ingredient => {
-      const currentAmount = gameState.resources[ingredient.id as keyof typeof gameState.resources] || 0;
-      return currentAmount >= ingredient.quantity;
-    });
-
-    if (!hasEnoughMaterials) return;
-
-    // 扣除材料
-    const updatedResources = { ...gameState.resources };
-    recipe.ingredients.forEach(ingredient => {
-      updatedResources[ingredient.id as keyof typeof updatedResources] = 
-        (updatedResources[ingredient.id as keyof typeof updatedResources] || 0) - ingredient.quantity;
-    });
-
-    // 开始炼丹
-    setGameState({
-      ...gameState,
-      resources: updatedResources,
-      alchemy: {
-        ...gameState.alchemy,
-        isBrewing: true,
-        currentRecipe: recipe,
-        progress: 0,
-        startTime: Date.now()
-      }
-    });
-
-    // 设置定时器更新进度
-    const alchemyInterval = setInterval(() => {
-      setGameState(prev => {
-        if (!prev || !prev.alchemy.isBrewing || !prev.alchemy.currentRecipe) {
-          clearInterval(alchemyInterval);
-          return prev;
-        }
-
-        const elapsed = Date.now() - prev.alchemy.startTime!;
-        const progress = Math.min(100, (elapsed / (prev.alchemy.currentRecipe.duration * 1000)) * 100);
-
-        if (progress >= 100) {
-          clearInterval(alchemyInterval);
-          return finishAlchemy(prev);
-        }
-
-        return {
-          ...prev,
-          alchemy: {
-            ...prev.alchemy,
-            progress
-          }
-        };
-      });
-    }, 100);
+    // 调用游戏核心的开始炼丹方法
+    const success = gameRef.current.startAlchemy(recipeId);
+    if (success) {
+      // 更新游戏状态
+      setGameState(gameRef.current?.getState() || gameState);
+    }
   };
 
   // 完成炼丹
   const finishAlchemy = (prevState: GameState) => {
     if (!prevState.alchemy.currentRecipe) return prevState;
-
-    // 获取炼制的丹药
-    const recipe = prevState.alchemy.currentRecipe;
     
-    // 更新游戏状态
-    const updatedResources = { ...prevState.resources };
-    updatedResources.pills = (updatedResources.pills || 0) + 1;
-    
-    // 增加经验
-    const expGain = recipe.expGain || 0;
-    const updatedCultivation = { ...prevState.cultivation };
-    updatedCultivation.exp = prevState.cultivation.exp + expGain;
+    // 调用游戏核心的完成炼丹方法
+    gameRef.current?.completeAlchemy();
     
     // 显示通知
-    showNotification(`炼丹成功！获得${recipe.name}，经验+${expGain}`, 'success');
+    showNotification('炼丹完成！', 'success');
     
-    // 重置炼丹状态
-    return {
-      ...prevState,
-      cultivation: updatedCultivation,
-      resources: updatedResources,
-      alchemy: {
-        ...prevState.alchemy,
-        isBrewing: false,
-        currentRecipe: undefined,
-        progress: 0,
-        startTime: undefined
-      }
-    };
+    // 返回更新后的状态
+    return gameRef.current?.getState() || prevState;
   };
 
   // 游戏开始状态

@@ -45,7 +45,7 @@ const EventPanel: React.FC<EventPanelProps> = ({ currentEvent, onEventChoice }) 
                   <div className="text-sm text-gray-400 mb-2">
                     需要: {Object.entries(choice.requirements.resources).map(([resource, amount]) => (
                       <span key={resource} className="inline-block mr-2">
-                        {getMaterialName(resource)} ×{amount}
+                        {getMaterialName(resource)} ×{typeof amount === 'number' ? amount : amount.length}
                       </span>
                     ))}
                   </div>
@@ -58,11 +58,14 @@ const EventPanel: React.FC<EventPanelProps> = ({ currentEvent, onEventChoice }) 
                       {outcome.effects && outcome.effects.exp && (
                         <> {outcome.effects.exp > 0 ? '+' : ''}{outcome.effects.exp} 经验</>
                       )}
-                      {outcome.effects && outcome.effects.resources && Object.entries(outcome.effects.resources).map(([resource, amount]) => (
-                        <span key={resource} className="inline-block mr-2">
-                          {amount && amount > 0 ? '+' : ''}{amount} {getMaterialName(resource)}
-                        </span>
-                      ))}
+                      {outcome.effects && outcome.effects.resources && Object.entries(outcome.effects.resources).map(([resource, amount]) => {
+                        const displayAmount = typeof amount === 'number' ? amount : amount.length;
+                        return (
+                          <span key={resource} className="inline-block mr-2">
+                            {displayAmount > 0 ? '+' : ''}{displayAmount} {getMaterialName(resource)}
+                          </span>
+                        );
+                      })}
                     </span>
                   ))}
                 </div>

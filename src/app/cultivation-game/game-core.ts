@@ -1,4 +1,4 @@
-import { GameState, Resources, Skill, Equipment, OfflineRewards, Quest, GameEvent, Event, Achievement, Monster, BattleResult, CultivationLevel, Pet, Sect, SectTask } from './types';
+import { GameState, Resources, Skill, Equipment, OfflineRewards, Quest, GameEvent, Event, Achievement, Monster, BattleResult, CultivationLevel, Pet, Sect, SectTask, PillQuality, Pill, AlchemyRecipe } from './types';
 import { monsters as initialMonsters } from './data/monsters';
 import { forgeBlueprints as initialForgeBlueprints } from './data/forge-blueprints';
 import {
@@ -31,12 +31,19 @@ export function createNewGame(playerName: string = '修真者'): GameState {
       maxExp: initialLevelInfo?.maxExp || 100,
       qiCapacity: initialLevelInfo?.baseQiCapacity || 100,
       cultivationSpeed: calculateCultivationSpeed({} as GameState, 'qi_refining_1'),
+      cultivationSpeedBonus: 0,
+      breakthroughChanceBonus: 0,
+      qiGatherRateBonus: 0,
+      expGainBonus: 0,
+      resourceGatheringSpeedBonus: 0,
+      alchemySuccessRateBonus: 0,
+      skillExpBoostBonus: 0,
       sect: undefined // 初始化宗门为undefined
     },
     resources: {
       qi: 0,
       gold: 100,
-      pills: 5,
+      pills: [],
       materials: 20,
       spiritFruit: 2,
       spiritGrass: 10,
@@ -85,7 +92,15 @@ export function createNewGame(playerName: string = '修真者'): GameState {
       currentPill: undefined,
       lastBrewTime: Date.now(),
       successCount: 0,
-      failedCount: 0
+      failedCount: 0,
+      skillLevel: 1,
+      skillExp: 0,
+      maxSkillExp: 100,
+      qualityModifier: 1.0,
+      totalQualityPoints: 0,
+      activePills: [],
+      knownPills: [],
+      maxConcurrentPills: 3
     },
     forge: {
       blueprints: initialForgeBlueprints.filter(blueprint => blueprint.requiredLevel === 'qi_refining_1'), // 初始解锁基础图谱
@@ -136,6 +151,28 @@ export class CultivationGame {
     if (!this.gameState.pets) {
       this.gameState.pets = [];
     }
+    // 确保alchemy和alchemy.activePills存在
+    if (!this.gameState.alchemy) {
+      this.gameState.alchemy = {
+        recipes: initialRecipes.filter(recipe => recipe.requiredLevel === 'qi_refining_1'),
+        progress: 0,
+        isBrewing: false,
+        currentPill: undefined,
+        lastBrewTime: Date.now(),
+        successCount: 0,
+        failedCount: 0,
+        skillLevel: 1,
+        skillExp: 0,
+        maxSkillExp: 100,
+        qualityModifier: 1.0,
+        totalQualityPoints: 0,
+        activePills: [],
+        knownPills: [],
+        maxConcurrentPills: 3
+      };
+    } else if (!this.gameState.alchemy.activePills) {
+      this.gameState.alchemy.activePills = [];
+    }
     // 如果有离线时间，计算离线收益
     this.processOfflineRewards();
   }
@@ -159,9 +196,17 @@ export class CultivationGame {
 
       if (achievement.requirements.resources) {
         for (const [resource, amount] of Object.entries(achievement.requirements.resources)) {
-          if ((this.gameState.resources[resource as keyof Resources] || 0) < amount) {
-            isUnlocked = false;
-            break;
+          if (resource === 'pills') {
+            // 对于丹药，使用数组长度进行比较
+            if (this.gameState.resources.pills.length < (amount as number)) {
+              isUnlocked = false;
+              break;
+            }
+          } else {
+            if ((this.gameState.resources[resource as keyof Resources] as number || 0) < (amount as number)) {
+              isUnlocked = false;
+              break;
+            }
           }
         }
       }
@@ -294,7 +339,24 @@ export class CultivationGame {
       
       // 应用其他资源奖励
       if (rewards.gold) this.gameState.resources.gold += rewards.gold;
-      if (rewards.pills) this.gameState.resources.pills += rewards.pills;
+      if (rewards.pills) {
+        // 处理数字类型的丹药奖励（如成就奖励）
+        for (let i = 0; i < rewards.pills; i++) {
+          this.gameState.resources.pills.push({
+            id: `pill_basic_${Date.now()}_${i}`,
+            name: '聚气丹',
+            description: '帮助修炼者凝聚灵气的基础丹药',
+            type: '聚气丹',
+            quality: 'normal',
+            effect: { cultivationSpeed: 1.2 },
+            duration: 300,
+            stackable: true,
+            maxStacks: 99,
+            rarity: 'common',
+            value: 10
+          });
+        }
+      }
       if (rewards.spiritFruit) this.gameState.resources.spiritFruit += rewards.spiritFruit;
       
       this.gameState.offlineTime = offlineTimeMs;
@@ -343,6 +405,9 @@ export class CultivationGame {
     
     // 更新炼器进度
     this.updateForgeProgress();
+    
+    // 检查和移除过期的丹药效果
+    this.checkExpiredPills(currentTime);
     
     // 自动获得灵石（每10秒获得1点）
     if (Math.random() < 0.1) { // 10%概率每秒获得1点灵石
@@ -430,9 +495,9 @@ export class CultivationGame {
       
       // 如果有突破丹药，提高成功率
       let usedPill = false;
-      if (this.gameState.resources.pills > 0) {
+      if (this.gameState.resources.pills.length > 0) {
         successChance += 0.2; // 使用丹药增加20%成功率
-        this.gameState.resources.pills--; // 消耗一颗丹药
+        this.gameState.resources.pills.pop(); // 消耗一颗丹药
         usedPill = true;
         console.log('使用了一颗突破丹药，成功率提升至', successChance * 100, '%');
       }
@@ -527,18 +592,21 @@ export class CultivationGame {
       this.notifyEvent('error', { message: '游戏状态未初始化' });
       return false;
     }
-    if (this.gameState.resources.pills <= 0) {
+    if (this.gameState.resources.pills.length === 0) {
       this.notifyEvent('error', { message: '没有丹药了' });
       return false;
     }
     
-    this.gameState.resources.pills--;
-    this.gameState.resources.qi = Math.min(
-      this.gameState.resources.qi + 50,
-      this.gameState.cultivation.qiCapacity
-    );
+    // 取出第一颗丹药
+    const pill = this.gameState.resources.pills.shift();
+    if (!pill) {
+      return false;
+    }
     
-    this.notifyEvent('pill_used', { remainingPills: this.gameState.resources.pills });
+    // 应用丹药效果
+    this.applyPillEffects(pill);
+    
+    this.notifyEvent('pill_used', { remainingPills: this.gameState.resources.pills.length });
     return true;
   }
 
@@ -933,15 +1001,33 @@ export class CultivationGame {
     
     // 检查材料是否足够
     for (const ingredient of blueprint.ingredients) {
-      if (this.gameState.resources[ingredient.materialId as keyof Resources] < ingredient.quantity) {
-        this.notifyEvent('error', { message: `材料不足: ${ingredient.materialId}` });
-        return false;
+      const materialId = ingredient.materialId as keyof Resources;
+      if (materialId === 'pills') {
+        // 检查丹药数量是否足够
+        if (this.gameState.resources.pills.length < ingredient.quantity) {
+          this.notifyEvent('error', { message: `丹药数量不足: ${ingredient.quantity}` });
+          return false;
+        }
+      } else {
+        // 检查其他资源是否足够
+        const resourceAmount = this.gameState.resources[materialId] as number;
+        if (resourceAmount < ingredient.quantity) {
+          this.notifyEvent('error', { message: `材料不足: ${ingredient.materialId}` });
+          return false;
+        }
       }
     }
     
     // 扣除材料
     for (const ingredient of blueprint.ingredients) {
-      this.gameState.resources[ingredient.materialId as keyof Resources] -= ingredient.quantity;
+      const materialId = ingredient.materialId as keyof Resources;
+      if (materialId === 'pills') {
+        // 扣除丹药（从数组末尾开始移除）
+        this.gameState.resources.pills.splice(-ingredient.quantity, ingredient.quantity);
+      } else {
+        // 扣除其他资源
+        (this.gameState.resources[materialId] as number) -= ingredient.quantity;
+      }
     }
     
     // 开始炼器
@@ -1068,13 +1154,27 @@ export class CultivationGame {
       spiritFruit: 25  // 每个灵果卖25灵石
     };
     
-    if (this.gameState.resources[resourceType] < quantity) {
-      this.notifyEvent('error', { message: '资源不足' });
-      return false;
+    if (resourceType === 'pills') {
+      // 检查丹药数量是否足够
+      if (this.gameState.resources.pills.length < quantity) {
+        this.notifyEvent('error', { message: '丹药数量不足' });
+        return false;
+      }
+      
+      // 移除对应数量的丹药（从数组末尾开始移除）
+      this.gameState.resources.pills.splice(-quantity);
+    } else {
+      // 检查灵果数量是否足够
+      if ((this.gameState.resources[resourceType] as number) < quantity) {
+        this.notifyEvent('error', { message: '灵果数量不足' });
+        return false;
+      }
+      
+      // 减少灵果数量
+      (this.gameState.resources[resourceType] as number) -= quantity;
     }
     
     const totalIncome = sellPrices[resourceType] * quantity;
-    this.gameState.resources[resourceType] -= quantity;
     this.gameState.resources.gold += totalIncome;
     
     this.notifyEvent('resource_sold', { resourceType, quantity, totalIncome });
@@ -1098,7 +1198,28 @@ export class CultivationGame {
     }
     
     this.gameState.resources.gold -= totalCost;
-    this.gameState.resources[itemType] += quantity;
+    
+    if (itemType === 'pills') {
+      // 对于丹药，创建相应数量的基础丹药
+      for (let i = 0; i < quantity; i++) {
+        this.gameState.resources.pills.push({
+          id: `pill_basic_${Date.now()}_${i}`,
+          name: '聚气丹',
+          description: '帮助修炼者凝聚灵气的基础丹药',
+          type: '聚气丹',
+          quality: 'normal',
+          effect: { cultivationSpeed: 1.2 },
+          duration: 300,
+          stackable: true,
+          maxStacks: 99,
+          rarity: 'common',
+          value: 10
+        });
+      }
+    } else {
+      // 对于其他资源，直接增加数量
+      (this.gameState.resources[itemType] as number) += quantity;
+    }
     
     this.notifyEvent('item_bought', { itemType, quantity, totalCost });
     return true;
@@ -1175,6 +1296,12 @@ export class CultivationGame {
           return false;
         }
       }
+      if (quest.requirements.alchemy.recipeCount) {
+        const recipeCount = this.gameState.alchemy ? this.gameState.alchemy.recipes.length : 0;
+        if (recipeCount < quest.requirements.alchemy.recipeCount) {
+          return false;
+        }
+      }
     }
     
     // 检查事件条件
@@ -1186,6 +1313,31 @@ export class CultivationGame {
           return false;
         }
       }
+      if (quest.requirements.events.specificEventIds) {
+        // TODO: 实现特定事件检查逻辑
+        // 需要记录玩家遇到的具体事件ID
+      }
+    }
+    
+    // 检查采集条件
+    if (quest.requirements.gathering) {
+      if (quest.requirements.gathering.totalCount) {
+        const totalGathering = (this.gameState.autoGatheringCount || 0);
+        if (totalGathering < quest.requirements.gathering.totalCount) {
+          return false;
+        }
+      }
+      
+      if (quest.requirements.gathering.resourceTypes) {
+        // TODO: 实现特定资源采集数量检查
+        // 需要记录玩家采集的具体资源数量
+      }
+    }
+    
+    // 检查怪物条件
+    if (quest.requirements.monsters) {
+      // TODO: 实现怪物击杀数量检查
+      // 需要记录玩家击杀的怪物数量
     }
     
     return true;
@@ -1227,6 +1379,23 @@ export class CultivationGame {
             this.gameState.resources.qi + amount,
             this.gameState.cultivation.qiCapacity
           );
+        } else if (resource === 'pills' && typeof amount === 'number') {
+          // 处理数字类型的丹药奖励
+          for (let i = 0; i < amount; i++) {
+            this.gameState.resources.pills.push({
+              id: `pill_basic_${Date.now()}_${i}`,
+              name: '聚气丹',
+              description: '帮助修炼者凝聚灵气的基础丹药',
+              type: '聚气丹',
+              quality: 'normal',
+              effect: { cultivationSpeed: 1.2 },
+              duration: 300,
+              stackable: true,
+              maxStacks: 99,
+              rarity: 'common',
+              value: 10
+            });
+          }
         } else {
           (this.gameState.resources as any)[resource] += amount;
         }
@@ -1283,6 +1452,23 @@ export class CultivationGame {
             this.gameState.resources.qi + amount,
             this.gameState.cultivation.qiCapacity
           );
+        } else if (resource === 'pills' && typeof amount === 'number') {
+          // 处理数字类型的丹药奖励
+          for (let i = 0; i < amount; i++) {
+            this.gameState.resources.pills.push({
+              id: `pill_basic_${Date.now()}_${i}`,
+              name: '聚气丹',
+              description: '帮助修炼者凝聚灵气的基础丹药',
+              type: '聚气丹',
+              quality: 'normal',
+              effect: { cultivationSpeed: 1.2 },
+              duration: 300,
+              stackable: true,
+              maxStacks: 99,
+              rarity: 'common',
+              value: 10
+            });
+          }
         } else {
           (this.gameState.resources as any)[resource] += amount;
         }
@@ -1376,7 +1562,31 @@ export class CultivationGame {
                 this.gameState.resources.qi + amount,
                 this.gameState.cultivation.qiCapacity
               );
+            } else if (resource === 'pills' && amount) {
+              // 处理丹药奖励
+              if (typeof amount === 'number') {
+                // 如果是数字类型，创建对应数量的基础丹药
+                for (let i = 0; i < amount; i++) {
+                  this.gameState.resources.pills.push({
+                    id: `pill_basic_${Date.now()}_${i}`,
+                    name: '聚气丹',
+                    description: '帮助修炼者凝聚灵气的基础丹药',
+                    type: '聚气丹',
+                    quality: 'normal',
+                    effect: { cultivationSpeed: 1.2 },
+                    duration: 300,
+                    stackable: true,
+                    maxStacks: 99,
+                    rarity: 'common',
+                    value: 10
+                  });
+                }
+              } else if (Array.isArray(amount)) {
+                // 如果是数组类型，直接添加到丹药列表
+                this.gameState.resources.pills.push(...amount);
+              }
             } else if (amount) {
+              // 处理其他资源
               (this.gameState.resources as any)[resource] += amount;
             }
           }
@@ -1407,6 +1617,12 @@ export class CultivationGame {
         this.notifyEvent('error', { message: '炼丹系统未初始化' });
         return false;
       }
+      
+      // 检查是否已经在炼丹
+      if (this.gameState.alchemy.isBrewing) {
+        this.notifyEvent('error', { message: '正在炼丹中，无法同时炼制多个丹药' });
+        return false;
+      }
       const recipe = this.gameState.alchemy.recipes.find(r => r.id === recipeId);
       if (!recipe) {
         this.notifyEvent('error', { message: '未知的炼丹配方' });
@@ -1435,6 +1651,7 @@ export class CultivationGame {
 
       // 开始炼丹
       this.gameState.alchemy.currentRecipe = recipe;
+      this.gameState.alchemy.currentPill = recipe.pills[0]; // 设置当前炼制的丹药
       this.gameState.alchemy.progress = 0;
       this.gameState.alchemy.isBrewing = true;
       this.gameState.alchemy.startTime = Date.now();
@@ -1464,32 +1681,74 @@ export class CultivationGame {
     }
 
     // 完成炼丹
-    private completeAlchemy() {
+    public completeAlchemy() {
       if (!this.gameState.alchemy || !this.gameState.alchemy.currentRecipe) {
         return;
       }
 
       const recipe = this.gameState.alchemy.currentRecipe;
       
+      // 计算实际成功率（基础成功率 + 技能加成）
+      const skillLevel = this.gameState.alchemy.skillLevel;
+      const skillBonus = skillLevel * 0.02; // 每级增加2%成功率
+      const actualSuccessRate = Math.min(recipe.baseSuccessRate + skillBonus, 0.95); // 最高95%
+      
       // 检查成功率
-      const success = Math.random() < recipe.successRate;
+      const success = Math.random() < actualSuccessRate;
       
       if (success && recipe.pills && recipe.pills.length > 0) {
-        // 成功炼制，获得丹药
-        const pillId = recipe.pills[0];
-        const pill = initialPills.find(p => p.id === pillId);
+        // 成功炼制，选择丹药
+        const pillId = recipe.pills[Math.floor(Math.random() * recipe.pills.length)];
+        const basePill = initialPills.find(p => p.id === pillId);
         
-        if (pill) {
-          // 更新丹药数量
-          this.gameState.resources.pills++;
+        if (basePill) {
+          // 计算丹药品质
+          const qualityBonus = skillLevel * 0.005; // 每级增加0.5%高品质概率
+          const qualityRoll = Math.random();
+          let quality: PillQuality;
+          
+          if (recipe.qualityChances) {
+            if (qualityRoll < recipe.qualityChances.celestial + qualityBonus) {
+              quality = 'celestial';
+            } else if (qualityRoll < recipe.qualityChances.perfect + qualityBonus) {
+              quality = 'perfect';
+            } else if (qualityRoll < recipe.qualityChances.high + qualityBonus) {
+              quality = 'high';
+            } else if (qualityRoll < recipe.qualityChances.normal + qualityBonus) {
+              quality = 'normal';
+            } else {
+              quality = 'low';
+            }
+          } else {
+            // 默认品质
+            quality = qualityRoll < 0.1 + qualityBonus ? 'high' : qualityRoll < 0.4 + qualityBonus ? 'normal' : 'low';
+          }
+          
+          // 计算品质倍数
+          const qualityMultiplier = this.getQualityMultiplier(quality);
+          
+          // 创建丹药实例
+          const pill: Pill = {
+            ...basePill,
+            quality,
+            id: `${basePill.id}_${Date.now()}_${Math.floor(Math.random() * 1000)}` // 唯一ID
+          };
+          
+          // 将丹药添加到背包中
+          this.gameState.resources.pills.push(pill);
           
           // 更新统计数据
           this.gameState.alchemy.successCount++;
+          this.gameState.alchemy.totalQualityPoints += this.getQualityPoints(quality);
           
           // 增加经验值
           if (recipe.expGain) {
+            // 品质加成经验值
+            const qualityExpBonus = Math.round(recipe.expGain * (qualityMultiplier - 1));
+            const totalExpGain = recipe.expGain + qualityExpBonus;
+            
             // 经验满时不自动突破，只显示提示
-            const expAfterGain = this.gameState.cultivation.exp + recipe.expGain;
+            const expAfterGain = this.gameState.cultivation.exp + totalExpGain;
             if (expAfterGain >= this.gameState.cultivation.maxExp) {
               this.gameState.cultivation.exp = this.gameState.cultivation.maxExp;
               this.notifyEvent('info', { message: '经验已满，可以尝试突破境界' });
@@ -1497,12 +1756,39 @@ export class CultivationGame {
               this.gameState.cultivation.exp = expAfterGain;
             }
           }
+          
+          // 增加炼丹技能经验
+          const skillExpGain = this.calculateAlchemySkillExp(recipe, quality);
+          this.gameState.alchemy.skillExp += skillExpGain;
+          
+          // 检查炼丹技能升级
+          this.checkAlchemySkillLevelUp();
 
           this.notifyEvent('alchemy_success', { pill, expGain: recipe.expGain });
         }
       } else {
         // 炼丹失败
         this.gameState.alchemy.failedCount++;
+        
+        // 应用失败惩罚
+        if (recipe.failurePenalty) {
+          if (recipe.failurePenalty.resourceLossRatio) {
+            // 计算并应用资源损失比例
+            const lossRatio = recipe.failurePenalty.resourceLossRatio;
+            for (const ingredient of recipe.ingredients) {
+              const resourceKey = ingredient.id as keyof Resources;
+              const lossAmount = Math.ceil(ingredient.quantity * lossRatio);
+              if (resourceKey === 'pills') {
+                // 对于丹药，从数组中移除对应数量（从末尾开始移除）
+                this.gameState.resources.pills.splice(-lossAmount, lossAmount);
+              } else if ((this.gameState.resources[resourceKey] as number) >= lossAmount) {
+                // 对于其他资源，直接减少数量
+                (this.gameState.resources[resourceKey] as number) -= lossAmount;
+              }
+            }
+          }
+        }
+        
         this.notifyEvent('alchemy_failed', { recipe });
       }
 
@@ -1511,6 +1797,163 @@ export class CultivationGame {
       this.gameState.alchemy.currentRecipe = undefined;
       this.gameState.alchemy.progress = 0;
       this.gameState.alchemy.startTime = undefined;
+    }
+
+    // 获取品质倍数
+    private getQualityMultiplier(quality: PillQuality): number {
+      switch (quality) {
+        case 'celestial':
+          return 2.0;
+        case 'perfect':
+          return 1.7;
+        case 'high':
+          return 1.4;
+        case 'normal':
+          return 1.2;
+        case 'low':
+          return 1.0;
+        default:
+          return 1.0;
+      }
+    }
+
+    // 获取品质点数
+    private getQualityPoints(quality: PillQuality): number {
+      switch (quality) {
+        case 'celestial':
+          return 50;
+        case 'perfect':
+          return 30;
+        case 'high':
+          return 15;
+        case 'normal':
+          return 5;
+        case 'low':
+          return 1;
+        default:
+          return 1;
+      }
+    }
+
+    // 计算炼丹技能经验
+    private calculateAlchemySkillExp(recipe: AlchemyRecipe, quality: PillQuality): number {
+      const baseExp = recipe.expGain / 2;
+      const qualityBonus = this.getQualityPoints(quality) / 10;
+      return Math.round(baseExp + qualityBonus);
+    }
+
+    // 检查炼丹技能升级
+    private checkAlchemySkillLevelUp(): void {
+      const currentLevel = this.gameState.alchemy.skillLevel;
+      const currentExp = this.gameState.alchemy.skillExp;
+      const requiredExp = this.getRequiredAlchemySkillExp(currentLevel);
+      
+      if (currentExp >= requiredExp) {
+        this.gameState.alchemy.skillLevel++;
+        this.gameState.alchemy.skillExp -= requiredExp;
+        this.gameState.alchemy.qualityModifier += 0.005; // 每级增加0.5%高品质概率
+        this.notifyEvent('alchemy_skill_up', { newLevel: this.gameState.alchemy.skillLevel });
+      }
+    }
+
+    // 获取所需的炼丹技能经验
+    private getRequiredAlchemySkillExp(level: number): number {
+      return Math.round(100 * Math.pow(1.5, level - 1));
+    }
+
+    // 应用丹药效果
+    private applyPillEffects(pill: Pill): void {
+      // 确保activePills存在
+      if (!this.gameState.alchemy.activePills) {
+        this.gameState.alchemy.activePills = [];
+      }
+      // 添加丹药到激活列表
+      this.gameState.alchemy.activePills.push({
+        pill,
+        startTime: Date.now()
+      });
+      
+      // 应用即时效果
+      if (pill.effect.qiRegen) {
+        this.gameState.resources.qi = Math.min(
+          this.gameState.resources.qi + pill.effect.qiRegen,
+          this.gameState.cultivation.qiCapacity
+        );
+      }
+      
+      // 应用持续效果
+      if (pill.effect.cultivationSpeed) {
+        this.gameState.cultivation.cultivationSpeedBonus += pill.effect.cultivationSpeed;
+      }
+      
+      if (pill.effect.breakthroughChance) {
+        this.gameState.cultivation.breakthroughChanceBonus += pill.effect.breakthroughChance;
+      }
+      
+      if (pill.effect.resourceGatheringSpeed) {
+        this.gameState.cultivation.resourceGatheringSpeedBonus += pill.effect.resourceGatheringSpeed;
+      }
+      
+      if (pill.effect.alchemySuccessRate) {
+        this.gameState.cultivation.alchemySuccessRateBonus += pill.effect.alchemySuccessRate;
+      }
+      
+      if (pill.effect.skillExpBoost) {
+        this.gameState.cultivation.skillExpBoostBonus += pill.effect.skillExpBoost;
+      }
+    }
+    
+    // 检查和移除过期的丹药效果
+    private checkExpiredPills(currentTime: number): void {
+      if (!this.gameState.alchemy || !this.gameState.alchemy.activePills || this.gameState.alchemy.activePills.length === 0) {
+        return;
+      }
+      
+      // 过滤出未过期的丹药效果
+      const expiredPills = [];
+      const remainingPills = [];
+      
+      for (const activePill of this.gameState.alchemy.activePills) {
+        const { pill, startTime } = activePill;
+        const durationMs = (pill.duration || 0) * 1000;
+        
+        if (currentTime - startTime >= durationMs) {
+          // 丹药效果已过期
+          expiredPills.push(activePill);
+        } else {
+          // 丹药效果未过期
+          remainingPills.push(activePill);
+        }
+      }
+      
+      // 如果有过期的丹药效果，移除它们的加成
+      for (const expiredPill of expiredPills) {
+        const { pill } = expiredPill;
+        
+        // 移除持续效果加成
+        if (pill.effect.cultivationSpeed) {
+          this.gameState.cultivation.cultivationSpeedBonus -= pill.effect.cultivationSpeed;
+        }
+        
+        if (pill.effect.breakthroughChance) {
+          this.gameState.cultivation.breakthroughChanceBonus -= pill.effect.breakthroughChance;
+        }
+        
+        if (pill.effect.resourceGatheringSpeed) {
+          this.gameState.cultivation.resourceGatheringSpeedBonus -= pill.effect.resourceGatheringSpeed;
+        }
+        
+        if (pill.effect.alchemySuccessRate) {
+          this.gameState.cultivation.alchemySuccessRateBonus -= pill.effect.alchemySuccessRate;
+        }
+        
+        if (pill.effect.skillExpBoost) {
+          this.gameState.cultivation.skillExpBoostBonus -= pill.effect.skillExpBoost;
+        }
+      }
+      
+      // 更新激活的丹药效果列表
+      this.gameState.alchemy.activePills = remainingPills;
     }
 
     // 解锁新的炼丹配方
@@ -1628,14 +2071,26 @@ export class CultivationGame {
 
       // 检查资源是否足够
       for (const [resource, amount] of Object.entries(trainingCost)) {
-        if ((this.gameState.resources[resource as keyof Resources] || 0) < amount) {
-          return false;
+        if (resource === 'pills') {
+          // 对于丹药，使用数组长度进行比较
+          if (this.gameState.resources.pills.length < amount) {
+            return false;
+          }
+        } else {
+          if ((this.gameState.resources[resource as keyof Resources] as number || 0) < amount) {
+            return false;
+          }
         }
       }
 
       // 扣除资源
       for (const [resource, amount] of Object.entries(trainingCost)) {
-        (this.gameState.resources[resource as keyof Resources] as number) -= amount;
+        if (resource === 'pills') {
+          // 对于丹药，从数组中移除相应数量的元素
+          this.gameState.resources.pills.splice(0, amount);
+        } else {
+          (this.gameState.resources[resource as keyof Resources] as number) -= amount;
+        }
       }
 
       // 增加宠物经验
@@ -1684,14 +2139,26 @@ export class CultivationGame {
 
       // 检查资源是否足够
       for (const [resource, amount] of Object.entries(upgradeCost)) {
-        if ((this.gameState.resources[resource as keyof Resources] || 0) < amount) {
-          return false;
+        if (resource === 'pills') {
+          // 对于丹药，使用数组长度进行比较
+          if (this.gameState.resources.pills.length < amount) {
+            return false;
+          }
+        } else {
+          if ((this.gameState.resources[resource as keyof Resources] as number || 0) < amount) {
+            return false;
+          }
         }
       }
 
       // 扣除资源
       for (const [resource, amount] of Object.entries(upgradeCost)) {
-        (this.gameState.resources[resource as keyof Resources] as number) -= amount;
+        if (resource === 'pills') {
+          // 对于丹药，从数组中移除相应数量的元素
+          this.gameState.resources.pills.splice(0, amount);
+        } else {
+          (this.gameState.resources[resource as keyof Resources] as number) -= amount;
+        }
       }
 
       // 升级技能
@@ -1751,12 +2218,12 @@ export class CultivationGame {
       }
 
       // 喂食消耗资源
-      if (this.gameState.resources.pills <= 0) {
+      if (this.gameState.resources.pills.length <= 0) {
         return false;
       }
 
       // 扣除资源
-      this.gameState.resources.pills--;
+      this.gameState.resources.pills.pop();
 
       // 增加忠诚度
       pet.loyalty = Math.min(pet.loyalty + 10, 100);
@@ -1902,8 +2369,33 @@ export class CultivationGame {
       // 领取资源奖励
       if (task.rewards.resources) {
         Object.entries(task.rewards.resources).forEach(([key, value]) => {
-          if (key in this.gameState.resources) {
-            (this.gameState.resources[key as keyof Resources] as number) += value;
+          if (key === 'pills') {
+            // 对于丹药，创建相应数量的基础丹药并添加到数组
+            if (typeof value === 'number') {
+              for (let i = 0; i < value; i++) {
+                this.gameState.resources.pills.push({
+                  id: `pill_basic_${Date.now()}_${i}`,
+                  name: '聚气丹',
+                  description: '帮助修炼者凝聚灵气的基础丹药',
+                  type: '聚气丹',
+                  quality: 'normal',
+                  effect: { cultivationSpeed: 1.2 },
+                  duration: 300,
+                  stackable: true,
+                  maxStacks: 99,
+                  rarity: 'common',
+                  value: 10
+                });
+              }
+            } else if (Array.isArray(value)) {
+              // 如果是数组类型，直接添加到丹药列表
+              this.gameState.resources.pills.push(...value);
+            }
+          } else if (key in this.gameState.resources) {
+            // 对于其他资源，确保value是数字类型
+            if (typeof value === 'number') {
+              (this.gameState.resources[key as keyof Resources] as number) += value;
+            }
           }
         });
       }

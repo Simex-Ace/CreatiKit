@@ -26,7 +26,9 @@ export const ForgePanel: React.FC<ForgePanelProps> = ({
     if (!blueprint.ingredients || !gameState.resources) return false;
     
     return blueprint.ingredients.every(ingredient => {
-      const currentAmount = gameState.resources[ingredient.materialId as keyof typeof gameState.resources] || 0;
+      const resource = gameState.resources[ingredient.materialId as keyof typeof gameState.resources] || 0;
+      // 如果资源是pills数组，则使用长度，否则使用数值
+      const currentAmount = ingredient.materialId === 'pills' && Array.isArray(resource) ? resource.length : Number(resource);
       return currentAmount >= ingredient.quantity;
     });
   };
@@ -77,7 +79,9 @@ export const ForgePanel: React.FC<ForgePanelProps> = ({
                       <td className="px-4 py-3 text-purple-200 border-b border-slate-600">
                         <div className="ingredients-list">
                           {blueprint.ingredients.map((ingredient, index) => {
-                            const currentAmount = gameState.resources[ingredient.materialId as keyof typeof gameState.resources] || 0;
+                            const resource = gameState.resources[ingredient.materialId as keyof typeof gameState.resources] || 0;
+                            // 如果资源是pills数组，则使用长度，否则使用数值
+                            const currentAmount = ingredient.materialId === 'pills' && Array.isArray(resource) ? resource.length : Number(resource);
                             const hasEnough = currentAmount >= ingredient.quantity;
                             return (
                               <div key={index} className="flex justify-between">

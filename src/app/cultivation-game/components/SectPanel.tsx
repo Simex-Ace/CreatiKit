@@ -169,7 +169,7 @@ const SectPanel: React.FC<SectPanelProps> = ({
                     <td className="px-4 py-3 text-white border-b border-slate-600">{task.rewards.contribution}</td>
                     <td className="px-4 py-3 text-purple-200 border-b border-slate-600">
                       {task.rewards.resources && Object.entries(task.rewards.resources).map(([resource, amount]) => (
-                        <div key={resource}>{getMaterialName(resource)}: +{amount}</div>
+                        <div key={resource}>{getMaterialName(resource)}: +{typeof amount === 'number' ? amount : amount.length}</div>
                       ))}
                     </td>
                     <td className="px-4 py-3 border-b border-slate-600">

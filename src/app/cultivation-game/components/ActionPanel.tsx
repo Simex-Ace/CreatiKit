@@ -53,12 +53,12 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({ gameState, onAction })
         <div className="action-card" style={{ display: 'flex', flexDirection: 'column', minHeight: '150px' }}>
           <div className="action-title">服用丹药</div>
           <div className="action-description">恢复50点灵气</div>
-          <div style={{ marginBottom: '0.5rem', color: '#f5d76e' }}>剩余: {gameState.resources.pills}</div>
+          <div style={{ marginBottom: '0.5rem', color: '#f5d76e' }}>剩余: {gameState.resources.pills.length}</div>
           <div style={{ marginTop: 'auto', paddingBottom: '16px' }}>
             <button 
               className="btn" 
               onClick={() => handleAction('usePill')}
-              disabled={gameState.resources.pills <= 0}
+              disabled={gameState.resources.pills.length <= 0}
             >
               服用丹药
             </button>
@@ -253,7 +253,7 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({ gameState, onAction })
               <button 
                 className="btn btn-sell"
                 onClick={() => handleAction('sellResource', { type: 'pills', quantity: 1 })}
-                disabled={!gameState.resources.pills || gameState.resources.pills < 1}
+                disabled={!gameState.resources.pills || gameState.resources.pills.length < 1}
               >
                 出售 (10)
               </button>

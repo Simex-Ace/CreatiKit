@@ -64,10 +64,20 @@ const PetPanel: React.FC<PetPanelProps> = ({
   };
 
   // 检查资源是否足够
-  const hasEnoughResources = (cost: Partial<Resources>) => {
+  const hasEnoughResources = (cost: Record<string, number>) => {
     for (const [resource, amount] of Object.entries(cost)) {
-      if ((gameState.resources[resource as keyof Resources] || 0) < amount) {
-        return false;
+      const resourceAmount = gameState.resources[resource as keyof Resources];
+      // 如果资源是pills，比较数组长度
+      if (resource === 'pills') {
+        const currentAmount = Array.isArray(resourceAmount) ? resourceAmount.length : 0;
+        if (currentAmount < (amount as number)) {
+          return false;
+        }
+      } else {
+        // 其他资源直接比较数值
+        if ((resourceAmount as number || 0) < (amount as number)) {
+          return false;
+        }
       }
     }
     return true;
@@ -262,9 +272,9 @@ const PetPanel: React.FC<PetPanelProps> = ({
                           训练宠物
                         </button>
                         <button
-                          className={`flex-1 py-2 rounded ${selectedPet.loyalty < 100 && gameState.resources.pills > 0 ? 'bg-green-600/80 text-white hover:bg-green-500/80' : 'bg-gray-600/80 text-gray-300 cursor-not-allowed'}`}
+                          className={`flex-1 py-2 rounded ${selectedPet.loyalty < 100 && gameState.resources.pills.length > 0 ? 'bg-green-600/80 text-white hover:bg-green-500/80' : 'bg-gray-600/80 text-gray-300 cursor-not-allowed'}`}
                           onClick={() => onFeedPet(selectedPet.id)}
-                          disabled={selectedPet.loyalty >= 100 || gameState.resources.pills <= 0}
+                          disabled={selectedPet.loyalty >= 100 || gameState.resources.pills.length <= 0}
                         >
                           喂食
                         </button>

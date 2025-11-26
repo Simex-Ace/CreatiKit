@@ -44,7 +44,7 @@ export type CultivationLevel =
 export interface Resources {
   qi: number; // 灵气
   gold: number; // 灵石
-  pills: number; // 丹药
+  pills: Pill[]; // 丹药列表
   materials: number; // 基础材料
   spiritFruit: number; // 灵果
   spiritGrass: number; // 灵草
@@ -101,6 +101,13 @@ export interface CultivationInfo {
   maxExp: number;
   qiCapacity: number; // 灵气容量
   cultivationSpeed: number; // 修炼速度
+  cultivationSpeedBonus: number; // 修炼速度加成
+  breakthroughChanceBonus: number; // 突破成功率加成
+  qiGatherRateBonus: number; // 灵气采集速率加成
+  expGainBonus: number; // 经验获得加成
+  resourceGatheringSpeedBonus: number; // 资源采集速度加成
+  alchemySuccessRateBonus: number; // 炼丹成功率加成
+  skillExpBoostBonus: number; // 技能经验加成
   sect?: Sect;
 }
 
@@ -242,21 +249,37 @@ export interface Quest {
     alchemy?: {
       successCount?: number;
       failedCount?: number;
+      recipeCount?: number;
     };
     events?: {
       encountered?: number;
+      specificEventIds?: string[];
     };
     totalCultivations?: number;
     totalQiGathered?: number;
     autoCultivationCount?: number;
     autoGatheringCount?: number;
+    gathering?: {
+      totalCount?: number;
+      resourceTypes?: Array<{
+        id: string;
+        count: number;
+      }>;
+    };
+    monsters?: Array<{
+      id: string;
+      count?: number;
+    }>;
   };
   rewards: {
-    resources?: Partial<Resources>;
+    resources?: AchievementRewardResources;
     skills?: string[];
     exp?: number;
     recipes?: string[]; // 炼丹配方奖励
     equipment?: string[]; // 装备奖励
+    pills?: string[]; // 丹药奖励
+    achievements?: string[]; // 成就奖励
+    reputation?: number; // 声望奖励
   };
   completed: boolean;
   accepted: boolean; // 是否已接受
@@ -264,12 +287,21 @@ export interface Quest {
   dueDate?: number; // 截止日期（用于限时任务）
   questChain?: string; // 所属任务链ID
   nextQuest?: string; // 后续任务ID
+  progress?: Record<string, number>; // 任务进度跟踪
+  priority?: 'high' | 'medium' | 'low'; // 任务优先级
 }
 
 // 事件触发条件接口
 export interface EventTriggers {
-  actionType: string; // 触发的操作类型 (cultivate, gatherQi, any)
+  actionType: string; // 触发的操作类型 (cultivate, gatherQi, alchemy, any)
   probability: number; // 触发概率 (0-1)
+  levelRequirement?: CultivationLevel; // 境界要求
+  timeOfDay?: 'morning' | 'afternoon' | 'evening' | 'night'; // 时间要求
+  season?: 'spring' | 'summer' | 'autumn' | 'winter'; // 季节要求
+  weather?: 'clear' | 'rainy' | 'snowy' | 'foggy'; // 天气要求
+  cooldown?: number; // 冷却时间（秒）
+  requiredEventIds?: string[]; // 需要先触发的事件
+  requiredQuestIds?: string[]; // 需要完成的任务
 }
 
 // 事件结果接口
@@ -277,12 +309,21 @@ export interface EventOutcome {
   probability: number;
   result: string;
   effects: {
-    resources?: Partial<Resources>;
+    resources?: AchievementRewardResources;
     exp?: number;
     cultivationSpeedBoost?: number;
     breakthroughBonus?: boolean;
+    gatheringSpeedBoost?: number;
+    alchemySuccessRateBoost?: number;
+    skillExp?: Record<string, number>;
+    reputationChange?: number;
+    questTrigger?: string;
+    newEvent?: string;
+    petEncounter?: string;
+    monsterEncounter?: string;
     [key: string]: any;
   };
+  nextEvent?: string; // 后续事件ID
 }
 
 // 事件选择接口
@@ -293,6 +334,9 @@ export interface EventChoice {
     level?: CultivationLevel;
     resources?: Partial<Resources>;
     skills?: { id: string; level: number }[];
+    alchemySuccess?: number;
+    gatheringCount?: number;
+    monsterKills?: number;
   };
   outcomes: EventOutcome[];
 }
@@ -356,6 +400,22 @@ export interface PetData {
 }
 
 // 成就接口
+// 成就奖励资源接口（允许pills为数字类型）
+export interface AchievementRewardResources {
+  qi?: number;
+  gold?: number;
+  pills?: number | Pill[];
+  materials?: number;
+  spiritFruit?: number;
+  spiritGrass?: number;
+  spiritWater?: number;
+  spiritStone?: number;
+  spiritCrystal?: number;
+  heavenlyHerb?: number;
+  immortalFruit?: number;
+  divineEssence?: number;
+}
+
 export interface Achievement {
   id: string;
   name: string;
@@ -379,7 +439,7 @@ export interface Achievement {
     sectLevel?: number;
   };
   reward: {
-    resources?: Partial<Resources>;
+    resources?: AchievementRewardResources;
     exp?: number;
   };
 }
@@ -414,21 +474,41 @@ export type PillType =
   | '气血丹'
   | '通灵丹'
   | '避毒丹'
-  | '回春丹';
+  | '回春丹'
+  | '洗髓丹'
+  | '破障丹'
+  | '固元丹'
+  | '青冥丹'
+  | '紫极丹'
+  | '玄元丹'
+  | '混元丹';
+
+// 丹药品质类型
+export type PillQuality = 'low' | 'normal' | 'high' | 'perfect' | 'celestial';
 
 // 丹药接口
 export interface Pill {
   id: string;
   name: string;
   description: string;
+  type: PillType;
+  quality: PillQuality;
   effect: {
     cultivationSpeed?: number;
     breakthroughChance?: number;
     healthRegen?: number;
     resourceGatheringSpeed?: number;
     poisonResistance?: number;
+    qiRegen?: number;
+    alchemySuccessRate?: number;
+    spiritSense?: number;
+    damageResistance?: number;
+    skillExpBoost?: number;
+    reputationBoost?: number;
   };
-  duration: number;
+  duration: number; // 效果持续时间（秒）
+  stackable: boolean; // 是否可叠加
+  maxStacks: number; // 最大叠加数量
   rarity: 'common' | 'rare' | 'epic' | 'legendary';
   value: number;
 }
@@ -443,11 +523,23 @@ export interface AlchemyRecipe {
     id: string;
     quantity: number;
   }[];
-  duration: number;
+  duration: number; // 炼制时间（秒）
   requiredLevel: CultivationLevel;
-  successRate: number;
+  baseSuccessRate: number;
   rarity: 'common' | 'rare' | 'epic' | 'legendary';
-  expGain?: number;
+  expGain: number;
+  qualityChances?: {
+    low: number;
+    normal: number;
+    high: number;
+    perfect: number;
+    celestial: number;
+  };
+  failurePenalty?: {
+    resourceLossRatio?: number; // 资源损失比例 (0-1)
+    expLoss?: number;
+    cooldown?: number;
+  };
 }
 
 // 炼丹状态接口
@@ -461,6 +553,17 @@ export interface AlchemyState {
   lastBrewTime: number; // 上次炼丹时间
   successCount: number; // 成功炼丹次数
   failedCount: number; // 失败炼丹次数
+  skillLevel: number; // 炼丹技能等级
+  skillExp: number; // 炼丹技能经验
+  maxSkillExp: number; // 升级所需经验
+  qualityModifier: number; // 品质提升修饰符
+  totalQualityPoints: number; // 总品质点数
+  activePills: Array<{
+    pill: Pill;
+    startTime: number;
+  }>; // 当前激活的丹药效果
+  knownPills: string[]; // 已知的丹药ID列表
+  maxConcurrentPills: number; // 最大同时使用的丹药数量
 }
 
 // 炼器系统相关接口

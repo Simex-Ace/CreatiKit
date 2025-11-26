@@ -13,7 +13,17 @@ export const alchemyRecipes: AlchemyRecipe[] = [
     ],
     duration: 5,
     requiredLevel: 'qi_refining_1',
-    successRate: 0.8,
+    baseSuccessRate: 0.8,
+    qualityChances: {
+      celestial: 0.001,
+      perfect: 0.005,
+      high: 0.02,
+      normal: 0.3,
+      low: 1.0
+    },
+    failurePenalty: {
+      resourceLossRatio: 0.5
+    },
     rarity: 'common',
     expGain: 20
   },
@@ -29,7 +39,17 @@ export const alchemyRecipes: AlchemyRecipe[] = [
     ],
     duration: 10,
     requiredLevel: 'qi_refining_2',
-    successRate: 0.7,
+    baseSuccessRate: 0.7,
+    qualityChances: {
+      celestial: 0.001,
+      perfect: 0.005,
+      high: 0.02,
+      normal: 0.3,
+      low: 1.0
+    },
+    failurePenalty: {
+      resourceLossRatio: 0.5
+    },
     rarity: 'common',
     expGain: 40
   },
@@ -45,7 +65,17 @@ export const alchemyRecipes: AlchemyRecipe[] = [
     ],
     duration: 20,
     requiredLevel: 'qi_refining_3',
-    successRate: 0.6,
+    baseSuccessRate: 0.6,
+    qualityChances: {
+      celestial: 0.002,
+      perfect: 0.01,
+      high: 0.05,
+      normal: 0.4,
+      low: 1.0
+    },
+    failurePenalty: {
+      resourceLossRatio: 0.6
+    },
     rarity: 'rare',
     expGain: 100
   },
@@ -62,7 +92,17 @@ export const alchemyRecipes: AlchemyRecipe[] = [
     ],
     duration: 30,
     requiredLevel: 'foundation_3',
-    successRate: 0.4,
+    baseSuccessRate: 0.4,
+    qualityChances: {
+      celestial: 0.005,
+      perfect: 0.02,
+      high: 0.1,
+      normal: 0.5,
+      low: 1.0
+    },
+    failurePenalty: {
+      resourceLossRatio: 0.7
+    },
     rarity: 'epic',
     expGain: 200
   },
@@ -79,7 +119,17 @@ export const alchemyRecipes: AlchemyRecipe[] = [
     ],
     duration: 60,
     requiredLevel: 'golden_core_3',
-    successRate: 0.2,
+    baseSuccessRate: 0.2,
+    qualityChances: {
+      celestial: 0.01,
+      perfect: 0.05,
+      high: 0.2,
+      normal: 0.6,
+      low: 1.0
+    },
+    failurePenalty: {
+      resourceLossRatio: 0.8
+    },
     rarity: 'legendary',
     expGain: 500
   },
@@ -96,7 +146,17 @@ export const alchemyRecipes: AlchemyRecipe[] = [
     ],
     duration: 8,
     requiredLevel: 'qi_refining_1',
-    successRate: 0.85,
+    baseSuccessRate: 0.85,
+    qualityChances: {
+      celestial: 0.001,
+      perfect: 0.005,
+      high: 0.02,
+      normal: 0.3,
+      low: 1.0
+    },
+    failurePenalty: {
+      resourceLossRatio: 0.5
+    },
     rarity: 'common',
     expGain: 30
   },
@@ -112,7 +172,17 @@ export const alchemyRecipes: AlchemyRecipe[] = [
     ],
     duration: 15,
     requiredLevel: 'foundation_1',
-    successRate: 0.75,
+    baseSuccessRate: 0.75,
+    qualityChances: {
+      celestial: 0.05,
+      perfect: 0.15,
+      high: 0.3,
+      normal: 0.4,
+      low: 0.1
+    },
+    failurePenalty: {
+      resourceLossRatio: 0.5
+    },
     rarity: 'rare',
     expGain: 60
   },
@@ -128,7 +198,17 @@ export const alchemyRecipes: AlchemyRecipe[] = [
     ],
     duration: 25,
     requiredLevel: 'foundation_2',
-    successRate: 0.7,
+    baseSuccessRate: 0.7,
+    qualityChances: {
+      celestial: 0.05,
+      perfect: 0.15,
+      high: 0.3,
+      normal: 0.4,
+      low: 0.1
+    },
+    failurePenalty: {
+      resourceLossRatio: 0.8
+    },
     rarity: 'rare',
     expGain: 80
   },
@@ -145,7 +225,17 @@ export const alchemyRecipes: AlchemyRecipe[] = [
     ],
     duration: 120,
     requiredLevel: 'nascent_soul_3',
-    successRate: 0.15,
+    baseSuccessRate: 0.15,
+    qualityChances: {
+      celestial: 0.15,
+      perfect: 0.25,
+      high: 0.3,
+      normal: 0.25,
+      low: 0.05
+    },
+    failurePenalty: {
+      resourceLossRatio: 0.7
+    },
     rarity: 'legendary',
     expGain: 1000
   },
@@ -161,7 +251,17 @@ export const alchemyRecipes: AlchemyRecipe[] = [
     ],
     duration: 30,
     requiredLevel: 'foundation_3',
-    successRate: 0.65,
+    baseSuccessRate: 0.65,
+    qualityChances: {
+      celestial: 0.08,
+      perfect: 0.2,
+      high: 0.32,
+      normal: 0.3,
+      low: 0.1
+    },
+    failurePenalty: {
+      resourceLossRatio: 0.6
+    },
     rarity: 'epic',
     expGain: 150
   }

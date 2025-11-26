@@ -38,8 +38,6 @@ export const InventoryPanel: React.FC<InventoryPanelProps> = ({ gameState }) => 
         return '⚔️';
       case 'accessory':
         return '💍';
-      case 'shoes':
-        return '👟';
       default:
         return '📦';
     }
@@ -113,6 +111,56 @@ export const InventoryPanel: React.FC<InventoryPanelProps> = ({ gameState }) => 
         </div>
       </div>
       
+      {/* 丹药列表 */}
+      <div style={{ marginBottom: '2rem' }}>
+        <h3 style={{ color: '#f5d76e', marginBottom: '1rem' }}>丹药</h3>
+        {gameState.resources.pills.length > 0 ? (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '1rem' }}>
+            {gameState.resources.pills.map((pill) => (
+              <div key={pill.id} className="pill-item">
+                <div style={{ display: 'flex', alignItems: 'center', marginBottom: '0.5rem' }}>
+                  <span style={{ fontSize: '1.5rem', marginRight: '0.5rem' }}>⚗️</span>
+                  <div>
+                    <div className="pill-name">{pill.name}</div>
+                    <div className="pill-quality">{pill.quality}</div>
+                  </div>
+                </div>
+                <div className="pill-effects">
+                  {pill.effect && Object.entries(pill.effect).map(([key, value]) => {
+                    const effectNames = {
+                      cultivationSpeed: '修炼速度',
+                      breakthroughChance: '突破概率',
+                      healthRegen: '生命值恢复',
+                      resourceGatheringSpeed: '资源采集速度',
+                      poisonResistance: '毒抗',
+                      qiRegen: '灵气恢复',
+                      alchemySuccessRate: '炼丹成功率',
+                      spiritSense: '灵识',
+                      damageResistance: '伤害减免',
+                      skillExpBoost: '技能经验加成',
+                      reputationBoost: '声望加成'
+                    };
+                    // 只显示有值的效果
+                    if (value && effectNames[key as keyof typeof effectNames]) {
+                      return (
+                        <div key={key} style={{ marginBottom: '0.25rem' }}>
+                          {effectNames[key as keyof typeof effectNames]} +{value}
+                        </div>
+                      );
+                    }
+                    return null;
+                  })}
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div style={{ color: '#94a3b8', textAlign: 'center', padding: '1rem' }}>
+            暂无丹药
+          </div>
+        )}
+      </div>
+
       {/* 资源面板 */}
       <div>
         <h3 style={{ color: '#f5d76e', marginBottom: '1rem' }}>资源储备</h3>
@@ -121,11 +169,6 @@ export const InventoryPanel: React.FC<InventoryPanelProps> = ({ gameState }) => 
             <div className="resource-icon">💰</div>
             <div className="resource-name">灵石</div>
             <div className="resource-value">{gameState.resources.gold}</div>
-          </div>
-          <div className="resource-item">
-            <div className="resource-icon">⚗️</div>
-            <div className="resource-name">丹药</div>
-            <div className="resource-value">{gameState.resources.pills}</div>
           </div>
           <div className="resource-item">
             <div className="resource-icon">🍎</div>
