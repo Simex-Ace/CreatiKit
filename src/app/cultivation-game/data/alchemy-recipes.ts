@@ -16,9 +16,9 @@ export const alchemyRecipes: AlchemyRecipe[] = [
     baseSuccessRate: 0.8,
     qualityChances: {
       celestial: 0.001,
-      perfect: 0.005,
-      high: 0.02,
-      normal: 0.3,
+      perfect: 0.006,
+      high: 0.026,
+      normal: 0.326,
       low: 1.0
     },
     failurePenalty: {
@@ -42,9 +42,9 @@ export const alchemyRecipes: AlchemyRecipe[] = [
     baseSuccessRate: 0.7,
     qualityChances: {
       celestial: 0.001,
-      perfect: 0.005,
-      high: 0.02,
-      normal: 0.3,
+      perfect: 0.006,
+      high: 0.026,
+      normal: 0.326,
       low: 1.0
     },
     failurePenalty: {
@@ -68,9 +68,9 @@ export const alchemyRecipes: AlchemyRecipe[] = [
     baseSuccessRate: 0.6,
     qualityChances: {
       celestial: 0.002,
-      perfect: 0.01,
-      high: 0.05,
-      normal: 0.4,
+      perfect: 0.012,
+      high: 0.062,
+      normal: 0.462,
       low: 1.0
     },
     failurePenalty: {
@@ -95,9 +95,9 @@ export const alchemyRecipes: AlchemyRecipe[] = [
     baseSuccessRate: 0.4,
     qualityChances: {
       celestial: 0.005,
-      perfect: 0.02,
-      high: 0.1,
-      normal: 0.5,
+      perfect: 0.025,
+      high: 0.125,
+      normal: 0.625,
       low: 1.0
     },
     failurePenalty: {
@@ -122,9 +122,9 @@ export const alchemyRecipes: AlchemyRecipe[] = [
     baseSuccessRate: 0.2,
     qualityChances: {
       celestial: 0.01,
-      perfect: 0.05,
-      high: 0.2,
-      normal: 0.6,
+      perfect: 0.06,
+      high: 0.26,
+      normal: 0.86,
       low: 1.0
     },
     failurePenalty: {
@@ -149,9 +149,9 @@ export const alchemyRecipes: AlchemyRecipe[] = [
     baseSuccessRate: 0.85,
     qualityChances: {
       celestial: 0.001,
-      perfect: 0.005,
-      high: 0.02,
-      normal: 0.3,
+      perfect: 0.006,
+      high: 0.026,
+      normal: 0.326,
       low: 1.0
     },
     failurePenalty: {
@@ -175,10 +175,10 @@ export const alchemyRecipes: AlchemyRecipe[] = [
     baseSuccessRate: 0.75,
     qualityChances: {
       celestial: 0.05,
-      perfect: 0.15,
-      high: 0.3,
-      normal: 0.4,
-      low: 0.1
+      perfect: 0.2,
+      high: 0.5,
+      normal: 0.9,
+      low: 1.0
     },
     failurePenalty: {
       resourceLossRatio: 0.5
@@ -201,10 +201,10 @@ export const alchemyRecipes: AlchemyRecipe[] = [
     baseSuccessRate: 0.7,
     qualityChances: {
       celestial: 0.05,
-      perfect: 0.15,
-      high: 0.3,
-      normal: 0.4,
-      low: 0.1
+      perfect: 0.2,
+      high: 0.5,
+      normal: 0.9,
+      low: 1.0
     },
     failurePenalty: {
       resourceLossRatio: 0.8
@@ -228,10 +228,10 @@ export const alchemyRecipes: AlchemyRecipe[] = [
     baseSuccessRate: 0.15,
     qualityChances: {
       celestial: 0.15,
-      perfect: 0.25,
-      high: 0.3,
-      normal: 0.25,
-      low: 0.05
+      perfect: 0.4,
+      high: 0.7,
+      normal: 0.95,
+      low: 1.0
     },
     failurePenalty: {
       resourceLossRatio: 0.7
@@ -254,10 +254,10 @@ export const alchemyRecipes: AlchemyRecipe[] = [
     baseSuccessRate: 0.65,
     qualityChances: {
       celestial: 0.08,
-      perfect: 0.2,
-      high: 0.32,
-      normal: 0.3,
-      low: 0.1
+      perfect: 0.28,
+      high: 0.6,
+      normal: 0.9,
+      low: 1.0
     },
     failurePenalty: {
       resourceLossRatio: 0.6
@@ -282,9 +282,9 @@ export const alchemyRecipes: AlchemyRecipe[] = [
     baseSuccessRate: 0.6,
     qualityChances: {
       celestial: 0.002,
-      perfect: 0.01,
-      high: 0.05,
-      normal: 0.4,
+      perfect: 0.012,
+      high: 0.062,
+      normal: 0.462,
       low: 1.0
     },
     failurePenalty: {
@@ -308,9 +308,9 @@ export const alchemyRecipes: AlchemyRecipe[] = [
     baseSuccessRate: 0.5,
     qualityChances: {
       celestial: 0.005,
-      perfect: 0.02,
-      high: 0.1,
-      normal: 0.5,
+      perfect: 0.025,
+      high: 0.125,
+      normal: 0.625,
       low: 1.0
     },
     failurePenalty: {
@@ -335,9 +335,9 @@ export const alchemyRecipes: AlchemyRecipe[] = [
     baseSuccessRate: 0.65,
     qualityChances: {
       celestial: 0.002,
-      perfect: 0.01,
-      high: 0.05,
-      normal: 0.4,
+      perfect: 0.012,
+      high: 0.062,
+      normal: 0.462,
       low: 1.0
     },
     failurePenalty: {
@@ -362,9 +362,9 @@ export const alchemyRecipes: AlchemyRecipe[] = [
     baseSuccessRate: 0.6,
     qualityChances: {
       celestial: 0.003,
-      perfect: 0.015,
-      high: 0.07,
-      normal: 0.45,
+      perfect: 0.018,
+      high: 0.088,
+      normal: 0.538,
       low: 1.0
     },
     failurePenalty: {
@@ -389,9 +389,9 @@ export const alchemyRecipes: AlchemyRecipe[] = [
     baseSuccessRate: 0.4,
     qualityChances: {
       celestial: 0.01,
-      perfect: 0.05,
-      high: 0.2,
-      normal: 0.6,
+      perfect: 0.06,
+      high: 0.26,
+      normal: 0.86,
       low: 1.0
     },
     failurePenalty: {
@@ -416,9 +416,9 @@ export const alchemyRecipes: AlchemyRecipe[] = [
     baseSuccessRate: 0.45,
     qualityChances: {
       celestial: 0.008,
-      perfect: 0.04,
-      high: 0.15,
-      normal: 0.55,
+      perfect: 0.048,
+      high: 0.198,
+      normal: 0.748,
       low: 1.0
     },
     failurePenalty: {
@@ -443,10 +443,10 @@ export const alchemyRecipes: AlchemyRecipe[] = [
     baseSuccessRate: 0.2,
     qualityChances: {
       celestial: 0.15,
-      perfect: 0.25,
-      high: 0.3,
-      normal: 0.25,
-      low: 0.05
+      perfect: 0.4,
+      high: 0.7,
+      normal: 0.95,
+      low: 1.0
     },
     failurePenalty: {
       resourceLossRatio: 0.9
@@ -470,9 +470,9 @@ export const alchemyRecipes: AlchemyRecipe[] = [
     baseSuccessRate: 0.55,
     qualityChances: {
       celestial: 0.005,
-      perfect: 0.02,
-      high: 0.1,
-      normal: 0.5,
+      perfect: 0.025,
+      high: 0.125,
+      normal: 0.625,
       low: 1.0
     },
     failurePenalty: {
@@ -497,9 +497,9 @@ export const alchemyRecipes: AlchemyRecipe[] = [
     baseSuccessRate: 0.5,
     qualityChances: {
       celestial: 0.008,
-      perfect: 0.03,
-      high: 0.15,
-      normal: 0.55,
+      perfect: 0.038,
+      high: 0.188,
+      normal: 0.738,
       low: 1.0
     },
     failurePenalty: {
@@ -524,9 +524,9 @@ export const alchemyRecipes: AlchemyRecipe[] = [
     baseSuccessRate: 0.6,
     qualityChances: {
       celestial: 0.005,
-      perfect: 0.02,
-      high: 0.1,
-      normal: 0.5,
+      perfect: 0.025,
+      high: 0.125,
+      normal: 0.625,
       low: 1.0
     },
     failurePenalty: {

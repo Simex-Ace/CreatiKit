@@ -1,13 +1,15 @@
 'use client'
 
 import React from 'react';
-import { GameState, Equipment } from '../types';
+import { GameState, Equipment, Pill } from '../types';
+import { getQualityName } from '../utils';
 
 interface InventoryPanelProps {
   gameState: GameState;
+  onAction: (action: string, params?: any) => void;
 }
 
-export const InventoryPanel: React.FC<InventoryPanelProps> = ({ gameState }) => {
+export const InventoryPanel: React.FC<InventoryPanelProps> = ({ gameState, onAction }) => {
   // 计算总属性加成
   const calculateTotalBonuses = () => {
     const bonuses = {
@@ -52,6 +54,34 @@ export const InventoryPanel: React.FC<InventoryPanelProps> = ({ gameState }) => 
     };
     
     return `${effectNames[effectName as keyof typeof effectNames]} +${value}${effectName === 'cultivationSpeed' || effectName === 'qiGatherRate' ? 'x' : ''}`;
+  };
+
+  // 获取丹药效果的简短描述
+  const getPillShortEffect = (pill: Pill) => {
+    if (!pill.effect) return '';
+    
+    const effectNames = {
+      cultivationSpeed: '修炼速度',
+      breakthroughChance: '突破概率',
+      healthRegen: '生命值恢复',
+      resourceGatheringSpeed: '资源采集速度',
+      poisonResistance: '毒抗',
+      qiRegen: '灵气恢复',
+      alchemySuccessRate: '炼丹成功率',
+      spiritSense: '灵识',
+      damageResistance: '伤害减免',
+      skillExpBoost: '技能经验加成',
+      reputationBoost: '声望加成'
+    };
+    
+    // 只返回第一个效果作为简短描述
+    const firstEffect = Object.entries(pill.effect).find(([key, value]) => value);
+    if (firstEffect) {
+      const [key, value] = firstEffect;
+      return `${effectNames[key as keyof typeof effectNames]} +${value}`;
+    }
+    
+    return '';
   };
 
   return (
@@ -115,41 +145,34 @@ export const InventoryPanel: React.FC<InventoryPanelProps> = ({ gameState }) => 
       <div style={{ marginBottom: '2rem' }}>
         <h3 style={{ color: '#f5d76e', marginBottom: '1rem' }}>丹药</h3>
         {gameState.resources.pills.length > 0 ? (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '1rem' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))', gap: '1rem' }}>
             {gameState.resources.pills.map((pill) => (
-              <div key={pill.id} className="pill-item">
-                <div style={{ display: 'flex', alignItems: 'center', marginBottom: '0.5rem' }}>
-                  <span style={{ fontSize: '1.5rem', marginRight: '0.5rem' }}>⚗️</span>
-                  <div>
-                    <div className="pill-name">{pill.name}</div>
-                    <div className="pill-quality">{pill.quality}</div>
+              <div key={pill.id} className="pill-item" style={{ cursor: 'pointer', transition: 'transform 0.2s' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '0.5rem', borderRadius: '8px', border: '1px solid #4a5568', backgroundColor: 'rgba(30, 41, 59, 0.8)' }}>
+                  <span style={{ fontSize: '1.8rem', marginBottom: '0.5rem' }}>⚗️</span>
+                  <div className="pill-name" style={{ fontWeight: 'bold', color: '#ffffff', textAlign: 'center', marginBottom: '0.25rem' }}>{pill.name}</div>
+                  <div className="pill-quality" style={{ fontSize: '0.8rem', color: '#94a3b8', marginBottom: '0.5rem' }}>{getQualityName(pill.quality)}</div>
+                  <div className="pill-effect" style={{ fontSize: '0.8rem', color: '#a5b4fc', textAlign: 'center', marginBottom: '0.5rem' }}>
+                    {getPillShortEffect(pill)}
                   </div>
-                </div>
-                <div className="pill-effects">
-                  {pill.effect && Object.entries(pill.effect).map(([key, value]) => {
-                    const effectNames = {
-                      cultivationSpeed: '修炼速度',
-                      breakthroughChance: '突破概率',
-                      healthRegen: '生命值恢复',
-                      resourceGatheringSpeed: '资源采集速度',
-                      poisonResistance: '毒抗',
-                      qiRegen: '灵气恢复',
-                      alchemySuccessRate: '炼丹成功率',
-                      spiritSense: '灵识',
-                      damageResistance: '伤害减免',
-                      skillExpBoost: '技能经验加成',
-                      reputationBoost: '声望加成'
-                    };
-                    // 只显示有值的效果
-                    if (value && effectNames[key as keyof typeof effectNames]) {
-                      return (
-                        <div key={key} style={{ marginBottom: '0.25rem' }}>
-                          {effectNames[key as keyof typeof effectNames]} +{value}
-                        </div>
-                      );
-                    }
-                    return null;
-                  })}
+                  <button 
+                    onClick={() => onAction('usePill', { pillId: pill.id })} 
+                    style={{ 
+                      width: '100%', 
+                      padding: '0.25rem 0.5rem', 
+                      fontSize: '0.8rem', 
+                      backgroundColor: '#6d28d9', 
+                      color: 'white', 
+                      border: 'none', 
+                      borderRadius: '4px', 
+                      cursor: 'pointer',
+                      transition: 'background-color 0.2s'
+                    }}
+                    onMouseOver={(e) => (e.currentTarget.style.backgroundColor = '#7c3aed')}
+                    onMouseOut={(e) => (e.currentTarget.style.backgroundColor = '#6d28d9')}
+                  >
+                    使用
+                  </button>
                 </div>
               </div>
             ))}
@@ -168,7 +191,7 @@ export const InventoryPanel: React.FC<InventoryPanelProps> = ({ gameState }) => 
           <div className="resource-item">
             <div className="resource-icon">💰</div>
             <div className="resource-name">灵石</div>
-            <div className="resource-value">{gameState.resources.gold}</div>
+            <div className="resource-value">{gameState.resources.spiritStone}</div>
           </div>
           <div className="resource-item">
             <div className="resource-icon">🍎</div>

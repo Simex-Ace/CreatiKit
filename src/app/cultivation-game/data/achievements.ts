@@ -62,7 +62,7 @@ export const achievements: Achievement[] = [
     description: '拥有10000灵石',
     requirements: {
       resources: {
-        gold: 10000
+        spiritStone: 10000
       }
     },
     reward: {

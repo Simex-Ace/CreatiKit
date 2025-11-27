@@ -246,7 +246,7 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({ gameState, onAction })
               <button 
                 className="btn btn-buy"
                 onClick={() => handleAction('buyItem', { type: 'pills', quantity: 1 })}
-                disabled={gameState.resources.gold < 20}
+                disabled={gameState.resources.spiritStone < 20}
               >
                 购买
               </button>
@@ -268,7 +268,7 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({ gameState, onAction })
               <button 
                 className="btn btn-buy"
                 onClick={() => handleAction('buyItem', { type: 'spiritFruit', quantity: 1 })}
-                disabled={gameState.resources.gold < 50}
+                disabled={gameState.resources.spiritStone < 50}
               >
                 购买
               </button>
@@ -285,7 +285,7 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({ gameState, onAction })
           <div className="item-card gold-card">
             <div className="item-icon">💰</div>
             <div className="item-name">当前灵石</div>
-            <div className="item-price">{gameState.resources.gold}</div>
+            <div className="item-price">{gameState.resources.spiritStone}</div>
           </div>
         </div>
       </div>

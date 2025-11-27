@@ -103,7 +103,7 @@ export const quests: Quest[] = [
     difficulty: 'normal',
     requirements: {
       resources: {
-        gold: 1000,
+        spiritStone: 1000,
         materials: 100
       }
     },

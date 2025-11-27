@@ -1,4 +1,7 @@
-import { GameState, Resources, Skill, Equipment, OfflineRewards, Quest, GameEvent, Event, Achievement, Monster, BattleResult, CultivationLevel, Pet, Sect, SectTask, PillQuality, Pill, AlchemyRecipe, ExplorationArea, ExplorationRewards } from './types';
+import { GameState, Resources, Skill, Equipment, OfflineRewards, Quest, GameEvent, Event, Achievement, Monster, BattleResult, CultivationLevel, Pet, Sect, SectTask, PillQuality, Pill, AlchemyRecipe, ExplorationArea, ExplorationRewards, Formation, Farmland, Crop, Talisman, TalismanRecipe, TalismanState } from './types';
+import { formations } from './data/formations';
+import { farmlands } from './data/farmlands';
+import { crops } from './data/crops';
 import { monsters as initialMonsters } from './data/monsters';
 import { forgeBlueprints as initialForgeBlueprints } from './data/forge-blueprints';
 import { explorationAreas as initialExplorationAreas } from './data/exploration-areas';
@@ -19,6 +22,7 @@ import { achievements as initialAchievements } from './data/achievements';
 import { alchemyRecipes as initialRecipes } from './data/alchemy-recipes';
 import { petData } from './data/pets';
 import { sects } from './data/sects';
+import { talismans as initialTalismans, talismanRecipes as initialTalismanRecipes } from './data/talismans';
 
 // 创建新的游戏状态
 export function createNewGame(playerName: string = '修真者'): GameState {
@@ -44,18 +48,18 @@ export function createNewGame(playerName: string = '修真者'): GameState {
     },
     resources: {
       qi: 0,
-      gold: 100,
+      spiritStone: 110, // 合并了原来的gold和spiritStone
       pills: [],
       items: [],
       materials: 20,
       spiritFruit: 2,
       spiritGrass: 10,
       spiritWater: 5,
-      spiritStone: 10,
       spiritCrystal: 2,
       heavenlyHerb: 0,
       immortalFruit: 0,
-      divineEssence: 0
+      divineEssence: 0,
+      spiritPaper: 50
     },
     skills: initialSkills,
     equipment: [
@@ -151,7 +155,46 @@ export function createNewGame(playerName: string = '修真者'): GameState {
     // 战斗统计
     totalBattlesWon: 0,
     totalBattlesLost: 0,
-    lastSave: Date.now()
+    lastSave: Date.now(),
+    // 阵法系统初始状态
+    formations: formations,
+    activeFormation: undefined,
+    // 灵田种植系统初始状态
+    farmlands: farmlands,
+    crops: crops,
+    unlockedCrops: ['crop_spirit_grass'],
+    farmlandLevel: 1,
+    maxFarmlands: 4,
+    fertilizer: 50,
+    waterStorage: 100,
+    maxWaterStorage: 200,
+    farmingSkillLevel: 1,
+    farmingSkillExp: 0,
+    maxFarmingSkillExp: 100,
+    // 每日签到系统初始状态
+    dailyCheckIn: {
+      lastCheckInDate: 0,
+      consecutiveDays: 0,
+      totalCheckIns: 0,
+      canCheckIn: true
+    },
+    // 符箓系统初始状态
+    talisman: {
+      recipes: initialTalismanRecipes.filter(recipe => recipe.requiredLevel === 'qi_refining_1'), // 初始解锁基础配方
+      progress: 0,
+      isCrafting: false,
+      currentTalisman: undefined,
+      lastCraftTime: Date.now(),
+      successCount: 0,
+      failedCount: 0,
+      skillLevel: 1,
+      skillExp: 0,
+      maxSkillExp: 100,
+      activeTalismans: [],
+      knownTalismans: [],
+      maxConcurrentTalismans: 3,
+      inventory: []
+    }
   };
 }
 
@@ -215,6 +258,36 @@ export class CultivationGame {
     } else if (!this.gameState.alchemy.activePills) {
       this.gameState.alchemy.activePills = [];
     }
+    // 确保每日签到系统存在
+    if (!this.gameState.dailyCheckIn) {
+      this.gameState.dailyCheckIn = {
+        lastCheckInDate: 0,
+        consecutiveDays: 0,
+        totalCheckIns: 0,
+        canCheckIn: true
+      };
+    }
+    // 确保符箓系统存在
+    if (!this.gameState.talisman) {
+      this.gameState.talisman = {
+        recipes: initialTalismanRecipes.filter(recipe => recipe.requiredLevel === 'qi_refining_1'),
+        progress: 0,
+        isCrafting: false,
+        currentTalisman: undefined,
+        lastCraftTime: Date.now(),
+        successCount: 0,
+        failedCount: 0,
+        skillLevel: 1,
+        skillExp: 0,
+        maxSkillExp: 100,
+        activeTalismans: [],
+        knownTalismans: [],
+        maxConcurrentTalismans: 3,
+        inventory: []
+      };
+    }
+    // 检查是否可以签到（基于日期）
+    this.checkDailyCheckInStatus();
     // 如果有离线时间，计算离线收益
     this.processOfflineRewards();
   }
@@ -380,7 +453,7 @@ export class CultivationGame {
       }
       
       // 应用其他资源奖励
-      if (rewards.gold) this.gameState.resources.gold += rewards.gold;
+      if (rewards.spiritStone) this.gameState.resources.spiritStone += rewards.spiritStone;
       if (rewards.pills) {
         // 处理数字类型的丹药奖励（如成就奖励）
         for (let i = 0; i < rewards.pills; i++) {
@@ -456,11 +529,17 @@ export class CultivationGame {
     
     // 自动获得灵石（每10秒获得1点）
     if (Math.random() < 0.1) { // 10%概率每秒获得1点灵石
-      this.gameState.resources.gold += 1;
+      this.gameState.resources.spiritStone += 1;
     }
     
     // 检查任务完成情况
     this.checkAllQuests();
+    
+    // 更新符箓制作进度
+    this.updateTalismanCrafting();
+    
+    // 更新激活的符箓效果
+    this.updateActiveTalismans();
     
     this.gameState.lastUpdateTime = currentTime;
     this.notifyEvent('game_updated', { state: this.getState() });
@@ -503,8 +582,8 @@ export class CultivationGame {
       this.notifyEvent('info', { message: '经验已满，可以尝试突破境界' });
     }
     
-    // 有20%几率触发随机事件
-    if (!auto && Math.random() < 0.2) {
+    // 有30%几率触发随机事件
+    if (!auto && Math.random() < 0.3) {
       this.triggerRandomEvent('cultivate');
     }
     
@@ -620,8 +699,8 @@ export class CultivationGame {
       this.gameState.autoGatheringCount = (this.gameState.autoGatheringCount || 0) + 1;
     }
     
-    // 有20%几率触发随机事件
-    if (!auto && Math.random() < 0.2) {
+    // 有30%几率触发随机事件
+    if (!auto && Math.random() < 0.3) {
       this.triggerRandomEvent('gatherQi');
     }
     
@@ -632,7 +711,7 @@ export class CultivationGame {
   }
 
   // 使用丹药
-  usePill(): boolean {
+  usePill(pillId?: string): boolean {
     if (!this.gameState.resources || !this.gameState.cultivation) {
       this.notifyEvent('error', { message: '游戏状态未初始化' });
       return false;
@@ -642,10 +721,23 @@ export class CultivationGame {
       return false;
     }
     
-    // 取出第一颗丹药
-    const pill = this.gameState.resources.pills.shift();
-    if (!pill) {
-      return false;
+    let pillIndex: number;
+    let pill;
+    
+    if (pillId) {
+      // 根据pillId找到特定的丹药
+      pillIndex = this.gameState.resources.pills.findIndex(p => p.id === pillId);
+      if (pillIndex === -1) {
+        this.notifyEvent('error', { message: '找不到指定的丹药' });
+        return false;
+      }
+      pill = this.gameState.resources.pills.splice(pillIndex, 1)[0];
+    } else {
+      // 默认取出第一颗丹药
+      pill = this.gameState.resources.pills.shift();
+      if (!pill) {
+        return false;
+      }
     }
     
     // 应用丹药效果
@@ -726,13 +818,13 @@ export class CultivationGame {
     }
     
     const upgradeCost = 100 * skill.level;
-    if (this.gameState.resources.gold < upgradeCost) {
+    if (this.gameState.resources.spiritStone < upgradeCost) {
       this.notifyEvent('error', { message: '灵石不足' });
       return false;
     }
     
     // 扣除费用并升级技能
-    this.gameState.resources.gold -= upgradeCost;
+    this.gameState.resources.spiritStone -= upgradeCost;
     skill.level++;
     
     // 根据技能类型增加效果
@@ -885,7 +977,7 @@ export class CultivationGame {
       
       // 应用奖励
       this.gameState.cultivation.exp += expGained;
-      this.gameState.resources.gold += goldGained;
+      this.gameState.resources.spiritStone += goldGained;
       this.gameState.totalBattlesWon++;
       
       // 添加战斗胜利日志
@@ -1220,7 +1312,7 @@ export class CultivationGame {
     }
     
     const totalIncome = sellPrices[resourceType] * quantity;
-    this.gameState.resources.gold += totalIncome;
+    this.gameState.resources.spiritStone += totalIncome;
     
     this.notifyEvent('resource_sold', { resourceType, quantity, totalIncome });
     return true;
@@ -1237,12 +1329,12 @@ export class CultivationGame {
     };
     
     const totalCost = prices[itemType] * quantity;
-    if (this.gameState.resources.gold < totalCost) {
+    if (this.gameState.resources.spiritStone < totalCost) {
       this.notifyEvent('error', { message: '灵石不足' });
       return false;
     }
     
-    this.gameState.resources.gold -= totalCost;
+    this.gameState.resources.spiritStone -= totalCost;
     
     if (itemType === 'pills') {
       // 对于丹药，创建相应数量的基础丹药
@@ -1550,14 +1642,9 @@ export class CultivationGame {
   
   // 触发随机事件
   private triggerRandomEvent(actionType?: string): void {
-    // 过滤出符合触发条件的事件
-    const availableEvents = initialEvents.filter(event => this.checkEventTrigger(event, actionType));
-    
-    if (availableEvents.length === 0) return;
-    
-    // 随机选择一个事件
-    const randomIndex = Math.floor(Math.random() * availableEvents.length);
-    this.currentEvent = availableEvents[randomIndex];
+    // 从所有事件中随机选择一个事件
+    const randomIndex = Math.floor(Math.random() * initialEvents.length);
+    this.currentEvent = initialEvents[randomIndex];
     
     // 更新事件统计
     this.gameState.totalEventsEncountered = (this.gameState.totalEventsEncountered || 0) + 1;
@@ -2024,9 +2111,19 @@ export class CultivationGame {
         );
       }
       
-      // 应用持续效果
+      // 应用即时效果：将修炼速度加成转换为直接经验值
       if (pill.effect.cultivationSpeed) {
-        this.gameState.cultivation.cultivationSpeedBonus += pill.effect.cultivationSpeed;
+        // 转换比例：将修炼速度加成（百分比）转换为经验值
+        const expGain = Math.floor(pill.effect.cultivationSpeed * 1000); // 假设1%的修炼速度加成对应1000点经验值
+        
+        // 确保不超过最大经验值
+        this.gameState.cultivation.exp = Math.min(
+          this.gameState.cultivation.exp + expGain,
+          this.gameState.cultivation.maxExp
+        );
+        
+        // 发送通知
+        this.notifyEvent('pill_used', { pill, expGain });
       }
       
       if (pill.effect.breakthroughChance) {
@@ -2073,10 +2170,7 @@ export class CultivationGame {
       for (const expiredPill of expiredPills) {
         const { pill } = expiredPill;
         
-        // 移除持续效果加成
-        if (pill.effect.cultivationSpeed) {
-          this.gameState.cultivation.cultivationSpeedBonus -= pill.effect.cultivationSpeed;
-        }
+        // 移除持续效果加成 (cultivationSpeed不再是持续效果，已改为即时经验)
         
         if (pill.effect.breakthroughChance) {
           this.gameState.cultivation.breakthroughChanceBonus -= pill.effect.breakthroughChance;
@@ -2499,13 +2593,283 @@ export class CultivationGame {
     // 取消探险功能已在1920行定义，此处不再重复定义
 
     // 生成探险奖励
+
+    // 符箓系统相关方法
+    
+    // 开始制作符箓
+    startCraftTalisman(recipeId: string): boolean {
+      if (!this.gameState.talisman) {
+        this.notifyEvent('error', { message: '符箓系统未初始化' });
+        return false;
+      }
+      
+      // 检查是否已经在制作符箓
+      if (this.gameState.talisman.isCrafting) {
+        this.notifyEvent('error', { message: '正在制作符箓中，无法同时制作多个符箓' });
+        return false;
+      }
+      
+      const recipe = this.gameState.talisman.recipes.find(r => r.id === recipeId);
+      if (!recipe) {
+        this.notifyEvent('error', { message: '未知的符箓配方' });
+        return false;
+      }
+      
+      // 检查修真境界是否达到要求
+      const meetsLevel = this.meetsLevelRequirement(recipe.requiredLevel);
+      if (!meetsLevel) {
+        this.notifyEvent('error', { message: '修真境界不足，无法制作此符箓' });
+        return false;
+      }
+      
+      // 检查材料是否足够
+      for (const ingredient of recipe.ingredients) {
+        const materialId = ingredient.id as keyof Resources;
+        if (materialId === 'pills') {
+          // 检查丹药数量是否足够
+          if (this.gameState.resources.pills.length < ingredient.quantity) {
+            this.notifyEvent('error', { message: `丹药数量不足: ${ingredient.quantity}` });
+            return false;
+          }
+        } else {
+          // 检查其他资源是否足够
+          const resourceAmount = this.gameState.resources[materialId] as number;
+          if (resourceAmount < ingredient.quantity) {
+            this.notifyEvent('error', { message: `材料不足: ${ingredient.id}` });
+            return false;
+          }
+        }
+      }
+      
+      // 扣除材料
+      for (const ingredient of recipe.ingredients) {
+        const materialId = ingredient.id as keyof Resources;
+        if (materialId === 'pills') {
+          // 扣除丹药（从数组末尾开始移除）
+          this.gameState.resources.pills.splice(-ingredient.quantity, ingredient.quantity);
+        } else {
+          // 扣除其他资源
+          (this.gameState.resources[materialId] as number) -= ingredient.quantity;
+        }
+      }
+      
+      // 开始制作符箓
+      const now = Date.now();
+      this.gameState.talisman.isCrafting = true;
+      this.gameState.talisman.currentTalisman = recipe.talismanId;
+      this.gameState.talisman.progress = 0;
+      this.gameState.talisman.startTime = now;
+      this.gameState.talisman.lastCraftTime = now;
+      
+      this.notifyEvent('talisman_craft_started', { recipe });
+      return true;
+    }
+    
+    // 更新符箓制作进度
+    private updateTalismanCrafting() {
+      if (!this.gameState.talisman || !this.gameState.talisman.isCrafting || !this.gameState.talisman.startTime) {
+        return;
+      }
+      
+      const now = Date.now();
+      const recipe = this.gameState.talisman.recipes.find(r => r.talismanId === this.gameState.talisman?.currentTalisman);
+      
+      if (!recipe) {
+        this.resetTalismanState();
+        return;
+      }
+      
+      const elapsed = now - this.gameState.talisman.startTime;
+      const duration = recipe.duration * 1000;
+      
+      if (elapsed >= duration) {
+        this.completeTalismanCrafting();
+      } else {
+        const progress = Math.min((elapsed / duration) * 100, 100);
+        this.gameState.talisman.progress = progress;
+      }
+    }
+    
+    // 完成符箓制作
+    private completeTalismanCrafting() {
+      if (!this.gameState.talisman || !this.gameState.talisman.isCrafting || !this.gameState.talisman.currentTalisman) {
+        return;
+      }
+      
+      const talismanId = this.gameState.talisman.currentTalisman;
+      const recipe = this.gameState.talisman.recipes.find(r => r.talismanId === talismanId);
+      
+      if (!recipe) {
+        this.resetTalismanState();
+        return;
+      }
+      
+      // 计算是否成功
+      const isSuccess = Math.random() < recipe.baseSuccessRate;
+      
+      if (isSuccess) {
+        // 制作成功，添加符箓到背包
+        const talisman = initialTalismans.find(t => t.id === talismanId);
+        if (talisman) {
+          this.gameState.talisman.inventory.push(talisman);
+          this.gameState.talisman.successCount++;
+          this.gameState.talisman.skillExp += recipe.expGain;
+          
+          // 检查技能升级
+          if (this.gameState.talisman.skillExp >= this.gameState.talisman.maxSkillExp) {
+            this.gameState.talisman.skillLevel++;
+            this.gameState.talisman.skillExp -= this.gameState.talisman.maxSkillExp;
+            this.gameState.talisman.maxSkillExp = Math.floor(this.gameState.talisman.maxSkillExp * 1.5);
+            this.notifyEvent('talisman_skill_level_up', { newLevel: this.gameState.talisman.skillLevel });
+          }
+          
+          this.notifyEvent('talisman_craft_success', { 
+            talisman, 
+            expGained: recipe.expGain 
+          });
+        }
+      } else {
+        // 制作失败
+        this.gameState.talisman.failedCount++;
+        this.notifyEvent('talisman_craft_failure', { talismanId });
+      }
+      
+      this.resetTalismanState();
+    }
+    
+    // 重置符箓制作状态
+    private resetTalismanState() {
+      if (!this.gameState.talisman) return;
+      
+      this.gameState.talisman.isCrafting = false;
+      this.gameState.talisman.currentTalisman = undefined;
+      this.gameState.talisman.progress = 0;
+      this.gameState.talisman.startTime = undefined;
+    }
+    
+    // 使用符箓
+    useTalisman(talismanId: string): boolean {
+      if (!this.gameState.talisman) {
+        this.notifyEvent('error', { message: '符箓系统未初始化' });
+        return false;
+      }
+      
+      // 查找符箓在背包中的索引
+      const talismanIndex = this.gameState.talisman.inventory.findIndex(t => t.id === talismanId);
+      if (talismanIndex === -1) {
+        this.notifyEvent('error', { message: '符箓不存在' });
+        return false;
+      }
+      
+      const talisman = this.gameState.talisman.inventory[talismanIndex];
+      
+      // 检查是否已经达到最大同时使用数量
+      if (this.gameState.talisman.activeTalismans.length >= this.gameState.talisman.maxConcurrentTalismans) {
+        this.notifyEvent('error', { message: '已达到最大同时使用符箓数量' });
+        return false;
+      }
+      
+      // 从背包中移除符箓
+      this.gameState.talisman.inventory.splice(talismanIndex, 1);
+      
+      // 添加到激活符箓列表
+      this.gameState.talisman.activeTalismans.push({
+        talisman,
+        startTime: Date.now()
+      });
+      
+      this.notifyEvent('talisman_used', { talisman });
+      return true;
+    }
+    
+    // 更新激活的符箓效果
+    private updateActiveTalismans() {
+      if (!this.gameState.talisman) return;
+      
+      const now = Date.now();
+      const expiredTalismans: number[] = [];
+      
+      // 检查并移除过期的符箓效果
+      this.gameState.talisman.activeTalismans.forEach((activeTalisman, index) => {
+        const elapsed = now - activeTalisman.startTime;
+        if (elapsed >= activeTalisman.talisman.duration * 1000) {
+          expiredTalismans.push(index);
+        }
+      });
+      
+      // 从后往前移除，避免索引错乱
+      for (let i = expiredTalismans.length - 1; i >= 0; i--) {
+        const index = expiredTalismans[i];
+        const expiredTalisman = this.gameState.talisman!.activeTalismans[index];
+        this.gameState.talisman!.activeTalismans.splice(index, 1);
+        this.notifyEvent('talisman_expired', { talisman: expiredTalisman.talisman });
+      }
+    }
+    
+    // 解锁符箓配方
+    unlockTalismanRecipe(recipeId: string): boolean {
+      if (!this.gameState.talisman) {
+        this.notifyEvent('error', { message: '符箓系统未初始化' });
+        return false;
+      }
+      
+      const recipe = initialTalismanRecipes.find(r => r.id === recipeId);
+      if (!recipe) {
+        this.notifyEvent('error', { message: '符箓配方不存在' });
+        return false;
+      }
+      
+      // 检查是否已经解锁
+      const alreadyUnlocked = this.gameState.talisman.recipes.some(r => r.id === recipeId);
+      if (alreadyUnlocked) {
+        this.notifyEvent('error', { message: '该符箓配方已经解锁' });
+        return false;
+      }
+      
+      // 检查境界是否达到要求
+      if (this.gameState.cultivation.level < recipe.requiredLevel) {
+        this.notifyEvent('error', { message: '境界不足，无法解锁该配方' });
+        return false;
+      }
+      
+      // 解锁配方
+      this.gameState.talisman.recipes.push(recipe);
+      this.notifyEvent('talisman_recipe_unlocked', { recipe });
+      return true;
+    }
+    
+    // 出售符箓
+    sellTalisman(talismanId: string): boolean {
+      if (!this.gameState.talisman) {
+        this.notifyEvent('error', { message: '符箓系统未初始化' });
+        return false;
+      }
+      
+      // 查找符箓在背包中的索引
+      const talismanIndex = this.gameState.talisman.inventory.findIndex(t => t.id === talismanId);
+      if (talismanIndex === -1) {
+        this.notifyEvent('error', { message: '符箓不存在' });
+        return false;
+      }
+      
+      const talisman = this.gameState.talisman.inventory[talismanIndex];
+      
+      // 从背包中移除符箓
+      this.gameState.talisman.inventory.splice(talismanIndex, 1);
+      
+      // 添加灵石
+      this.gameState.resources.spiritStone += talisman.value;
+      
+      this.notifyEvent('talisman_sold', { talisman, goldGained: talisman.value });
+      return true;
+    }
     private generateExplorationRewards(area: ExplorationArea, difficulty: string): ExplorationRewards {
       const baseRewards = area.rewards;
       // 从正确的位置获取基础奖励值
       const baseExp = baseRewards.exp || 0;
       // 从resources中获取金币和灵气的随机值
-      const baseGold = baseRewards.resources?.gold ? 
-        Math.floor(Math.random() * (baseRewards.resources.gold.max - baseRewards.resources.gold.min + 1)) + baseRewards.resources.gold.min : 0;
+      const baseSpiritStone = baseRewards.resources?.spiritStone ? 
+        Math.floor(Math.random() * (baseRewards.resources.spiritStone.max - baseRewards.resources.spiritStone.min + 1)) + baseRewards.resources.spiritStone.min : 0;
       const baseQi = baseRewards.resources?.qi ? 
         Math.floor(Math.random() * (baseRewards.resources.qi.max - baseRewards.resources.qi.min + 1)) + baseRewards.resources.qi.min : 0;
       
@@ -2514,16 +2878,16 @@ export class CultivationGame {
         exp: 0,
         reputation: 0,
         resources: {
-          gold: 0,
           qi: 0,
+          spiritStone: 0,
           pills: [],
           items: [],
           materials: 0,
           spiritFruit: 0,
           spiritGrass: 0,
           spiritWater: 0,
-          spiritStone: 0,
           spiritCrystal: 0,
+          spiritPaper: 0,
           heavenlyHerb: 0,
           immortalFruit: 0,
           divineEssence: 0
@@ -2546,7 +2910,7 @@ export class CultivationGame {
       // 计算并设置奖励值，应用技能等级和难度加成
       rewards.exp = Math.floor(baseExp * (1 + this.gameState.exploration.skillLevel * 0.1) * difficultyMultiplier);
       if (rewards.resources) {
-        rewards.resources.gold = Math.floor(baseGold * (1 + this.gameState.exploration.skillLevel * 0.1) * difficultyMultiplier);
+        rewards.resources.spiritStone = Math.floor(baseSpiritStone * (1 + this.gameState.exploration.skillLevel * 0.1) * difficultyMultiplier);
         rewards.resources.qi = Math.floor(baseQi * (1 + this.gameState.exploration.skillLevel * 0.1) * difficultyMultiplier);
       }
 
@@ -2604,7 +2968,7 @@ export class CultivationGame {
       
       // 处理资源奖励
       if (rewards.resources) {
-        this.gameState.resources.gold += rewards.resources.gold;
+        this.gameState.resources.spiritStone += rewards.resources.spiritStone;
         this.gameState.resources.qi += rewards.resources.qi;
         
         // 处理物品和丹药奖励
@@ -2830,5 +3194,105 @@ export class CultivationGame {
       if (this.eventCallback) {
         this.eventCallback(eventType, data);
       }
+    }
+    
+    // 每日签到相关方法
+    
+    // 检查每日签到状态
+    private checkDailyCheckInStatus(): void {
+      const currentDate = this.getDateKey();
+      const lastCheckInDate = this.gameState.dailyCheckIn.lastCheckInDate;
+      
+      // 如果今天还没有签到，则可以签到
+      this.gameState.dailyCheckIn.canCheckIn = currentDate !== lastCheckInDate;
+    }
+    
+    // 获取当前日期的唯一键（用于判断是否为同一天）
+    private getDateKey(): number {
+      const now = new Date();
+      return now.getFullYear() * 10000 + (now.getMonth() + 1) * 100 + now.getDate();
+    }
+    
+    // 执行每日签到
+    dailyCheckIn(): boolean {
+      if (!this.gameState.dailyCheckIn.canCheckIn) {
+        this.notifyEvent('error', { message: '今天已经签到过了' });
+        return false;
+      }
+      
+      const currentDate = this.getDateKey();
+      const lastCheckInDate = this.gameState.dailyCheckIn.lastCheckInDate;
+      
+      // 检查是否连续签到
+      let consecutiveDays = this.gameState.dailyCheckIn.consecutiveDays;
+      if (currentDate === lastCheckInDate + 1) {
+        // 连续签到
+        consecutiveDays++;
+      } else if (currentDate !== lastCheckInDate) {
+        // 断签，重置连续天数
+        consecutiveDays = 1;
+      }
+      
+      // 更新签到状态
+      this.gameState.dailyCheckIn.lastCheckInDate = currentDate;
+      this.gameState.dailyCheckIn.consecutiveDays = consecutiveDays;
+      this.gameState.dailyCheckIn.totalCheckIns++;
+      this.gameState.dailyCheckIn.canCheckIn = false;
+      
+      // 发放签到奖励
+      this.giveCheckInReward(consecutiveDays);
+      
+      this.notifyEvent('daily_check_in', { 
+        consecutiveDays, 
+        totalCheckIns: this.gameState.dailyCheckIn.totalCheckIns 
+      });
+      return true;
+    }
+    
+    // 发放签到奖励
+    private giveCheckInReward(consecutiveDays: number): void {
+      // 基础奖励
+      let goldReward = 100;
+      let pillsReward = 2;
+      let expReward = 50;
+      
+      // 根据连续签到天数增加奖励
+      if (consecutiveDays >= 7) {
+        goldReward = 500;
+        pillsReward = 10;
+        expReward = 200;
+      } else if (consecutiveDays >= 3) {
+        goldReward = 300;
+        pillsReward = 5;
+        expReward = 100;
+      }
+      
+      // 应用奖励
+      this.gameState.resources.spiritStone += goldReward;
+      this.gameState.cultivation.exp += expReward;
+      
+      // 添加丹药奖励
+      for (let i = 0; i < pillsReward; i++) {
+        this.gameState.resources.pills.push({
+          id: `pill_basic_${Date.now()}_${i}`,
+          name: '聚气丹',
+          description: '帮助修炼者凝聚灵气的基础丹药',
+          type: '聚气丹',
+          quality: 'normal',
+          effect: { cultivationSpeed: 1.2 },
+          duration: 300,
+          stackable: true,
+          maxStacks: 99,
+          rarity: 'common',
+          value: 10
+        });
+      }
+      
+      this.notifyEvent('check_in_reward', { 
+        gold: goldReward, 
+        pills: pillsReward, 
+        exp: expReward,
+        consecutiveDays 
+      });
     }
   }

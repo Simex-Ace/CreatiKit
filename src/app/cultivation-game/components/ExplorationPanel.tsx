@@ -126,47 +126,44 @@ const ExplorationPanel: React.FC<ExplorationPanelProps> = ({ gameState, onStartE
                   <p className="italic mt-1">{history.eventText}</p>
                 )}
                 <div className="mt-1 text-xs">
-                  获得: {history.rewards ? Object.entries(history.rewards).map(([resource, amount]) => {
-                    // 处理数组类型的奖励（equipment、pills）
-                    if (Array.isArray(amount)) {
-                      // 跳过空数组
-                      if (amount.length === 0) {
-                        return null;
-                      }
-                       
-                      // 统计每种物品/丹药的数量
-                      const itemCounts: Record<string, number> = {};
-                      amount.forEach(itemId => {
-                        itemCounts[itemId] = (itemCounts[itemId] || 0) + 1;
-                      });
-                       
-                      // 获取中文名称
-                      const resourceType = resource === 'equipment' ? '装备' : resource === 'pills' ? '丹药' : '其他';
+                  获得: {history.rewards ? (
+                    <>
+                      {/* 处理经验和声望 */}
+                      {history.rewards.exp && (
+                        <span className="inline-block mr-2">经验: +{history.rewards.exp}</span>
+                      )}
+                      {history.rewards.reputation && (
+                        <span className="inline-block mr-2">声望: +{history.rewards.reputation}</span>
+                      )}
                       
-                      // 显示每种物品/丹药的数量
-                      return Object.entries(itemCounts).map(([itemId, count]) => {
+                      {/* 处理资源奖励 */}
+                      {history.rewards.resources && Object.entries(history.rewards.resources).map(([resourceName, amount]) => {
                         // 使用现有的getMaterialName函数获取中文名称
-                        const itemName = getMaterialName(itemId) || itemId;
+                        const chineseName = getMaterialName(resourceName);
+                        
+                        // 跳过对象类型的资源（如pills数组）
+                        if (typeof amount === 'object' && amount !== null) {
+                          return null;
+                        }
+                        
                         return (
-                          <span key={itemId} className="inline-block mr-2">
-                            {itemName}: +{count}
+                          <span key={resourceName} className="inline-block mr-2">
+                            {chineseName}: +{amount}
                           </span>
                         );
-                      });
-                    }
-                    
-                    // 使用现有的getMaterialName函数获取中文名称
-                    const chineseName = resource === 'gold' ? '金币' : 
-                                      resource === 'qi' ? '灵气' :
-                                      resource === 'exp' ? '经验' :
-                                      resource === 'reputation' ? '声望' :
-                                      getMaterialName(resource);
-                    return (
-                      <span key={resource} className="inline-block mr-2">
-                        {chineseName}: +{amount}
-                      </span>
-                    );
-                  }).filter(Boolean) : null}
+                      }).filter(Boolean)}
+                      
+                      {/* 处理丹药奖励 */}
+                      {history.rewards.pills && history.rewards.pills.length > 0 && (
+                        <span className="inline-block mr-2">丹药: +{history.rewards.pills.length}</span>
+                      )}
+                      
+                      {/* 处理装备奖励 */}
+                      {history.rewards.equipment && history.rewards.equipment.length > 0 && (
+                        <span className="inline-block mr-2">装备: +{history.rewards.equipment.length}</span>
+                      )}
+                    </>
+                  ) : null}
                 </div>
               </div>
             ))}

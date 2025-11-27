@@ -43,18 +43,104 @@ export type CultivationLevel =
 // 资源类型
 export interface Resources {
   qi: number; // 灵气
-  gold: number; // 灵石
+  spiritStone: number; // 灵石
   pills: Pill[]; // 丹药列表
   materials: number; // 基础材料
   spiritFruit: number; // 灵果
   spiritGrass: number; // 灵草
   spiritWater: number; // 灵水
-  spiritStone: number; // 灵石
   spiritCrystal: number; // 灵晶
   heavenlyHerb: number; // 天材地宝
   immortalFruit: number; // 仙果
   divineEssence: number; // 神髓
+  spiritPaper: number; // 符纸
   items: any[]; // 物品列表
+}
+
+// 阵法类型
+export type FormationType = 'cultivation' | 'defense' | 'attack' | 'forge' | 'alchemy';
+
+// 阵法接口
+export interface Formation {
+  id: string;
+  name: string;
+  description: string;
+  type: FormationType;
+  unlockLevel: CultivationLevel;
+  effects: {
+    cultivationSpeedBoost?: number;
+    qiGatherRateBoost?: number;
+    defenseBoostBonus?: number;
+    attackBoostBonus?: number;
+    forgeSuccessRateBoost?: number;
+    alchemySuccessRateBoost?: number;
+    battleDamageBoost?: number;
+  };
+  upgradeCost: {
+    gold: number;
+    spiritStone: number;
+    spiritCrystal?: number;
+    heavenlyHerb?: number;
+  };
+  level: number;
+  maxLevel: number;
+  active: boolean;
+}
+
+// 灵田接口
+export interface Farmland {
+  id: string;
+  name: string;
+  description: string;
+  soilQuality: number;
+  upgradeCost: {
+    gold: number;
+    spiritStone: number;
+    spiritCrystal?: number;
+    heavenlyHerb?: number;
+  };
+  unlockRequirements: {
+    level: CultivationLevel;
+    gold?: number;
+  };
+  level: number;
+  maxLevel: number;
+  currentCrop: Crop | null;
+  isLocked: boolean;
+}
+
+// 作物类型
+export type CropType = 'spirit_grass' | 'spirit_fruit' | 'heavenly_herb';
+
+// 生长阶段接口
+export interface GrowthStage {
+  name: string;
+  duration: number;
+  image: string;
+  yield: number;
+}
+
+// 作物接口
+export interface Crop {
+  id: string;
+  name: string;
+  description: string;
+  type: CropType;
+  growthStages: GrowthStage[];
+  currentStage: number;
+  plantedTime: number;
+  harvestYield: {
+    spiritGrass?: number;
+    spiritFruit?: number;
+    heavenlyHerb?: number;
+    exp: number;
+    gold?: number;
+  };
+  requirements: {
+    farmlandLevel: number;
+  };
+  unlockLevel: CultivationLevel;
+  growthSpeed: number;
 }
 
 // 宗门接口
@@ -223,6 +309,30 @@ export interface GameState {
   totalBattlesWon: number; // 总胜利次数
   totalBattlesLost: number; // 总失败次数
   unlockedAchievements: string[]; // 已解锁但未领取奖励的成就ID列表
+  // 阵法相关属性
+  formations: Formation[];
+  activeFormation?: string; // 当前激活的阵法ID
+  // 灵田种植相关属性
+  farmlands: Farmland[];
+  crops: Crop[];
+  unlockedCrops: string[];
+  farmlandLevel: number; // 灵田总等级
+  maxFarmlands: number; // 最大灵田数量
+  fertilizer: number; // 肥料数量
+  waterStorage: number; // 水储量
+  maxWaterStorage: number; // 最大水储量
+  farmingSkillLevel: number; // 种植技能等级
+  farmingSkillExp: number; // 种植技能经验
+  maxFarmingSkillExp: number; // 升级所需种植技能经验
+  // 每日签到相关属性
+  dailyCheckIn: {
+    lastCheckInDate: number; // 上次签到日期
+    consecutiveDays: number; // 连续签到天数
+    totalCheckIns: number; // 总签到次数
+    canCheckIn: boolean; // 当前是否可以签到
+  };
+  // 符箓系统相关属性
+  talisman: TalismanState;
 }
 
 // 离线奖励接口
@@ -230,6 +340,7 @@ export interface OfflineRewards {
   exp?: number;
   qi?: number;
   gold?: number;
+  spiritStone?: number;
   pills?: number;
   spiritFruit?: number;
 }
@@ -416,6 +527,7 @@ export interface AchievementRewardResources {
   heavenlyHerb?: number;
   immortalFruit?: number;
   divineEssence?: number;
+  spiritPaper?: number;
 }
 
 export interface Achievement {
@@ -689,4 +801,68 @@ export interface ExplorationState {
   explorationHistory: ExplorationResult[]; // 探险历史记录
   explorationCount: number; // 探险次数计数
   skillLevel: number; // 探险技能等级（备用属性）
+}
+
+// 符箓系统相关接口
+
+// 符箓类型
+export type TalismanType = 'attack' | 'defense' | 'cultivation' | 'exploration' | 'utility';
+
+// 符箓接口
+export interface Talisman {
+  id: string;
+  name: string;
+  description: string;
+  type: TalismanType;
+  effect: {
+    attackBoost?: number;
+    defenseBoost?: number;
+    cultivationSpeedBoost?: number;
+    qiGatherRateBoost?: number;
+    explorationSuccessRateBoost?: number;
+    damageReduction?: number;
+    [key: string]: any;
+  };
+  duration: number; // 效果持续时间（秒）
+  cooldown: number; // 冷却时间（秒）
+  rarity: 'common' | 'rare' | 'epic' | 'legendary';
+  value: number;
+}
+
+// 符箓制作配方接口
+export interface TalismanRecipe {
+  id: string;
+  name: string;
+  description: string;
+  talismanId: string;
+  ingredients: {
+    id: string;
+    quantity: number;
+  }[];
+  requiredLevel: CultivationLevel;
+  baseSuccessRate: number;
+  expGain: number;
+  duration: number; // 制作时间（秒）
+}
+
+// 符箓状态接口
+export interface TalismanState {
+  recipes: TalismanRecipe[]; // 已解锁的符箓配方
+  currentTalisman?: string; // 当前正在制作的符箓ID
+  progress: number; // 制作进度 (0-100)
+  isCrafting: boolean; // 是否正在制作符箓
+  startTime?: number; // 开始制作的时间
+  lastCraftTime: number; // 上次制作时间
+  successCount: number; // 成功制作次数
+  failedCount: number; // 失败制作次数
+  skillLevel: number; // 符箓制作技能等级
+  skillExp: number; // 符箓制作技能经验
+  maxSkillExp: number; // 升级所需经验
+  activeTalismans: Array<{
+    talisman: Talisman;
+    startTime: number;
+  }>; // 当前激活的符箓效果
+  knownTalismans: string[]; // 已知的符箓ID列表
+  maxConcurrentTalismans: number; // 最大同时使用的符箓数量
+  inventory: Talisman[]; // 符箓背包
 }

@@ -17,6 +17,7 @@ import { ForgePanel } from './components/ForgePanel';
 import PetPanel from './components/PetPanel';
 import SectPanel from './components/SectPanel';
 import ExplorationPanel from './components/ExplorationPanel';
+import TalismanPanel from './components/TalismanPanel';
 import { alchemyRecipes } from './data/alchemy-recipes';
 import './globals.css';
 
@@ -149,6 +150,9 @@ export default function CultivationGamePage() {
         case 'recipe_unlocked':
           showNotification(`解锁新配方：${params.recipe.name}！`, 'success');
           break;
+        case 'pill_used':
+          showNotification(`服用了${params.pill.name}，获得${params.expGain}点经验！`, 'success');
+          break;
         case 'battle_started':
           showNotification(`遇到了${params.monster.name}！`, 'info');
           break;
@@ -181,6 +185,24 @@ export default function CultivationGamePage() {
           break;
         case 'pet_catch_failed':
           showNotification(`捕捉${params.petData.name}失败了，继续努力！`, 'error');
+          break;
+        case 'talisman_used':
+          showNotification(`使用了${params.talisman.name}，${params.talisman.description}`, 'success');
+          break;
+        case 'talisman_sold':
+          showNotification(`出售了${params.talisman.name}，获得了${params.goldGained}灵石`, 'success');
+          break;
+        case 'talisman_expired':
+          showNotification(`符箓效果已过期：${params.talisman.name}`, 'info');
+          break;
+        case 'talisman_craft_success':
+          showNotification(`成功制作了${params.talisman.name}，获得了${params.expGained}点经验`, 'success');
+          break;
+        case 'talisman_craft_failure':
+          showNotification('符箓制作失败', 'error');
+          break;
+        case 'talisman_skill_level_up':
+          showNotification(`符箓制作技能升级到了${params.newLevel}级！`, 'success');
           break;
         case 'game_updated':
           // 当游戏状态更新时，更新界面
@@ -227,10 +249,10 @@ export default function CultivationGamePage() {
         showNotification('开始采集灵气！', 'info');
         break;
       case 'usePill':
-        if (gameRef.current.usePill()) {
-          showNotification('服用了培元丹，修为大涨！', 'success');
+        if (gameRef.current.usePill(params?.pillId)) {
+          showNotification('服用了丹药，感觉修为有所提升！', 'success');
         } else {
-          showNotification('培元丹不足！', 'error');
+          showNotification('无法使用该丹药！', 'error');
         }
         break;
       case 'useSpiritFruit':
@@ -413,6 +435,21 @@ export default function CultivationGamePage() {
           gameRef.current.claimSectTaskReward(params.taskId);
         }
         break;
+      case 'startCraftTalisman':
+        if (gameRef.current) {
+          gameRef.current.startCraftTalisman(params.recipeId);
+        }
+        break;
+      case 'useTalisman':
+        if (gameRef.current) {
+          gameRef.current.useTalisman(params.talismanId);
+        }
+        break;
+      case 'sellTalisman':
+        if (gameRef.current) {
+          gameRef.current.sellTalisman(params.talismanId);
+        }
+        break;
       default:
         console.warn('未知操作:', action);
     }
@@ -455,17 +492,18 @@ export default function CultivationGamePage() {
   const getResourceName = (resource: keyof Resources): string => {
     const resourceNames: Record<keyof Resources, string> = {
       qi: '灵气',
-      gold: '灵石',
+      spiritStone: '灵石',
+
       pills: '丹药',
       materials: '基础材料',
       spiritFruit: '灵果',
       spiritGrass: '灵草',
       spiritWater: '灵水',
-      spiritStone: '灵石',
       spiritCrystal: '灵晶',
       heavenlyHerb: '天材地宝',
       immortalFruit: '仙果',
       divineEssence: '神髓',
+      spiritPaper: '符纸',
       items: '物品'
     };
     
@@ -654,12 +692,18 @@ export default function CultivationGamePage() {
               >
                 🏔️ 探险
               </button>
+              <button 
+                className={`tab-button ${activeTab === 'talisman' ? 'active' : ''}`}
+                onClick={() => setActiveTab('talisman')}
+              >
+                📜 符箓
+              </button>
             </div>
             
             {/* 标签页内容 */}
             <div className="tab-content">
               {activeTab === 'inventory' && gameState && (
-                <InventoryPanel gameState={gameState} />
+                <InventoryPanel gameState={gameState} onAction={handleAction} />
               )}
               {activeTab === 'quest' && gameState && (
                 <QuestPanel gameState={gameState} onAction={handleAction} />
@@ -709,6 +753,14 @@ export default function CultivationGamePage() {
                   gameState={gameState}
                   onStartExploration={(areaId) => handleAction('startExploration', { areaId })}
                   onCancelExploration={() => handleAction('cancelExploration')}
+                />
+              )}
+              {activeTab === 'talisman' && gameState && (
+                <TalismanPanel
+                  gameState={gameState}
+                  onStartCraft={(recipeId) => handleAction('startCraftTalisman', { recipeId })}
+                  onUseTalisman={(talismanId) => handleAction('useTalisman', { talismanId })}
+                  onSellTalisman={(talismanId) => handleAction('sellTalisman', { talismanId })}
                 />
               )}
             </div>

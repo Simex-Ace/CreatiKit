@@ -12,8 +12,7 @@ export const explorationAreas: ExplorationArea[] = [
     rewards: {
       resources: {
         spiritGrass: { min: 1, max: 3 },
-        spiritStone: { min: 1, max: 2 },
-        gold: { min: 10, max: 30 },
+        spiritStone: { min: 11, max: 32 },
         qi: { min: 100, max: 300 }
       },
       pills: [
@@ -51,9 +50,8 @@ export const explorationAreas: ExplorationArea[] = [
     rewards: {
       resources: {
         spiritGrass: { min: 2, max: 4 },
-        spiritStone: { min: 1, max: 3 },
+        spiritStone: { min: 21, max: 53 },
         spiritFruit: { min: 1, max: 2 },
-        gold: { min: 20, max: 50 },
         qi: { min: 200, max: 500 }
       },
       pills: [
@@ -98,9 +96,8 @@ export const explorationAreas: ExplorationArea[] = [
     rewards: {
       resources: {
         spiritGrass: { min: 3, max: 5 },
-        spiritStone: { min: 2, max: 4 },
+        spiritStone: { min: 52, max: 104 },
         spiritCrystal: { min: 1, max: 3 },
-        gold: { min: 50, max: 100 },
         qi: { min: 500, max: 1000 }
       },
       pills: [
@@ -148,10 +145,9 @@ export const explorationAreas: ExplorationArea[] = [
     rewards: {
       resources: {
         spiritGrass: { min: 5, max: 8 },
-        spiritStone: { min: 4, max: 6 },
+        spiritStone: { min: 104, max: 206 },
         spiritCrystal: { min: 3, max: 5 },
         heavenlyHerb: { min: 1, max: 3 },
-        gold: { min: 100, max: 200 },
         qi: { min: 1000, max: 2000 }
       },
       pills: [
@@ -199,11 +195,10 @@ export const explorationAreas: ExplorationArea[] = [
     rewards: {
       resources: {
         spiritGrass: { min: 8, max: 12 },
-        spiritStone: { min: 6, max: 10 },
+        spiritStone: { min: 206, max: 410 },
         spiritCrystal: { min: 5, max: 8 },
         heavenlyHerb: { min: 3, max: 5 },
         immortalFruit: { min: 1, max: 2 },
-        gold: { min: 200, max: 400 },
         qi: { min: 2000, max: 5000 }
       },
       pills: [
@@ -257,12 +252,11 @@ export const explorationAreas: ExplorationArea[] = [
     rewards: {
       resources: {
         spiritGrass: { min: 10, max: 15 },
-        spiritStone: { min: 8, max: 12 },
+        spiritStone: { min: 308, max: 612 },
         spiritCrystal: { min: 7, max: 10 },
         heavenlyHerb: { min: 4, max: 6 },
         immortalFruit: { min: 2, max: 3 },
         spiritFire: { min: 1, max: 2 },
-        gold: { min: 300, max: 600 },
         qi: { min: 3000, max: 8000 }
       },
       pills: [

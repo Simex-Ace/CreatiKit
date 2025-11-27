@@ -283,12 +283,13 @@ export const materialNames: Record<string, string> = {
   spiritGrass: '灵草',
   spiritWater: '灵水',
   spiritStone: '灵石',
+  gold: '灵石', // 兼容旧的gold键名
   spiritCrystal: '灵晶',
   heavenlyHerb: '天材地宝',
   immortalFruit: '仙果',
   divineEssence: '神髓',
   qi: '灵气',
-  gold: '金币',
+  spiritPaper: '符纸',
   pills: '丹药',
   materials: '基础材料',
   spiritFruit: '灵果'
@@ -296,7 +297,29 @@ export const materialNames: Record<string, string> = {
 
 // 获取材料的中文名称
 export function getMaterialName(material: string): string {
+  // 确保material是字符串
+  if (typeof material !== 'string') {
+    return String(material);
+  }
   return materialNames[material] || material;
+}
+
+// 品质名称映射表（英文到中文）
+export const qualityNames: Record<string, string> = {
+  celestial: '神级',
+  perfect: '完美',
+  high: '高品质',
+  normal: '普通',
+  low: '低品质'
+};
+
+// 获取品质的中文名称
+export function getQualityName(quality: string): string {
+  // 确保quality是字符串
+  if (typeof quality !== 'string') {
+    return String(quality);
+  }
+  return qualityNames[quality] || quality;
 }
 
 // 从本地存储加载游戏状态

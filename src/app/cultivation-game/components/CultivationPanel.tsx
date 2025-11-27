@@ -24,11 +24,10 @@ export const CultivationPanel: React.FC<CultivationPanelProps> = ({ gameState, o
   // 获取技能描述
   const getSkillDescription = (skillId: string) => {
     const descriptions: Record<string, string> = {
-      'basic_cultivation': '提升基础修炼效率',
-      'qi_gathering': '增加灵气采集速率',
-      'meditation': '提高修炼专注度，增加经验获得',
-      'herbal_medicine': '采集药草效率提升',
-      'alchemy': '炼制丹药成功率提高'
+      qiGather: '灵气采集技能，提升灵气吸收速度',
+      cultivation: '修炼技能，提升修炼效率',
+      gathering: '材料采集技能，提高材料采集效率',
+      alchemy: '炼丹技能，提升炼丹成功率'
     };
     return descriptions[skillId] || '未知技能';
   };
@@ -43,6 +42,14 @@ export const CultivationPanel: React.FC<CultivationPanelProps> = ({ gameState, o
     
     if (skill.effects.qiGatherRate) {
       effects.push(`灵气采集 +${Math.floor(skill.effects.qiGatherRate * 100)}%`);
+    }
+    
+    if (skill.effects.gatheringRate) {
+      effects.push(`材料采集 +${Math.floor(skill.effects.gatheringRate * 100)}%`);
+    }
+    
+    if (skill.effects.alchemySuccessRate) {
+      effects.push(`炼丹成功率 +${Math.floor(skill.effects.alchemySuccessRate * 100)}%`);
     }
     
     if (skill.effects.expGain) {
@@ -65,7 +72,7 @@ export const CultivationPanel: React.FC<CultivationPanelProps> = ({ gameState, o
         <div className="skill-list">
           {gameState.skills.map((skill: Skill) => {
             const upgradeCost = calculateUpgradeCost(skill.level);
-            const canUpgrade = skill.level < skill.maxLevel && gameState.resources.gold >= upgradeCost;
+            const canUpgrade = skill.level < skill.maxLevel && gameState.resources.spiritStone >= upgradeCost;
             
             return (
               <div key={skill.id} className="skill-item">

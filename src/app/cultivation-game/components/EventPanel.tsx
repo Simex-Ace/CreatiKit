@@ -52,22 +52,61 @@ const EventPanel: React.FC<EventPanelProps> = ({ currentEvent, onEventChoice }) 
                 )}
 
                 {/* 显示选择结果预览 */}
-                <div className="text-sm">
-                  {choice.outcomes?.map((outcome, index) => (
-                    <span key={index} className={`inline-block mr-3 text-gray-300`}>
-                      {outcome.effects && outcome.effects.exp && (
-                        <> {outcome.effects.exp > 0 ? '+' : ''}{outcome.effects.exp} 经验</>
-                      )}
-                      {outcome.effects && outcome.effects.resources && Object.entries(outcome.effects.resources).map(([resource, amount]) => {
-                        const displayAmount = typeof amount === 'number' ? amount : amount.length;
+                <div className="text-sm space-x-2">
+                  {choice.outcomes?.length && (
+                    <>                       
+                      {/* 收集所有结果中的经验和资源类型 */}
+                      {(() => {
+                        // 根据概率计算预期值
+                        let expectedExp = 0;
+                        const expectedResources: Record<string, number> = {};
+                        
+                        choice.outcomes.forEach(outcome => {
+                          const probability = outcome.probability || 1 / choice.outcomes.length;
+                          
+                          // 计算预期经验值
+                          if (outcome.effects?.exp) {
+                            expectedExp += outcome.effects.exp * probability;
+                          }
+                          
+                          // 计算预期资源值
+                          if (outcome.effects?.resources) {
+                            Object.entries(outcome.effects.resources).forEach(([resource, amount]) => {
+                              const displayAmount = typeof amount === 'number' ? amount : amount.length;
+                              if (!expectedResources[resource]) {
+                                expectedResources[resource] = 0;
+                              }
+                              expectedResources[resource] += displayAmount * probability;
+                            });
+                          }
+                        });
+                        
+                        // 格式化数值显示（四舍五入到整数）
+                        const formatValue = (value: number): string => {
+                          const roundedValue = Math.round(value);
+                          return `${roundedValue > 0 ? '+' : ''}${roundedValue}`;
+                        };
+                        
                         return (
-                          <span key={resource} className="inline-block mr-2">
-                            {displayAmount > 0 ? '+' : ''}{displayAmount} {getMaterialName(resource)}
-                          </span>
+                          <>
+                            {/* 显示经验 */}
+                            {expectedExp !== 0 && (
+                              <span className="mr-2">
+                                经验{formatValue(expectedExp)}
+                              </span>
+                            )}
+                            
+                            {/* 显示资源 */}
+                            {Object.entries(expectedResources).map(([resource, amount]) => (
+                              <span key={resource} className="mr-2">
+                                {getMaterialName(resource)}{formatValue(amount)}
+                              </span>
+                            ))}
+                          </>
                         );
-                      })}
-                    </span>
-                  ))}
+                      })()}
+                    </>
+                  )}
                 </div>
               </button>
             ))}
