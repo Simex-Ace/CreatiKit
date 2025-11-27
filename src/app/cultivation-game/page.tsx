@@ -18,6 +18,8 @@ import PetPanel from './components/PetPanel';
 import SectPanel from './components/SectPanel';
 import ExplorationPanel from './components/ExplorationPanel';
 import TalismanPanel from './components/TalismanPanel';
+import { StatusBar } from './components/StatusBar';
+import { AttributePanel } from './components/AttributePanel';
 import { alchemyRecipes } from './data/alchemy-recipes';
 import './globals.css';
 
@@ -43,6 +45,10 @@ export default function CultivationGamePage() {
         const game = new CultivationGame(parsedGame);
         setGameState(game.getState());
         gameRef.current = game;
+        // 设置事件回调
+        gameRef.current.setEventCallback(handleGameEvent);
+        // 启动游戏循环
+        gameRef.current.startGameLoop();
         
         // 显示离线收益通知
         if (offlineDuration > 60) {
@@ -63,6 +69,8 @@ export default function CultivationGamePage() {
     const newGameState = createNewGame('修仙者');
     setGameState(newGameState);
     gameRef.current = new CultivationGame(newGameState);
+    // 设置事件回调
+    gameRef.current.setEventCallback(handleGameEvent);
     // 启动新游戏实例的游戏循环
     gameRef.current.startGameLoop();
   };
@@ -96,123 +104,127 @@ export default function CultivationGamePage() {
   }, []);
 
   // 处理游戏事件
-  useEffect(() => {
-    const handleGameEvent = (eventName: string, params: any) => {
-      switch (eventName) {
-        case 'level_up':
-          // 使用中文名称显示突破结果
-          const levelUpNewLevelName = getCultivationLevelName(params.newLevel);
-          showNotification(`恭喜突破到${levelUpNewLevelName}！`, 'success');
-          // 确保状态更新
-          setGameState(gameRef.current?.getState() || gameState);
-          break;
-        case 'breakthrough_success':
-          // 使用中文名称显示突破结果
-          const newLevelName = getCultivationLevelName(params.newLevel);
-          showNotification(`恭喜突破到${newLevelName}！`, 'success');
-          // 确保状态更新
-          setGameState(gameRef.current?.getState() || gameState);
-          break;
-        case 'breakthrough_failed':
-          showNotification(params.message, 'error');
-          break;
-        case 'error':
-          showNotification(params.message, 'error');
-          break;
-        case 'game_updated':
-          // 确保界面更新
-          setGameState(gameRef.current?.getState() || gameState);
-          break;
-        case 'quest_updated':
-          setGameState(gameRef.current?.getState() || gameState);
-          break;
-        case 'quest_completed':
-          showNotification(`任务完成：${params.quest.description}`, 'success');
-          break;
-        case 'achievement_unlocked':
-          showAchievementNotification(params.achievement.description, params.achievement.reward);
-          break;
-        case 'event_triggered':
-          setCurrentEvent(params.event);
-          break;
-        case 'offline_rewards':
-          showNotification(`获得离线奖励！经验：${params.rewards.exp}，灵气：${params.rewards.qi}`, 'success');
-          break;
-        case 'alchemy_started':
-          showNotification(`开始炼制${params.recipe.name}！`, 'info');
-          break;
-        case 'alchemy_success':
-          showNotification(`炼丹成功！获得${params.pill.name}，经验+${params.expGain}`, 'success');
-          break;
-        case 'alchemy_failed':
-          showNotification(`炼丹失败！失去了所有材料。`, 'error');
-          break;
-        case 'recipe_unlocked':
-          showNotification(`解锁新配方：${params.recipe.name}！`, 'success');
-          break;
-        case 'pill_used':
-          showNotification(`服用了${params.pill.name}，获得${params.expGain}点经验！`, 'success');
-          break;
-        case 'battle_started':
-          showNotification(`遇到了${params.monster.name}！`, 'info');
-          break;
-        case 'battle_victory':
-          showNotification(`击败了${params.monster.name}！获得经验：${params.expGained}，金币：${params.goldGained}`, 'success');
-          break;
-        case 'battle_defeat':
-          showNotification(`被${params.monster.name}击败了！`, 'error');
-          break;
-        case 'flee_success':
-          showNotification(`成功逃脱了战斗！`, 'success');
-          break;
-        case 'forge_started':
-          showNotification(`开始炼制装备！`, 'info');
-          break;
-        case 'forge_success':
-          showNotification(`炼器成功！获得装备，经验+${params.expGained}`, 'success');
-          break;
-        case 'forge_failure':
-          showNotification(`炼器失败！失去了所有材料。`, 'error');
-          break;
-        case 'forge_progress_updated':
-          // 可以添加进度更新通知，但通常不需要
-          break;
-        case 'blueprint_unlocked':
-          showNotification(`解锁新图谱：${params.blueprint.name}！`, 'success');
-          break;
-        case 'pet_caught':
-          showNotification(`成功捕捉了${params.pet.name}！`, 'success');
-          break;
-        case 'pet_catch_failed':
-          showNotification(`捕捉${params.petData.name}失败了，继续努力！`, 'error');
-          break;
-        case 'talisman_used':
-          showNotification(`使用了${params.talisman.name}，${params.talisman.description}`, 'success');
-          break;
-        case 'talisman_sold':
-          showNotification(`出售了${params.talisman.name}，获得了${params.goldGained}灵石`, 'success');
-          break;
-        case 'talisman_expired':
-          showNotification(`符箓效果已过期：${params.talisman.name}`, 'info');
-          break;
-        case 'talisman_craft_success':
-          showNotification(`成功制作了${params.talisman.name}，获得了${params.expGained}点经验`, 'success');
-          break;
-        case 'talisman_craft_failure':
-          showNotification('符箓制作失败', 'error');
-          break;
-        case 'talisman_skill_level_up':
-          showNotification(`符箓制作技能升级到了${params.newLevel}级！`, 'success');
-          break;
-        case 'game_updated':
-          // 当游戏状态更新时，更新界面
-          setGameState(params.state);
-          break;
-        default:
-          console.warn('未知游戏事件:', eventName);
-      }
-    };
+  const handleGameEvent = (eventName: string, params: any) => {
+    switch (eventName) {
+      case 'level_up':
+        // 使用中文名称显示突破结果
+        const levelUpNewLevelName = getCultivationLevelName(params.newLevel);
+        showNotification(`恭喜突破到${levelUpNewLevelName}！`, 'success');
+        // 确保状态更新
+        setGameState(gameRef.current?.getState() || gameState);
+        break;
+      case 'breakthrough_success':
+        // 使用中文名称显示突破结果
+        const newLevelName = getCultivationLevelName(params.newLevel);
+        showNotification(`恭喜突破到${newLevelName}！`, 'success');
+        // 确保状态更新
+        setGameState(gameRef.current?.getState() || gameState);
+        break;
+      case 'breakthrough_failed':
+        showNotification(params.message, 'error');
+        break;
+      case 'error':
+        showNotification(params.message, 'error');
+        break;
+      case 'game_updated':
+        // 确保界面更新
+        setGameState(gameRef.current?.getState() || gameState);
+        break;
+      case 'quest_updated':
+        setGameState(gameRef.current?.getState() || gameState);
+        break;
+      case 'quest_completed':
+        showNotification(`任务完成：${params.quest.description}`, 'success');
+        break;
+      case 'achievement_unlocked':
+        showAchievementNotification(params.achievement.description, params.achievement.reward);
+        break;
+      case 'event_triggered':
+        setCurrentEvent(params.event);
+        break;
+      case 'offline_rewards':
+        showNotification(`获得离线奖励！经验：${params.rewards.exp}，法力值：${params.rewards.qi}`, 'success');
+        break;
+      case 'alchemy_started':
+        showNotification(`开始炼制${params.recipe.name}！`, 'info');
+        break;
+      case 'alchemy_success':
+        showNotification(`炼丹成功！获得${params.pill.name}，经验+${params.expGain}`, 'success');
+        break;
+      case 'alchemy_failed':
+        showNotification(`炼丹失败！失去了所有材料。`, 'error');
+        break;
+      case 'recipe_unlocked':
+        showNotification(`解锁新配方：${params.recipe.name}！`, 'success');
+        break;
+      case 'pill_used':
+        if (params.pill && params.effectMessage) {
+          showNotification(`服用了${params.pill.name}，${params.effectMessage}！`, 'success');
+        } else if (params.pill) {
+          showNotification(`服用了${params.pill.name}！`, 'success');
+        } else {
+          // 处理只传递了remainingPills的情况
+          showNotification(`服用了丹药！`, 'success');
+        }
+        break;
+      case 'battle_started':
+        showNotification(`遇到了${params.monster.name}！`, 'info');
+        break;
+      case 'battle_victory':
+        showNotification(`击败了${params.monster.name}！获得经验：${params.expGained}，金币：${params.goldGained}`, 'success');
+        break;
+      case 'battle_defeat':
+        showNotification(`被${params.monster.name}击败了！`, 'error');
+        break;
+      case 'flee_success':
+        showNotification(`成功逃脱了战斗！`, 'success');
+        break;
+      case 'forge_started':
+        showNotification(`开始炼制装备！`, 'info');
+        break;
+      case 'forge_success':
+        showNotification(`炼器成功！获得装备，经验+${params.expGained}`, 'success');
+        break;
+      case 'forge_failure':
+        showNotification(`炼器失败！失去了所有材料。`, 'error');
+        break;
+      case 'forge_progress_updated':
+        // 可以添加进度更新通知，但通常不需要
+        break;
+      case 'blueprint_unlocked':
+        showNotification(`解锁新图谱：${params.blueprint.name}！`, 'success');
+        break;
+      case 'pet_caught':
+        showNotification(`成功捕捉了${params.pet.name}！`, 'success');
+        break;
+      case 'pet_catch_failed':
+        showNotification(`捕捉${params.petData.name}失败了，继续努力！`, 'error');
+        break;
+      case 'talisman_used':
+        showNotification(`使用了${params.talisman.name}，${params.talisman.description}`, 'success');
+        break;
+      case 'talisman_sold':
+        showNotification(`出售了${params.talisman.name}，获得了${params.goldGained}灵石`, 'success');
+        break;
+      case 'talisman_expired':
+        showNotification(`符箓效果已过期：${params.talisman.name}`, 'info');
+        break;
+      case 'talisman_craft_success':
+        showNotification(`成功制作了${params.talisman.name}，获得了${params.expGained}点经验`, 'success');
+        break;
+      case 'talisman_craft_failure':
+        showNotification('符箓制作失败', 'error');
+        break;
+      case 'talisman_skill_level_up':
+        showNotification(`符箓制作技能升级到了${params.newLevel}级！`, 'success');
+        break;
+      default:
+        console.warn('未知游戏事件:', eventName);
+    }
+  };
 
+  // 设置事件回调
+  useEffect(() => {
     if (gameRef.current) {
       gameRef.current.setEventCallback(handleGameEvent);
     }
@@ -246,14 +258,10 @@ export default function CultivationGamePage() {
         break;
       case 'gatherQi':
         gameRef.current.gatherQi();
-        showNotification('开始采集灵气！', 'info');
+        showNotification('开始恢复法力值！', 'info');
         break;
       case 'usePill':
-        if (gameRef.current.usePill(params?.pillId)) {
-          showNotification('服用了丹药，感觉修为有所提升！', 'success');
-        } else {
-          showNotification('无法使用该丹药！', 'error');
-        }
+        gameRef.current.usePill(params?.pillId);
         break;
       case 'useSpiritFruit':
         if (gameRef.current.useSpiritFruit()) {
@@ -625,11 +633,15 @@ export default function CultivationGamePage() {
           <div className="subtitle">踏上修仙之路，突破境界，成就大道</div>
         </div>
         
+        {/* 状态栏 */}
+        {gameState && <StatusBar gameState={gameState} />}
+        
         {/* 控制面板 */}
         <div className="game-main">
           {/* 左侧面板 */}
           <div className="left-panel">
             {gameState && <StatusPanel gameState={gameState} />}
+            {gameState && <AttributePanel gameState={gameState} />}
             {gameState && <ActionPanel gameState={gameState} onAction={handleAction} />}
             {gameState && <CultivationPanel gameState={gameState} onAction={handleAction} />}
           </div>
@@ -732,35 +744,35 @@ export default function CultivationGamePage() {
               {activeTab === 'pets' && gameState && (
                 <PetPanel
                   gameState={gameState}
-                  onCatchPet={(petDataId) => handleAction('catchPet', { petDataId })}
-                  onTrainPet={(petId) => handleAction('trainPet', { petId })}
-                  onUpgradePetSkill={(petId, skillIndex) => handleAction('upgradePetSkill', { petId, skillIndex })}
-                  onTogglePetActive={(petId) => handleAction('togglePetActive', { petId })}
-                  onFeedPet={(petId) => handleAction('feedPet', { petId })}
+                  onCatchPet={(petDataId) => handleAction('catchPet', { petDataId})}
+                  onTrainPet={(petId) => handleAction('trainPet', { petId})}
+                  onUpgradePetSkill={(petId, skillIndex) => handleAction('upgradePetSkill', { petId, skillIndex})}
+                  onTogglePetActive={(petId) => handleAction('togglePetActive', { petId})}
+                  onFeedPet={(petId) => handleAction('feedPet', { petId})}
                 />
               )}
               {activeTab === 'sect' && gameState && (
                 <SectPanel
                   gameState={gameState}
-                  onJoinSect={(sectId) => handleAction('joinSect', { sectId })}
-                  onContributeToSect={(amount) => handleAction('contributeToSect', { amount })}
-                  onCompleteSectTask={(taskId) => handleAction('completeSectTask', { taskId })}
-                  onClaimSectTaskReward={(taskId) => handleAction('claimSectTaskReward', { taskId })}
+                  onJoinSect={(sectId) => handleAction('joinSect', { sectId})}
+                  onContributeToSect={(amount) => handleAction('contributeToSect', { amount})}
+                  onCompleteSectTask={(taskId) => handleAction('completeSectTask', { taskId})}
+                  onClaimSectTaskReward={(taskId) => handleAction('claimSectTaskReward', { taskId})}
                 />
               )}
               {activeTab === 'exploration' && gameState && (
                 <ExplorationPanel
                   gameState={gameState}
-                  onStartExploration={(areaId) => handleAction('startExploration', { areaId })}
+                  onStartExploration={(areaId) => handleAction('startExploration', { areaId})}
                   onCancelExploration={() => handleAction('cancelExploration')}
                 />
               )}
               {activeTab === 'talisman' && gameState && (
                 <TalismanPanel
                   gameState={gameState}
-                  onStartCraft={(recipeId) => handleAction('startCraftTalisman', { recipeId })}
-                  onUseTalisman={(talismanId) => handleAction('useTalisman', { talismanId })}
-                  onSellTalisman={(talismanId) => handleAction('sellTalisman', { talismanId })}
+                  onStartCraft={(recipeId) => handleAction('startCraftTalisman', { recipeId})}
+                  onUseTalisman={(talismanId) => handleAction('useTalisman', { talismanId})}
+                  onSellTalisman={(talismanId) => handleAction('sellTalisman', { talismanId})}
                 />
               )}
             </div>

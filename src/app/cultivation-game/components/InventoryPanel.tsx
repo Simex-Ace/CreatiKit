@@ -48,9 +48,9 @@ export const InventoryPanel: React.FC<InventoryPanelProps> = ({ gameState, onAct
   // 格式化属性效果文本
   const formatEffect = (effectName: string, value: number) => {
     const effectNames = {
-      qiCapacity: '灵气上限',
+      qiCapacity: '法力值上限',
       cultivationSpeed: '修炼速度',
-      qiGatherRate: '灵气采集速率'
+      qiGatherRate: '法力值恢复速率'
     };
     
     return `${effectNames[effectName as keyof typeof effectNames]} +${value}${effectName === 'cultivationSpeed' || effectName === 'qiGatherRate' ? 'x' : ''}`;
@@ -66,7 +66,7 @@ export const InventoryPanel: React.FC<InventoryPanelProps> = ({ gameState, onAct
       healthRegen: '生命值恢复',
       resourceGatheringSpeed: '资源采集速度',
       poisonResistance: '毒抗',
-      qiRegen: '灵气恢复',
+      qiRegen: '法力值恢复',
       alchemySuccessRate: '炼丹成功率',
       spiritSense: '灵识',
       damageResistance: '伤害减免',
@@ -127,7 +127,7 @@ export const InventoryPanel: React.FC<InventoryPanelProps> = ({ gameState, onAct
         <h3 style={{ color: '#f5d76e', marginBottom: '1rem' }}>总属性加成</h3>
         <div className="status-info">
           <div className="status-item">
-            <span className="status-label">灵气上限加成</span>
+            <span className="status-label">法力值上限加成</span>
             <span className="status-value" style={{ color: '#4fc3f7' }}>+{totalBonuses.qiCapacity}</span>
           </div>
           <div className="status-item">
@@ -135,7 +135,7 @@ export const InventoryPanel: React.FC<InventoryPanelProps> = ({ gameState, onAct
             <span className="status-value" style={{ color: '#4fc3f7' }}>+{Math.floor(totalBonuses.cultivationSpeed * 100)}%</span>
           </div>
           <div className="status-item">
-            <span className="status-label">灵气采集加成</span>
+            <span className="status-label">法力值恢复速率加成</span>
             <span className="status-value" style={{ color: '#4fc3f7' }}>+{Math.floor(totalBonuses.qiGatherRate * 100)}%</span>
           </div>
         </div>

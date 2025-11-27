@@ -56,7 +56,7 @@ export const StatusPanel: React.FC<StatusPanelProps> = ({ gameState }) => {
         </div>
         
         <div className="status-item">
-          <span className="status-label">灵气</span>
+          <span className="status-label">法力值</span>
           <span className="status-value">{Math.floor(gameState.resources.qi)} / {gameState.cultivation.qiCapacity}</span>
         </div>
         
@@ -80,10 +80,10 @@ export const StatusPanel: React.FC<StatusPanelProps> = ({ gameState }) => {
         </div>
       </div>
       
-      {/* 灵气进度条 */}
+      {/* 法力值进度条 */}
       <div style={{ marginTop: '1rem' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
-          <span>灵气储存</span>
+          <span>法力值储存</span>
           <span>{Math.floor(qiProgress)}%</span>
         </div>
         <div className="progress-bar">

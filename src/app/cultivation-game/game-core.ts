@@ -13,7 +13,9 @@ import {
   calculateQiGatherRate,
   calculateOfflineRewards,
   getCultivationLevelInfo,
-  saveGameState
+  saveGameState,
+  calculateMaxHealth,
+  calculateAttributeBonus
 } from './utils';
 import { quests as initialQuests } from './data/quests';
 import { events as initialEvents } from './data/events';
@@ -44,10 +46,21 @@ export function createNewGame(playerName: string = '修真者'): GameState {
       resourceGatheringSpeedBonus: 0,
       alchemySuccessRateBonus: 0,
       skillExpBoostBonus: 0,
-      sect: undefined // 初始化宗门为undefined
+      sect: undefined, // 初始化宗门为undefined
+      // 初始化个人属性
+      attributes: {
+        constitution: 10,
+        rootBone: 10,
+        comprehension: 10,
+        spirituality: 10,
+        charm: 10
+      },
+      // 初始化生命值
+      maxHealth: calculateMaxHealth({} as GameState),
+      health: calculateMaxHealth({} as GameState)
     },
     resources: {
-      qi: 0,
+      qi: initialLevelInfo?.baseQiCapacity || 100, // 初始法力值满
       spiritStone: 110, // 合并了原来的gold和spiritStone
       pills: [],
       items: [],
@@ -552,15 +565,15 @@ export class CultivationGame {
       return false;
     }
     if (this.gameState.resources.qi < 10 && !auto) {
-      this.notifyEvent('error', { message: '灵气不足，无法修炼' });
+      this.notifyEvent('error', { message: '法力值不足，无法修炼' });
       return false;
     }
     
-    // 消耗灵气
+    // 消耗法力值
     if (!auto) {
       this.gameState.resources.qi = Math.max(0, this.gameState.resources.qi - 10);
     } else {
-      // 自动修炼时每分钟消耗一次灵气
+      // 自动修炼时每分钟消耗一次法力值
       if (Math.random() < 1/60) { // 60秒一次
         this.gameState.resources.qi = Math.max(0, this.gameState.resources.qi - 10);
       }
@@ -672,7 +685,7 @@ export class CultivationGame {
     }
   }
 
-  // 采集灵气
+  // 恢复法力值
   gatherQi(auto: boolean = false): boolean {
     if (!this.gameState.resources || !this.gameState.cultivation) {
       this.notifyEvent('error', { message: '游戏状态未初始化' });
@@ -680,13 +693,13 @@ export class CultivationGame {
     }
     if (this.gameState.resources.qi >= this.gameState.cultivation.qiCapacity) {
       if (!auto) {
-        this.notifyEvent('error', { message: '灵气已达到上限' });
+        this.notifyEvent('error', { message: '法力值已达到上限' });
       }
       return false;
     }
     
     const qiRate = calculateQiGatherRate(this.gameState);
-    const qiGain = qiRate * (auto ? 0.3 : 1); // 自动采集效率提高
+    const qiGain = qiRate * (auto ? 0.3 : 1); // 自动恢复效率提高
     
     this.gameState.resources.qi = Math.min(
       this.gameState.resources.qi + qiGain,
@@ -743,7 +756,6 @@ export class CultivationGame {
     // 应用丹药效果
     this.applyPillEffects(pill);
     
-    this.notifyEvent('pill_used', { remainingPills: this.gameState.resources.pills.length });
     return true;
   }
 
@@ -1341,11 +1353,11 @@ export class CultivationGame {
       for (let i = 0; i < quantity; i++) {
         this.gameState.resources.pills.push({
           id: `pill_basic_${Date.now()}_${i}`,
-          name: '聚气丹',
-          description: '帮助修炼者凝聚灵气的基础丹药',
-          type: '聚气丹',
+          name: '培元丹',
+          description: '坊市购买的培元丹，可提升修炼速度和恢复法力值',
+          type: '培元丹',
           quality: 'normal',
-          effect: { cultivationSpeed: 1.2 },
+          effect: { cultivationSpeed: 1.2, qiRegen: 50 },
           duration: 300,
           stackable: true,
           maxStacks: 99,
@@ -2104,11 +2116,25 @@ export class CultivationGame {
       });
       
       // 应用即时效果
+      let effectMessage = '';
+      
+      if (pill.effect.healthRegen) {
+        this.gameState.cultivation.health = Math.min(
+          this.gameState.cultivation.health + pill.effect.healthRegen,
+          this.gameState.cultivation.maxHealth
+        );
+        effectMessage += `恢复了${pill.effect.healthRegen}点生命值`;
+      }
+      
       if (pill.effect.qiRegen) {
         this.gameState.resources.qi = Math.min(
           this.gameState.resources.qi + pill.effect.qiRegen,
           this.gameState.cultivation.qiCapacity
         );
+        if (effectMessage) {
+          effectMessage += `，`;
+        }
+        effectMessage += `恢复了${pill.effect.qiRegen}点法力值`;
       }
       
       // 应用即时效果：将修炼速度加成转换为直接经验值
@@ -2122,9 +2148,14 @@ export class CultivationGame {
           this.gameState.cultivation.maxExp
         );
         
-        // 发送通知
-        this.notifyEvent('pill_used', { pill, expGain });
+        if (effectMessage) {
+          effectMessage += `，`;
+        }
+        effectMessage += `获得了${expGain}点经验`;
       }
+      
+      // 发送包含实际效果的通知
+      this.notifyEvent('pill_used', { pill, effectMessage });
       
       if (pill.effect.breakthroughChance) {
         this.gameState.cultivation.breakthroughChanceBonus += pill.effect.breakthroughChance;

@@ -1,22 +1,22 @@
 import { CultivationLevel, GameState, Resources, Skill, OfflineRewards } from './types';
 
 // 修真境界顺序和升级需求
-export const cultivationLevels: { level: CultivationLevel; maxExp: number; baseQiCapacity: number }[] = [
-  { level: 'qi_refining_1', maxExp: 100, baseQiCapacity: 100 },
-  { level: 'qi_refining_2', maxExp: 300, baseQiCapacity: 200 },
-  { level: 'qi_refining_3', maxExp: 600, baseQiCapacity: 350 },
-  { level: 'foundation_1', maxExp: 1200, baseQiCapacity: 600 },
-  { level: 'foundation_2', maxExp: 2400, baseQiCapacity: 1000 },
-  { level: 'foundation_3', maxExp: 4800, baseQiCapacity: 1600 },
-  { level: 'golden_core_1', maxExp: 10000, baseQiCapacity: 2500 },
-  { level: 'golden_core_2', maxExp: 20000, baseQiCapacity: 4000 },
-  { level: 'golden_core_3', maxExp: 40000, baseQiCapacity: 6500 },
-  { level: 'nascent_soul_1', maxExp: 80000, baseQiCapacity: 10000 },
-  { level: 'nascent_soul_2', maxExp: 160000, baseQiCapacity: 15000 },
-  { level: 'nascent_soul_3', maxExp: 320000, baseQiCapacity: 22000 },
-  { level: 'spirit_transformation_1', maxExp: 640000, baseQiCapacity: 30000 },
-  { level: 'spirit_transformation_2', maxExp: 1280000, baseQiCapacity: 40000 },
-  { level: 'spirit_transformation_3', maxExp: 2560000, baseQiCapacity: 50000 }
+export const cultivationLevels: { level: CultivationLevel; maxExp: number; baseQiCapacity: number; baseHealth: number }[] = [
+  { level: 'qi_refining_1', maxExp: 100, baseQiCapacity: 100, baseHealth: 100 },
+  { level: 'qi_refining_2', maxExp: 300, baseQiCapacity: 200, baseHealth: 150 },
+  { level: 'qi_refining_3', maxExp: 600, baseQiCapacity: 350, baseHealth: 200 },
+  { level: 'foundation_1', maxExp: 1200, baseQiCapacity: 600, baseHealth: 300 },
+  { level: 'foundation_2', maxExp: 2400, baseQiCapacity: 1000, baseHealth: 450 },
+  { level: 'foundation_3', maxExp: 4800, baseQiCapacity: 1600, baseHealth: 650 },
+  { level: 'golden_core_1', maxExp: 10000, baseQiCapacity: 2500, baseHealth: 1000 },
+  { level: 'golden_core_2', maxExp: 20000, baseQiCapacity: 4000, baseHealth: 1500 },
+  { level: 'golden_core_3', maxExp: 40000, baseQiCapacity: 6500, baseHealth: 2200 },
+  { level: 'nascent_soul_1', maxExp: 80000, baseQiCapacity: 10000, baseHealth: 3000 },
+  { level: 'nascent_soul_2', maxExp: 160000, baseQiCapacity: 15000, baseHealth: 4500 },
+  { level: 'nascent_soul_3', maxExp: 320000, baseQiCapacity: 22000, baseHealth: 6500 },
+  { level: 'spirit_transformation_1', maxExp: 640000, baseQiCapacity: 30000, baseHealth: 10000 },
+  { level: 'spirit_transformation_2', maxExp: 1280000, baseQiCapacity: 40000, baseHealth: 15000 },
+  { level: 'spirit_transformation_3', maxExp: 2560000, baseQiCapacity: 50000, baseHealth: 20000 }
 ];
 
 // 获取下一个境界
@@ -31,6 +31,60 @@ export function getNextCultivationLevel(currentLevel: CultivationLevel): Cultiva
 // 获取境界信息
 export function getCultivationLevelInfo(level: CultivationLevel) {
   return cultivationLevels.find(info => info.level === level);
+}
+
+// 计算最大生命值
+export function calculateMaxHealth(state: GameState): number {
+  // 添加全面的空值检查
+  if (!state || !state.cultivation) {
+    return 100; // 返回基础值，避免崩溃
+  }
+  
+  const levelInfo = getCultivationLevelInfo(state.cultivation.level);
+  const baseHealth = levelInfo?.baseHealth || 100;
+  const constitutionBonus = (state.cultivation.attributes?.constitution || 0) * 5;
+  return baseHealth + constitutionBonus;
+}
+
+// 计算属性对特定系统的加成
+export function calculateAttributeBonus(state: GameState, bonusType: string): number {
+  const attributes = state.cultivation.attributes || {
+    constitution: 0,
+    rootBone: 0,
+    comprehension: 0,
+    spirituality: 0,
+    charm: 0
+  };
+  
+  switch (bonusType) {
+    case 'cultivationSpeed':
+      return attributes.constitution * 0.01; // 每点体质+1%修炼速度
+    case 'breakthroughChance':
+      return attributes.rootBone * 0.005; // 每点根骨+0.5%突破成功率
+    case 'qiGatherRate':
+      return attributes.spirituality * 0.01; // 每点灵性+1%灵气采集速度
+    case 'expGain':
+      return attributes.comprehension * 0.01; // 每点悟性+1%经验获得
+    case 'resourceGathering':
+      return attributes.rootBone * 0.01; // 每点根骨+1%资源采集效率
+    case 'alchemySuccess':
+      return attributes.comprehension * 0.005; // 每点悟性+0.5%炼丹成功率
+    case 'talismanSuccess':
+      return attributes.spirituality * 0.005; // 每点灵性+0.5%符箓制作成功率
+    case 'explorationSuccess':
+      return attributes.spirituality * 0.005; // 每点灵性+0.5%探险成功率
+    case 'sectContribution':
+      return attributes.charm * 0.01; // 每点魅力+1%宗门贡献
+    case 'petCapture':
+      return attributes.charm * 0.005; // 每点魅力+0.5%宠物捕捉成功率
+    default:
+      return 0;
+  }
+}
+
+// 格式化属性值显示
+export function formatAttributeValue(value: number): string {
+  return value.toFixed(0);
 }
 
 // 将境界标识符转换为中文名称
@@ -116,6 +170,20 @@ export function levelUp(state: GameState): GameState {
     return state;
   }
 
+  // 计算新的最大生命值
+  const constitutionBonus = state.cultivation.attributes?.constitution * 5 || 0;
+  const newMaxHealth = nextLevelInfo.baseHealth + constitutionBonus;
+
+  // 随机提升1-3点属性
+  const attributeKeys = Object.keys(state.cultivation.attributes) as Array<keyof typeof state.cultivation.attributes>;
+  const attributesToIncrease = Math.floor(Math.random() * 3) + 1; // 1-3个属性
+  const newAttributes = { ...state.cultivation.attributes };
+  
+  for (let i = 0; i < attributesToIncrease; i++) {
+    const randomAttribute = attributeKeys[Math.floor(Math.random() * attributeKeys.length)];
+    newAttributes[randomAttribute] += 1;
+  }
+
   const newState = { ...state };
   newState.cultivation = {
     ...state.cultivation,
@@ -123,7 +191,11 @@ export function levelUp(state: GameState): GameState {
     exp: 0, // 升级后经验清零
     maxExp: nextLevelInfo.maxExp,
     qiCapacity: nextLevelInfo.baseQiCapacity + calculateEquipmentBonus(state, 'qiCapacity'),
-    cultivationSpeed: calculateCultivationSpeed(state, nextLevel)
+    cultivationSpeed: calculateCultivationSpeed(state, nextLevel),
+    // 更新生命值和属性
+    maxHealth: newMaxHealth,
+    health: newMaxHealth, // 突破时恢复满生命值
+    attributes: newAttributes
   };
 
   // 升级时清空灵气
@@ -133,6 +205,8 @@ export function levelUp(state: GameState): GameState {
   };
 
   console.log('升级完成，新状态:', newState.cultivation.level, '新经验:', newState.cultivation.exp);
+  console.log('升级后属性:', newState.cultivation.attributes);
+  console.log('升级后生命值:', newState.cultivation.health, '/', newState.cultivation.maxHealth);
   console.log('========= levelUp 函数结束 =========');
   
   return newState;
@@ -150,6 +224,11 @@ export function calculateEquipmentBonus(state: GameState, bonusType: keyof typeo
 
 // 计算修炼速度
 export function calculateCultivationSpeed(state: GameState, level?: CultivationLevel): number {
+  // 添加全面的空值检查
+  if (!state || !state.cultivation) {
+    return 1; // 返回基础值，避免崩溃
+  }
+  
   const baseSpeed = 1 + ((state.skills || []).reduce((speed, skill) => {
     return speed + (skill.effects.cultivationSpeed || 0);
   }, 0));
@@ -162,11 +241,19 @@ export function calculateCultivationSpeed(state: GameState, level?: CultivationL
   // 装备加成
   const equipmentBonus = calculateEquipmentBonus(state, 'cultivationSpeed');
   
-  return baseSpeed * levelBonus + equipmentBonus;
+  // 体质属性加成
+  const attributeBonus = (state.cultivation.attributes?.constitution || 0) * 0.01; // 每点体质+1%修炼速度
+  
+  return baseSpeed * levelBonus * (1 + attributeBonus) + equipmentBonus;
 }
 
 // 计算灵气采集速率
 export function calculateQiGatherRate(state: GameState): number {
+  // 添加全面的空值检查
+  if (!state || !state.cultivation) {
+    return 2; // 返回基础值，避免崩溃
+  }
+  
   const baseRate = 2;
   const skillBonus = (state.skills || []).reduce((rate, skill) => {
     return rate + (skill.effects.qiGatherRate || 0);
@@ -176,7 +263,10 @@ export function calculateQiGatherRate(state: GameState): number {
   const levelIndex = cultivationLevels.findIndex(l => l.level === state.cultivation.level);
   const levelBonus = Math.pow(1.05, levelIndex); // 每境界增加5%采集速率
   
-  return baseRate * levelBonus + skillBonus;
+  // 灵性属性加成
+  const attributeBonus = (state.cultivation.attributes?.spirituality || 0) * 0.01; // 每点灵性+1%灵气采集速度
+  
+  return baseRate * levelBonus * (1 + attributeBonus) + skillBonus;
 }
 
 // 格式化数字（如 1000 -> 1K）

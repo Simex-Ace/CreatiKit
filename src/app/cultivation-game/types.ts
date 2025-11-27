@@ -42,7 +42,7 @@ export type CultivationLevel =
 
 // 资源类型
 export interface Resources {
-  qi: number; // 灵气
+  qi: number; // 法力值
   spiritStone: number; // 灵石
   pills: Pill[]; // 丹药列表
   materials: number; // 基础材料
@@ -186,16 +186,27 @@ export interface CultivationInfo {
   level: CultivationLevel;
   exp: number;
   maxExp: number;
-  qiCapacity: number; // 灵气容量
+  qiCapacity: number; // 法力值容量
   cultivationSpeed: number; // 修炼速度
   cultivationSpeedBonus: number; // 修炼速度加成
   breakthroughChanceBonus: number; // 突破成功率加成
-  qiGatherRateBonus: number; // 灵气采集速率加成
+  qiGatherRateBonus: number; // 法力值恢复速率加成
   expGainBonus: number; // 经验获得加成
   resourceGatheringSpeedBonus: number; // 资源采集速度加成
   alchemySuccessRateBonus: number; // 炼丹成功率加成
   skillExpBoostBonus: number; // 技能经验加成
   sect?: Sect;
+  // 个人属性
+  attributes: {
+    constitution: number; // 体质
+    rootBone: number;     // 根骨
+    comprehension: number; // 悟性
+    spirituality: number;  // 灵性
+    charm: number;         // 魅力
+  };
+  // 生命值
+  health: number;         // 当前生命值
+  maxHealth: number;      // 最大生命值
 }
 
 // 技能接口
@@ -207,7 +218,7 @@ export interface Skill {
   maxLevel: number;
   unlockLevel: CultivationLevel;
   effects: {
-    qiGatherRate?: number; // 灵气采集速率提升
+    qiGatherRate?: number; // 法力值恢复速率提升
     goldFindRate?: number; // 灵石发现率提升
     cultivationSpeed?: number; // 修炼速度提升
     expGain?: number; // 经验获得提升
@@ -225,10 +236,10 @@ export interface Equipment {
   type: 'weapon' | 'armor' | 'accessory';
   level: number;
   effects: {
-    qiCapacity?: number;
-    cultivationSpeed?: number;
-    defense?: number;
-    qiGatherRate?: number;
+    qiCapacity?: number; // 法力值容量提升
+    cultivationSpeed?: number; // 修炼速度提升
+    defense?: number; // 防御力提升
+    qiGatherRate?: number; // 法力值恢复速率提升
   };
 }
 
@@ -598,7 +609,9 @@ export type PillType =
   | '混元丹'
   | '灵光丹'
   | '神息丹'
-  | '金刚丹';
+  | '金刚丹'
+  | '法力丹'
+  | '生命丹';
 
 // 丹药品质类型
 export type PillQuality = 'low' | 'normal' | 'high' | 'perfect' | 'celestial';

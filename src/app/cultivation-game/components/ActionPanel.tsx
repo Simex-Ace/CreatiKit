@@ -22,7 +22,7 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({ gameState, onAction })
       <div className="action-grid">
         <div className="action-card" style={{ display: 'flex', flexDirection: 'column', minHeight: '150px' }}>
           <div className="action-title">盘膝修炼</div>
-          <div className="action-description">消耗10点灵气，获得经验值</div>
+          <div className="action-description">消耗10点法力值，获得经验值</div>
           <div style={{ marginBottom: '0.5rem', minHeight: '1.2rem' }}></div>
           <div style={{ marginTop: 'auto', paddingBottom: '16px' }}>
             <button 
@@ -36,8 +36,8 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({ gameState, onAction })
         </div>
         
         <div className="action-card" style={{ display: 'flex', flexDirection: 'column', minHeight: '150px' }}>
-          <div className="action-title">采集灵气</div>
-          <div className="action-description">从天地间采集灵气储存</div>
+          <div className="action-title">恢复法力值</div>
+          <div className="action-description">恢复自身法力值</div>
           <div style={{ marginBottom: '0.5rem', minHeight: '1.2rem' }}></div>
           <div style={{ marginTop: 'auto', paddingBottom: '16px' }}>
             <button 
@@ -45,14 +45,14 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({ gameState, onAction })
               onClick={() => handleAction('gatherQi')}
               disabled={gameState.resources.qi >= gameState.cultivation.qiCapacity}
             >
-              采集灵气
+              恢复法力值
             </button>
           </div>
         </div>
         
         <div className="action-card" style={{ display: 'flex', flexDirection: 'column', minHeight: '150px' }}>
           <div className="action-title">服用丹药</div>
-          <div className="action-description">恢复50点灵气</div>
+          <div className="action-description">恢复50点法力值</div>
           <div style={{ marginBottom: '0.5rem', color: '#f5d76e' }}>剩余: {gameState.resources.pills.length}</div>
           <div style={{ marginTop: 'auto', paddingBottom: '16px' }}>
             <button 
@@ -115,7 +115,7 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({ gameState, onAction })
         </div>
         
         <div className="auto-mode-toggle">
-          <span>自动采集灵气</span>
+          <span>自动恢复法力值</span>
           <label className="toggle-switch">
             <input 
               type="checkbox" 
@@ -127,7 +127,7 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({ gameState, onAction })
         </div>
         
         <p style={{ color: '#94a3b8', fontSize: '0.9rem', marginTop: '0.5rem' }}>
-          自动模式效率较低，但可在您离开时持续积累资源。请确保有足够的灵气用于自动修炼。
+          自动模式效率较低，但可在您离开时持续积累资源。请确保有足够的法力值用于自动修炼。
         </p>
       </div>
       
