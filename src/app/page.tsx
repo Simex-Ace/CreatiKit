@@ -103,6 +103,10 @@ export default function Home() {
     router.push('/background-remover');
   };
 
+  const handleCameraGestureDrawing = () => {
+    router.push('/camera-gesture-drawing');
+  };
+
   const handleFreeUse = () => {
     // 跳转到功能区域
     window.scrollTo({ top: 500, behavior: 'smooth' });
@@ -247,6 +251,27 @@ export default function Home() {
             {/* 装饰元素 */}
             <div className="absolute -bottom-6 -right-6 w-24 h-24 rounded-full bg-gradient-to-br from-yellow-200 to-yellow-100 opacity-50 blur-sm z-0"></div>
             <div className="absolute -top-4 -left-4 w-16 h-16 rounded-full bg-gradient-to-br from-blue-200 to-blue-100 opacity-50 blur-sm z-0"></div>
+          </Card>
+
+          {/* 隔空写字卡片 */}
+          <Card className="relative min-h-[300px] flex flex-col transition-all duration-300 hover:shadow-lg border-2 border-blue-400 transform hover:-translate-y-1">
+            <div className="absolute -top-3 -right-3 bg-blue-500 text-white text-xs font-bold px-3 py-1 rounded-full">
+              新品
+            </div>
+            <div className="p-6 flex-grow flex flex-col space-y-4">
+              <div className="rounded-full bg-blue-100 p-3 w-fit">
+                <PencilRuler className="h-6 w-6 text-blue-600" />
+              </div>
+              <h3 className="text-xl font-bold text-blue-700">隔空写字</h3>
+              <p className="text-muted-foreground flex-grow">
+                使用手势控制进行空中书写，支持多种工具、缩放和消散效果，带来全新的交互体验
+              </p>
+              <div className="mt-auto pt-4">
+                <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold" onClick={handleCameraGestureDrawing}>
+                  开始体验
+                </Button>
+              </div>
+            </div>
           </Card>
 
           {/* 代码工具卡片 */}

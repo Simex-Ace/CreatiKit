@@ -1,0 +1,577 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>隔空写字 — 带预览窗口（镜像笔迹、UI 不镜像）</title>
+  <style>
+    :root{
+      --bg:#0f1724; --panel:#0b1220; --accent:#60a5fa; --muted:#94a3b8;
+    }
+    html,body{height:100%;margin:0;font-family:Inter,system-ui,Segoe UI,Roboto,'Helvetica Neue',Arial}
+    body{background:linear-gradient(180deg,#071027 0%, #0b1220 60%);color:#e6eef8;overflow:hidden}
+    #app{position:relative;width:100vw;height:100vh;display:flex;align-items:center;justify-content:center}
+
+/* 主摄像头 video：视觉上镜像（CSS），位置根据模式变化 */
+    video#input_video{
+      position:fixed;
+      right:1rem; top:1rem;
+      width:240px; height:135px;
+      border-radius:12px; object-fit:cover;
+      box-shadow:0 8px 30px rgba(2,6,23,0.7); border:1px solid rgba(255,255,255,0.03);
+      z-index:60; opacity:0.9;
+      transform: scaleX(-1); /* 视觉镜像 */
+      transition: all 280ms ease;
+    }
+
+/* 画布与 UI */
+    canvas#drawCanvas{position:fixed;left:0;top:0;width:100%;height:100%;z-index:30;pointer-events:none}
+    canvas#uiCanvas{position:fixed;left:0;top:0;width:100%;height:100%;z-index:40;pointer-events:none}
+
+/* 小预览窗（内含 preview video，可拖动、缩放）*/
+    .preview {
+      position:fixed;
+      right:1rem; top:1rem;
+      width:240px; height:135px;
+      z-index:70;
+      border-radius:12px;
+      overflow:hidden;
+      box-shadow:0 10px 30px rgba(0,0,0,0.6);
+      border:1px solid rgba(255,255,255,0.06);
+      background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.12));
+      cursor:grab;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      transition: box-shadow 120ms ease;
+    }
+    .preview:active { cursor:grabbing; }
+    .preview video { width:100%; height:100%; object-fit:cover; transform: scaleX(-1); }
+
+/* 预览窗的右下角拉伸把手 */
+    .resizer {
+      position:absolute; right:6px; bottom:6px; width:14px; height:14px;
+      background:rgba(255,255,255,0.08); border-radius:3px; cursor:se-resize; z-index:80;
+      display:flex; align-items:center; justify-content:center;
+    }
+    .resizer:after { content:''; width:8px; height:8px; border-right:2px solid rgba(255,255,255,0.28); border-bottom:2px solid rgba(255,255,255,0.28); transform:rotate(45deg); }
+
+    .topbar{position:fixed;left:1rem;top:1rem;color:var(--muted);font-size:13px;z-index:80}
+    .hint{position:fixed;left:50%;transform:translateX(-50%);top:1.8rem;color:var(--muted);font-size:13px;z-index:80;text-align:center;max-width:70%}
+    footer{position:fixed;right:1rem;bottom:1rem;color:var(--muted);font-size:12px;z-index:80}
+
+/* 控制面板 DOM 参考样式（我们用 UI canvas 绘制但保留 DOM 以便后续） */
+    .panel{position:fixed;left:50%;transform:translateX(-50%);bottom:5%;z-index:80;padding:14px;border-radius:14px;display:flex;gap:12px;align-items:center}
+    .tool{width:72px;height:72px;border-radius:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer}
+    .tool p{font-size:12px;color:var(--muted);margin:0;margin-top:6px}
+  </style>
+</head>
+<body>
+  <div id="app">
+    <!-- 主摄像头（用于 MediaPipe / 备用预览） -->
+    <video id="input_video" autoplay playsinline muted></video>
+
+    <!-- 绘图与 UI 两个 canvas（draw 镜像由 context transform 实现；ui 不镜像） -->
+    <canvas id="drawCanvas"></canvas>
+    <canvas id="uiCanvas"></canvas>
+
+    <div class="topbar">隔空写字 · 手势控制（MediaPipe Hands）</div>
+    <div class="hint">张开掌心呼出面板 · 食指点选 · 拇指+食指捏合写字 · 两手食指缩放 · 食指+中指消散</div>
+    <footer>单文件示例 — 允许摄像头权限后生效</footer>
+
+    <!-- 真实 DOM 预览窗（可拖动、缩放、点击切换背景模式）-->
+    <div id="preview" class="preview" title="点击切换背景 | 拖动移动 | 右下角拖拽缩放">
+      <!-- 预览视频与主 video 使用同一视频流（赋值后） -->
+      <video id="preview_video" autoplay playsinline muted></video>
+      <div class="resizer" id="preview_resizer" title="拖动调整大小"></div>
+    </div>
+  </div>
+
+  <!-- MediaPipe -->
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js"></script>
+
+  <script>
+  /***************************************************************************
+   * 说明：
+   * - 主摄像头 video（#input_video）CSS 镜像（transform: scaleX(-1)）。
+   * - drawCanvas 的上下文被设置为水平镜像（ctx.setTransform(-ratio,...))，
+   *   所以在 drawCanvas 上绘制的笔迹会与视频的镜像方向一致。
+   * - uiCanvas 不使用镜像 transform，UI（文字）始终正常显示。
+   * - 预览窗（#preview）是一个 DOM 元素，内部的 preview_video 也镜像显示，
+   *   可拖动/缩放，单击切换“全屏摄像头背景模式”。
+   ***************************************************************************/
+
+  // DOM 元素
+  const inputVideo = document.getElementById('input_video');
+  const previewVideo = document.getElementById('preview_video');
+  const previewEl = document.getElementById('preview');
+  const previewResizer = document.getElementById('preview_resizer');
+  const drawCanvas = document.getElementById('drawCanvas');
+  const uiCanvas = document.getElementById('uiCanvas');
+  const dctx = drawCanvas.getContext('2d');
+  const uctx = uiCanvas.getContext('2d');
+
+  // 背景模式标志：false = 默认（深色背景 + 小预览窗）
+  // true = 摄像头作为全屏背景（inputVideo 变为全屏背景）
+  let cameraBackgroundMode = false;
+
+  // 初始尺寸设置、DPR
+  function fitCanvasSize(canvas, ctx, mirror=false){
+    const ratio = window.devicePixelRatio || 1;
+    canvas.width = Math.floor(window.innerWidth * ratio);
+    canvas.height = Math.floor(window.innerHeight * ratio);
+    canvas.style.width = window.innerWidth + 'px';
+    canvas.style.height = window.innerHeight + 'px';
+    if(ctx){
+      if(mirror){
+        // 镜像：scaleX = -ratio, translateX = canvas.width
+        ctx.setTransform(-ratio, 0, 0, ratio, canvas.width, 0);
+      } else {
+        ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+      }
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+    }
+  }
+
+  fitCanvasSize(drawCanvas, dctx, true);
+  fitCanvasSize(uiCanvas, uctx, false);
+  window.addEventListener('resize', ()=>{
+    fitCanvasSize(drawCanvas, dctx, true);
+    fitCanvasSize(uiCanvas, uctx, false);
+    panelBounds = [];
+  });
+
+  // 状态
+  let showPanel = false;
+  let panelBounds = [];
+  const tools = [
+    {id:'pen', color:'#60a5fa', size:6},
+    {id:'eraser', color:'#000000', size:36},
+    {id:'settings', color:'#ffffff', size:8}
+  ];
+  let selectedTool = {...tools[0]};
+  let strokes = [];
+  let currentStroke = null;
+  let lastHands = [];
+  let gestureState = {scaling:false, startDist:0, startScale:1};
+  const particles = [];
+
+  // MediaPipe Hands
+  const hands = new Hands({locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`});
+  hands.setOptions({
+    maxNumHands: 2,
+    modelComplexity: 1,
+    minDetectionConfidence: 0.72,
+    minTrackingConfidence: 0.6
+  });
+  hands.onResults(onHandsResults);
+
+  // 启动摄像头（使用 Camera helper）
+  const camera = new Camera(inputVideo, {
+    onFrame: async () => { await hands.send({image: inputVideo}); },
+    width: 1280, height: 720
+  });
+  camera.start().then(()=> {
+    // 当 camera 启动后，如果预览视频没有 stream，则复制主 video 的 stream
+    try {
+      // 现代浏览器允许多元素共享同一个 MediaStream
+      if(!previewVideo.srcObject) previewVideo.srcObject = inputVideo.srcObject;
+      previewVideo.play().catch(()=>{});
+    } catch(e){
+      console.warn('无法共享 media stream 到预览视频：', e);
+    }
+  }).catch(err=>{
+    console.error('camera start error', err);
+  });
+
+  /**********************
+   *  手势检测辅助函数
+   **********************/
+  function fingersStatus(landmarks){
+    const tips = {thumb:4, index:8, middle:12, ring:16, pinky:20};
+    const pip = {thumb:2, index:6, middle:10, ring:14, pinky:18};
+    const res = {};
+    ['index','middle','ring','pinky'].forEach(k=>{
+      res[k] = landmarks[tips[k]].y < landmarks[pip[k]].y - 0.02;
+    });
+    res.thumb = Math.abs(landmarks[tips.thumb].x - landmarks[pip.thumb].x) > 0.03 && (Math.abs(landmarks[tips.thumb].x - landmarks[0].x) > 0.02);
+    return res;
+  }
+  function isPalmOpen(landmarks){ const s = fingersStatus(landmarks); const count = ['thumb','index','middle','ring','pinky'].filter(k=>s[k]).length; return count >= 4; }
+  function isPointingIndex(landmarks){ const s = fingersStatus(landmarks); return s.index && !s.middle && !s.ring && !s.pinky; }
+  function isPinch(landmarks){ const dx = landmarks[8].x - landmarks[4].x; const dy = landmarks[8].y - landmarks[4].y; return Math.hypot(dx,dy) < 0.05; }
+  function isIndexAndMiddle(landmarks){ const s = fingersStatus(landmarks); return s.index && s.middle; }
+
+  // 坐标映射：forUI=true -> 返回视觉坐标（视频经过 CSS 镜像）用于 UI 点击检测
+  // forUI=false -> 返回原始屏幕坐标（用于绘图，配合 drawCanvas 的镜像 transform）
+  function toScreen(pt, options={forUI:false}){
+    const w = window.innerWidth, h = window.innerHeight;
+    if(options.forUI){
+      return { x: (1 - pt.x) * w, y: pt.y * h };
+    } else {
+      return { x: pt.x * w, y: pt.y * h };
+    }
+  }
+
+  // MediaPipe onResults 入口
+  let lastPanelToggleTime = 0;
+  function onHandsResults(results){
+    lastHands = results.multiHandLandmarks || [];
+
+    // 如果检测到掌心张开（任意一只手），显示面板（带防抖）
+    if(lastHands.length > 0){
+      const h0 = lastHands[0];
+      if(isPalmOpen(h0)){
+        if(!showPanel && performance.now() - lastPanelToggleTime > 400){ showPanel = true; lastPanelToggleTime = performance.now(); }
+      }
+    }
+
+    // 面板显示时，检测食指点选（UI 坐标）
+    if(showPanel && lastHands.length > 0){
+      const main = lastHands[0];
+      if(isPointingIndex(main)){ handlePanelPointing(main); }
+      if(isPalmOpen(main) && performance.now() - lastPanelToggleTime > 600){ showPanel = false; lastPanelToggleTime = performance.now(); }
+    }
+
+    // 写字：捏合（pinch）
+    if(lastHands.length > 0){
+      const h = lastHands[0];
+      if(isPinch(h)){
+        const pt = toScreen(h[8], {forUI:false});
+        if(!currentStroke){
+          if(selectedTool.id === 'eraser'){
+            currentStroke = {points:[pt], color:'#000000', size:selectedTool.size, type:'eraser'};
+          } else {
+            currentStroke = {points:[pt], color:selectedTool.color, size:selectedTool.size, type:'pen'};
+          }
+        } else {
+          currentStroke.points.push(pt);
+        }
+      } else {
+        if(currentStroke){ strokes.push(currentStroke); currentStroke = null; }
+      }
+    } else {
+      if(currentStroke){ strokes.push(currentStroke); currentStroke = null; }
+    }
+
+    // 双手缩放（两手食指伸出）
+    if(lastHands.length === 2){
+      const A = lastHands[0], B = lastHands[1];
+      const sA = fingersStatus(A), sB = fingersStatus(B);
+      if(sA.index && sB.index && !gestureState.scaling){
+        gestureState.scaling = true;
+        const pA = toScreen(A[8], {forUI:false}), pB = toScreen(B[8], {forUI:false});
+        gestureState.startDist = Math.hypot(pA.x-pB.x, pA.y-pB.y);
+        gestureState.startScale = 1;
+        selectedStrokes = strokes.map((s,i)=>i);
+      } else if(gestureState.scaling && sA.index && sB.index){
+        const pA = toScreen(A[8], {forUI:false}), pB = toScreen(B[8], {forUI:false});
+        const cur = Math.hypot(pA.x-pB.x, pA.y-pB.y);
+        const f = cur / (gestureState.startDist || cur);
+        scaleSelectedStrokes(f);
+        gestureState.startDist = cur;
+      } else if(gestureState.scaling && !(sA.index && sB.index)){
+        gestureState.scaling = false; selectedStrokes = [];
+      }
+    } else {
+      gestureState.scaling = false; selectedStrokes = [];
+    }
+
+    // 食指+中指 -> 消散
+    for(const h of lastHands){
+      if(isIndexAndMiddle(h)){ triggerDissolve(); break; }
+    }
+  }
+
+  // 面板指向（使用视觉坐标 forUI=true）
+  function handlePanelPointing(landmarks){
+    if(panelBounds.length === 0){
+      const midX = window.innerWidth/2;
+      const baseY = window.innerHeight*0.88;
+      const w = 360; const h = 110; const left = midX - w/2; const top = baseY - h/2;
+      panelBounds = [
+        {id:'pen', x:left+18, y:top+10, w:80, h:90},
+        {id:'eraser', x:left+18+96, y:top+10, w:80, h:90},
+        {id:'settings', x:left+18+192, y:top+10, w:120, h:90}
+      ];
+    }
+    const pt = toScreen(landmarks[8], {forUI:true});
+    for(const b of panelBounds){
+      if(pt.x >= b.x && pt.x <= b.x + b.w && pt.y >= b.y && pt.y <= b.y + b.h){
+        selectTool(b.id);
+      }
+    }
+  }
+
+  function selectTool(id){
+    const t = tools.find(x=>x.id===id);
+    if(!t) return;
+    selectedTool = t;
+    if(id === 'settings'){
+      const colors = ['#60a5fa','#f472b6','#34d399','#f97316','#ffffff'];
+      const idx = colors.indexOf(selectedTool.color);
+      const next = colors[(idx + 1) % colors.length];
+      selectedTool.color = next;
+      selectedTool.size = (selectedTool.size % 18) + 4;
+    }
+  }
+
+  function scaleSelectedStrokes(factor){
+    const cx = window.innerWidth/2, cy = window.innerHeight/2;
+    selectedStrokes.forEach(i=>{
+      const s = strokes[i];
+      s.points = s.points.map(p=>({x: cx + (p.x-cx)*factor, y: cy + (p.y-cy)*factor}));
+      s.size = Math.max(1, s.size * factor);
+    });
+  }
+
+  function triggerDissolve(){
+    strokes.forEach(s=>{
+      for(const p of s.points){
+        particles.push({x:p.x, y:p.y, vx:(Math.random()-0.5)*0.6, vy:1+Math.random()*1.2, life: 2000 + Math.random()*1600, born: performance.now(), color: s.color, alpha:1});
+      }
+    });
+    strokes = [];
+    currentStroke = null;
+  }
+
+  // 渲染主循环
+  function render(){
+    // UI canvas 清空（UI 不镜像）
+    uctx.clearRect(0,0,uiCanvas.width, uiCanvas.height);
+
+    // 绘制面板（if showPanel）
+    if(showPanel) drawPanel();
+
+    // drawCanvas (其 ctx 已被设置为镜像 transform)
+    dctx.clearRect(0,0,drawCanvas.width, drawCanvas.height);
+
+    // 绘制已保存 strokes
+    for(const s of strokes){
+      if(s.type === 'pen'){
+        dctx.beginPath();
+        for(let j=0;j<s.points.length;j++){
+          const p = s.points[j];
+          if(j===0) dctx.moveTo(p.x,p.y); else dctx.lineTo(p.x,p.y);
+        }
+        dctx.strokeStyle = s.color; dctx.lineWidth = s.size; dctx.stroke();
+      } else {
+        dctx.globalCompositeOperation = 'destination-out';
+        dctx.beginPath();
+        for(let j=0;j<s.points.length;j++){
+          const p = s.points[j];
+          if(j===0) dctx.moveTo(p.x,p.y); else dctx.lineTo(p.x,p.y);
+        }
+        dctx.lineWidth = s.size; dctx.stroke();
+        dctx.globalCompositeOperation = 'source-over';
+      }
+    }
+
+    // 当前 stroke
+    if(currentStroke){
+      const s = currentStroke;
+      dctx.beginPath();
+      for(let j=0;j<s.points.length;j++){
+        const p = s.points[j];
+        if(j===0) dctx.moveTo(p.x,p.y); else dctx.lineTo(p.x,p.y);
+      }
+      dctx.strokeStyle = s.color; dctx.lineWidth = s.size; dctx.stroke();
+    }
+
+    // 粒子动画
+    const now = performance.now();
+    for(let i=particles.length-1;i>=0;i--){
+      const pt = particles[i]; const age = now - pt.born;
+      if(age > pt.life){ particles.splice(i,1); continue; }
+      pt.x += pt.vx; pt.y += pt.vy; pt.vy += 0.01; pt.alpha = 1 - (age / pt.life);
+      dctx.globalAlpha = pt.alpha;
+      dctx.beginPath(); dctx.arc(pt.x, pt.y, 2, 0, Math.PI*2); dctx.fillStyle = pt.color; dctx.fill();
+      dctx.globalAlpha = 1;
+    }
+
+    // 在 UI canvas 上绘制手部关键点（视觉坐标）
+    if(lastHands.length > 0){
+      for(const h of lastHands){
+        drawHandOverlay(h);
+      }
+    }
+
+    requestAnimationFrame(render);
+  }
+  requestAnimationFrame(render);
+
+  // 绘制控制面板到 UICanvas（文字不会镜像）
+  function drawPanel(){
+    const midX = window.innerWidth/2;
+    const baseY = window.innerHeight*0.88;
+    const w = 360; const h = 110; const left = midX - w/2; const top = baseY - h/2;
+
+    uctx.save();
+    roundRect(uctx, left, top, w, h, 14);
+    uctx.fillStyle = 'rgba(12,18,28,0.6)'; uctx.fill();
+    uctx.strokeStyle = 'rgba(255,255,255,0.04)'; uctx.lineWidth = 1; uctx.stroke();
+
+    const btns = [
+      {id:'pen', x:left+18, y:top+10, w:80, h:90, label:'笔', color:selectedTool.id==='pen'?selectedTool.color:'#60a5fa', sel:selectedTool.id==='pen'},
+      {id:'eraser', x:left+18+96, y:top+10, w:80, h:90, label:'橡皮', color:'#f97316', sel:selectedTool.id==='eraser'},
+      {id:'settings', x:left+18+192, y:top+10, w:120, h:90, label:'色/粗', color:'#ffffff', sel:selectedTool.id==='settings'}
+    ];
+
+    for(const b of btns){
+      uctx.save();
+      roundRect(uctx, b.x, b.y, b.w, b.h, 10);
+      uctx.fillStyle = b.sel ? 'rgba(96,165,250,0.08)' : 'rgba(255,255,255,0.02)';
+      uctx.fill();
+      if(b.sel){ uctx.shadowColor = 'rgba(96,165,250,0.16)'; uctx.shadowBlur = 18; }
+      uctx.strokeStyle = 'rgba(255,255,255,0.03)'; uctx.stroke();
+      uctx.beginPath(); uctx.arc(b.x + b.w/2, b.y + 28, 18, 0, Math.PI*2); uctx.fillStyle = b.color; uctx.fill();
+      uctx.fillStyle = '#cbd5e1'; uctx.font = '12px system-ui'; uctx.textAlign = 'center'; uctx.fillText(b.label, b.x + b.w/2, b.y + 76);
+      uctx.restore();
+    }
+
+    uctx.restore();
+  }
+
+  function roundRect(ctx, x, y, w, h, r){ ctx.beginPath(); ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); }
+
+  function drawHandOverlay(landmarks){
+    uctx.save();
+    uctx.lineWidth = 2; uctx.strokeStyle = 'rgba(255,255,255,0.06)'; uctx.fillStyle = 'rgba(96,165,250,0.18)';
+    for(let i=0;i<landmarks.length;i++){
+      const p = toScreen(landmarks[i], {forUI:true});
+      uctx.beginPath(); uctx.arc(p.x, p.y, 6, 0, Math.PI*2); uctx.fill(); uctx.stroke();
+    }
+    uctx.restore();
+  }
+
+  // 键盘快捷（调试）
+  selectedTool = {...tools[0]}; selectedTool.color = '#60a5fa'; selectedTool.size = 6;
+  function clearAll(){ strokes = []; currentStroke = null; particles.length = 0; }
+  window.addEventListener('keydown', e=>{
+    if(e.key === 'c') triggerDissolve();
+    if(e.key === 'r') clearAll();
+  });
+
+  // ========== 预览窗交互：拖动、缩放、单击切换背景模式 ==========
+  (function setupPreview(){
+    // 元素
+    const el = previewEl;
+    const resizer = previewResizer;
+    let dragging = false, resizing = false;
+    let startX=0, startY=0, startLeft=0, startTop=0, startW=0, startH=0;
+
+    // 使用 style.left/top/right to position. We'll use right/top for initial but transform to left/top when dragging first begins for simplicity
+    function ensurePositioning(){
+      const cs = getComputedStyle(el);
+      if(cs.right !== 'auto'){
+        // convert right/top to left/top
+        const right = parseFloat(cs.right);
+        const top = parseFloat(cs.top);
+        el.style.left = (window.innerWidth - right - el.offsetWidth) + 'px';
+        el.style.top = top + 'px';
+        el.style.right = 'auto';
+      }
+    }
+    ensurePositioning();
+
+    // 拖动
+    el.addEventListener('pointerdown', (e)=>{
+      if(e.target === resizer) return; // resize handled separately
+      dragging = true; startX = e.clientX; startY = e.clientY;
+      const rect = el.getBoundingClientRect();
+      startLeft = rect.left; startTop = rect.top;
+      el.setPointerCapture(e.pointerId);
+    });
+    window.addEventListener('pointermove', (e)=>{
+      if(dragging){
+        const dx = e.clientX - startX, dy = e.clientY - startY;
+        let nx = startLeft + dx, ny = startTop + dy;
+        // 边界限制
+        nx = Math.max(6, Math.min(nx, window.innerWidth - el.offsetWidth - 6));
+        ny = Math.max(6, Math.min(ny, window.innerHeight - el.offsetHeight - 6));
+        el.style.left = nx + 'px'; el.style.top = ny + 'px';
+      } else if(resizing){
+        const dx = e.clientX - startX, dy = e.clientY - startY;
+        let nw = Math.max(100, Math.min(startW + dx, window.innerWidth - startLeft - 6));
+        let nh = Math.max(64, Math.min(startH + dy, window.innerHeight - startTop - 6));
+        el.style.width = nw + 'px'; el.style.height = nh + 'px';
+      }
+    });
+    window.addEventListener('pointerup', (e)=>{
+      if(dragging){ dragging = false; try{ e.releasePointerCapture && e.releasePointerCapture(e.pointerId);}catch(e){} }
+      if(resizing){ resizing = false; try{ e.releasePointerCapture && e.releasePointerCapture(e.pointerId);}catch(e){} }
+    });
+
+    // resize
+    resizer.addEventListener('pointerdown', (e)=>{
+      resizing = true; startX = e.clientX; startY = e.clientY;
+      const rect = el.getBoundingClientRect();
+      startLeft = rect.left; startTop = rect.top; startW = rect.width; startH = rect.height;
+      resizer.setPointerCapture(e.pointerId);
+      e.stopPropagation();
+    });
+
+    // 单击切换背景（click）
+    el.addEventListener('click', (e)=>{
+      // 轻点 (不在拖动时) 切换模式
+      if(!dragging && !resizing){
+        toggleCameraBackgroundMode();
+      }
+    });
+  })();
+
+  // 切换背景模式
+  function toggleCameraBackgroundMode(){
+    cameraBackgroundMode = !cameraBackgroundMode;
+    if(cameraBackgroundMode){
+      // 将主摄像头 video 拉到背景（全屏），并降低透明或样式
+      inputVideo.style.left = '0'; inputVideo.style.top = '0';
+      inputVideo.style.right = 'auto';
+      inputVideo.style.width = '100vw'; inputVideo.style.height = '100vh';
+      inputVideo.style.borderRadius = '0';
+      inputVideo.style.boxShadow = 'none';
+      inputVideo.style.zIndex = '0';
+      inputVideo.style.opacity = '0.95';
+      // 隐藏 preview DOM（或保持可见以便切换回来）——我们隐藏以免干扰
+      previewEl.style.display = 'none';
+    } else {
+      // 恢复到小预览模式
+      inputVideo.style.right = '1rem'; inputVideo.style.top = '1rem';
+      inputVideo.style.left = 'auto';
+      inputVideo.style.width = '240px'; inputVideo.style.height = '135px';
+      inputVideo.style.borderRadius = '12px';
+      inputVideo.style.boxShadow = '0 8px 30px rgba(2,6,23,0.7)';
+      inputVideo.style.zIndex = '60';
+      inputVideo.style.opacity = '0.9';
+      previewEl.style.display = 'flex';
+    }
+  }
+
+  // 确保 previewVideo 与 inputVideo 使用相同 stream（当 camera 启动后）
+  function ensurePreviewStream(){
+    try {
+      if(inputVideo.srcObject){
+        previewVideo.srcObject = inputVideo.srcObject;
+        previewVideo.play().catch(()=>{});
+      }
+    } catch(e){
+      console.warn('无法同步预览视频流：', e);
+    }
+  }
+  // 当 camera 启动完成时可能赋值 srcObject，尝试在多个时机确保同步
+  setTimeout(ensurePreviewStream, 800);
+  inputVideo.addEventListener('loadeddata', ensurePreviewStream);
+  inputVideo.addEventListener('play', ensurePreviewStream);
+
+  // ========== 其它工具函数 ==========
+  function toCSSPixels(val){ return val; } // 占位（我们直接用 window.innerWidth/Height）
+
+  // 画面渲染等完成，日志
+  console.log('已启动 — 请允许摄像头权限以使用隔空写字功能');
+
+  </script>
+</body>
+</html>
