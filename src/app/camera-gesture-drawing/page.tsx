@@ -24,11 +24,12 @@ const CameraGestureDrawing = () => {
   ]);
   const selectedToolRef = useRef({...toolsRef.current[0]});
   const strokesRef = useRef<Array<any>>([]);
-  const currentStrokeRef = useRef<any>(null);
+  const currentStrokeRef = useRef<{[key: number]: any}>({}); // 支持双手绘画，key为手的索引
   const lastHandsRef = useRef<Array<any>>([]);
   const gestureStateRef = useRef({scaling:false, startDist:0, startScale:1});
   const particlesRef = useRef<Array<any>>([]);
   const lastPanelToggleTimeRef = useRef(0);
+  const lastDissolveTimeRef = useRef(0); // 消散手势的防抖时间
   const selectedStrokesRef = useRef<Array<number>>([]);
   
   // MediaPipe 相关引用
@@ -107,13 +108,14 @@ const CameraGestureDrawing = () => {
   
   const isPalmOpen = (landmarks: Array<any>) => {
     const s = fingersStatus(landmarks);
-    const count = ['thumb','index','middle','ring','pinky'].filter(k=>s[k]).length;
-    return count >= 4;
+    // 张开双手：所有手指都张开（包括拇指）
+    return s.thumb && s.index && s.middle && s.ring && s.pinky;
   };
   
   const isPointingIndex = (landmarks: Array<any>) => {
     const s = fingersStatus(landmarks);
-    return s.index && !s.middle && !s.ring && !s.pinky;
+    // 只伸出食指
+    return s.index && !s.middle && !s.ring && !s.pinky && !s.thumb;
   };
   
   const isPinch = (landmarks: Array<any>) => {
@@ -122,9 +124,10 @@ const CameraGestureDrawing = () => {
     return Math.hypot(dx, dy) < 0.05;
   };
   
-  const isIndexAndMiddle = (landmarks: Array<any>) => {
+  const isSixGesture = (landmarks: Array<any>) => {
     const s = fingersStatus(landmarks);
-    return s.index && s.middle;
+    // 比六手势：只伸出拇指和小拇指
+    return s.thumb && s.pinky && !s.index && !s.middle && !s.ring;
   };
   
   // 坐标映射：forUI=true -> 返回视觉坐标（视频经过 CSS 镜像）用于 UI 点击检测
@@ -145,86 +148,127 @@ const CameraGestureDrawing = () => {
   const onHandsResults = (results: any) => {
     lastHandsRef.current = results.multiHandLandmarks || [];
     
-    // 如果检测到掌心张开（任意一只手），显示面板（带防抖）
+    // 定义手势变量，用于检测冲突
+    let hasPalmOpen = false;
+    let hasSixGesture = false;
+    let hasPinch = false;
+    
+    // 1. 先检测是否有消散手势（最高优先级）
+    if(lastHandsRef.current.length > 0) {
+      // 检查消散手势的防抖
+      const now = performance.now();
+      for(const h of lastHandsRef.current) {
+        if(isSixGesture(h)) {
+          if(now - lastDissolveTimeRef.current > 1000) { // 1秒防抖
+            hasSixGesture = true;
+            triggerDissolve();
+            lastDissolveTimeRef.current = now;
+            break;
+          }
+        }
+      }
+      
+      // 如果有消散手势，不执行其他手势
+      if(hasSixGesture) {
+        return;
+      }
+    }
+    
+    // 2. 检测张开双手（菜单控制）
     if(lastHandsRef.current.length > 0) {
       const h0 = lastHandsRef.current[0];
       if(isPalmOpen(h0)) {
-        if(!showPanelRef.current && performance.now() - lastPanelToggleTimeRef.current > 400) {
-          showPanelRef.current = true;
+        hasPalmOpen = true;
+        if(performance.now() - lastPanelToggleTimeRef.current > 600) {
+          showPanelRef.current = !showPanelRef.current;
           lastPanelToggleTimeRef.current = performance.now();
         }
       }
     }
     
-    // 面板显示时，检测食指点选（UI 坐标）
+    // 3. 如果显示面板，处理食指点选
     if(showPanelRef.current && lastHandsRef.current.length > 0) {
       const main = lastHandsRef.current[0];
       if(isPointingIndex(main)) {
         handlePanelPointing(main);
       }
-      if(isPalmOpen(main) && performance.now() - lastPanelToggleTimeRef.current > 600) {
-        showPanelRef.current = false;
-        lastPanelToggleTimeRef.current = performance.now();
-      }
     }
     
-    // 写字：捏合（pinch）
-    if(lastHandsRef.current.length > 0) {
-      const h = lastHandsRef.current[0];
-      if(isPinch(h)) {
-        const pt = toScreen(h[8], {forUI: false});
-        if(!currentStrokeRef.current) {
-          if(selectedToolRef.current.id === 'eraser') {
-            currentStrokeRef.current = {points:[pt], color:'#000000', size:selectedToolRef.current.size, type:'eraser'};
+    // 4. 如果没有张开双手，处理绘画和缩放手势
+    if(!hasPalmOpen) {
+      // 写字：捏合（pinch）- 支持双手同时绘画
+      const currentHands = lastHandsRef.current;
+      const activeHands = new Set<number>();
+      
+      // 处理每只手的绘画
+      for(let i = 0; i < currentHands.length; i++) {
+        const h = currentHands[i];
+        if(isPinch(h)) {
+          activeHands.add(i);
+          hasPinch = true;
+          const pt = toScreen(h[8], {forUI: false});
+          
+          if(!currentStrokeRef.current[i]) {
+            // 为这只手创建新线条
+            if(selectedToolRef.current.id === 'eraser') {
+              currentStrokeRef.current[i] = {points:[pt], color:'#000000', size:selectedToolRef.current.size, type:'eraser'};
+            } else {
+              currentStrokeRef.current[i] = {points:[pt], color:selectedToolRef.current.color, size:selectedToolRef.current.size, type:'pen'};
+            }
           } else {
-            currentStrokeRef.current = {points:[pt], color:selectedToolRef.current.color, size:selectedToolRef.current.size, type:'pen'};
+            // 继续绘制这只手的线条
+            currentStrokeRef.current[i].points.push(pt);
           }
-        } else {
-          currentStrokeRef.current.points.push(pt);
-        }
-      } else {
-        if(currentStrokeRef.current) {
-          strokesRef.current.push(currentStrokeRef.current);
-          currentStrokeRef.current = null;
         }
       }
-    } else {
-      if(currentStrokeRef.current) {
-        strokesRef.current.push(currentStrokeRef.current);
-        currentStrokeRef.current = null;
+      
+      // 结束未捏合的手的线条
+      const currentStrokeKeys = Object.keys(currentStrokeRef.current).map(Number);
+      for(const handIndex of currentStrokeKeys) {
+        if(!activeHands.has(handIndex)) {
+          if(currentStrokeRef.current[handIndex]) {
+            strokesRef.current.push(currentStrokeRef.current[handIndex]);
+            delete currentStrokeRef.current[handIndex];
+          }
+        }
       }
-    }
-    
-    // 双手缩放（两手食指伸出）
-    if(lastHandsRef.current.length === 2) {
-      const A = lastHandsRef.current[0], B = lastHandsRef.current[1];
-      const sA = fingersStatus(A), sB = fingersStatus(B);
-      if(sA.index && sB.index && !gestureStateRef.current.scaling) {
-        gestureStateRef.current.scaling = true;
-        const pA = toScreen(A[8], {forUI: false}), pB = toScreen(B[8], {forUI: false});
-        gestureStateRef.current.startDist = Math.hypot(pA.x-pB.x, pA.y-pB.y);
-        gestureStateRef.current.startScale = 1;
-        selectedStrokesRef.current = strokesRef.current.map((_,i)=>i);
-      } else if(gestureStateRef.current.scaling && sA.index && sB.index) {
-        const pA = toScreen(A[8], {forUI: false}), pB = toScreen(B[8], {forUI: false});
-        const cur = Math.hypot(pA.x-pB.x, pA.y-pB.y);
-        const f = cur / (gestureStateRef.current.startDist || cur);
-        scaleSelectedStrokes(f);
-        gestureStateRef.current.startDist = cur;
-      } else if(gestureStateRef.current.scaling && !(sA.index && sB.index)) {
+      
+      // 如果没有手检测到，结束所有当前线条
+      if(currentHands.length === 0) {
+        for(const handIndex in currentStrokeRef.current) {
+          if(currentStrokeRef.current[handIndex]) {
+            strokesRef.current.push(currentStrokeRef.current[handIndex]);
+            delete currentStrokeRef.current[handIndex];
+          }
+        }
+      }
+      
+      // 双手缩放（两手食指伸出）
+      if(lastHandsRef.current.length === 2 && !hasPinch) {
+        const A = lastHandsRef.current[0], B = lastHandsRef.current[1];
+        const sA = fingersStatus(A), sB = fingersStatus(B);
+        if(sA.index && !sA.middle && !sA.ring && !sA.pinky && !sA.thumb &&
+           sB.index && !sB.middle && !sB.ring && !sB.pinky && !sB.thumb) {
+          if(!gestureStateRef.current.scaling) {
+            gestureStateRef.current.scaling = true;
+            const pA = toScreen(A[8], {forUI: false}), pB = toScreen(B[8], {forUI: false});
+            gestureStateRef.current.startDist = Math.hypot(pA.x-pB.x, pA.y-pB.y);
+            gestureStateRef.current.startScale = 1;
+            selectedStrokesRef.current = strokesRef.current.map((_,i)=>i);
+          } else {
+            const pA = toScreen(A[8], {forUI: false}), pB = toScreen(B[8], {forUI: false});
+            const cur = Math.hypot(pA.x-pB.x, pA.y-pB.y);
+            const f = cur / (gestureStateRef.current.startDist || cur);
+            scaleSelectedStrokes(f);
+            gestureStateRef.current.startDist = cur;
+          }
+        } else if(gestureStateRef.current.scaling) {
+          gestureStateRef.current.scaling = false;
+          selectedStrokesRef.current = [];
+        }
+      } else if(gestureStateRef.current.scaling) {
         gestureStateRef.current.scaling = false;
         selectedStrokesRef.current = [];
-      }
-    } else {
-      gestureStateRef.current.scaling = false;
-      selectedStrokesRef.current = [];
-    }
-    
-    // 食指+中指 -> 消散
-    for(const h of lastHandsRef.current) {
-      if(isIndexAndMiddle(h)) {
-        triggerDissolve();
-        break;
       }
     }
   };
@@ -293,7 +337,7 @@ const CameraGestureDrawing = () => {
       }
     });
     strokesRef.current = [];
-    currentStrokeRef.current = null;
+    currentStrokeRef.current = {}; // 重置为对象，支持双手绘画
   };
   
   // 适应画布尺寸
@@ -446,18 +490,33 @@ const CameraGestureDrawing = () => {
       }
     }
     
-    // 当前 stroke
+    // 当前 stroke - 支持双手同时绘制
     if(currentStrokeRef.current) {
-      const s = currentStrokeRef.current;
-      dctx.beginPath();
-      for(let j = 0; j < s.points.length; j++) {
-        const p = s.points[j];
-        if(j === 0) dctx.moveTo(p.x, p.y);
-        else dctx.lineTo(p.x, p.y);
+      for(const handIndex in currentStrokeRef.current) {
+        const s = currentStrokeRef.current[handIndex];
+        if(s.type === 'pen') {
+          dctx.beginPath();
+          for(let j = 0; j < s.points.length; j++) {
+            const p = s.points[j];
+            if(j === 0) dctx.moveTo(p.x, p.y);
+            else dctx.lineTo(p.x, p.y);
+          }
+          dctx.strokeStyle = s.color;
+          dctx.lineWidth = s.size;
+          dctx.stroke();
+        } else {
+          dctx.globalCompositeOperation = 'destination-out';
+          dctx.beginPath();
+          for(let j = 0; j < s.points.length; j++) {
+            const p = s.points[j];
+            if(j === 0) dctx.moveTo(p.x, p.y);
+            else dctx.lineTo(p.x, p.y);
+          }
+          dctx.lineWidth = s.size;
+          dctx.stroke();
+          dctx.globalCompositeOperation = 'source-over';
+        }
       }
-      dctx.strokeStyle = s.color;
-      dctx.lineWidth = s.size;
-      dctx.stroke();
     }
     
     // 粒子动画
@@ -641,7 +700,7 @@ const CameraGestureDrawing = () => {
     if(e.key === 'c') triggerDissolve();
     if(e.key === 'r') {
       strokesRef.current = [];
-      currentStrokeRef.current = null;
+    currentStrokeRef.current = {}; // 重置为对象，支持双手绘画
       particlesRef.current = [];
     }
   };
