@@ -29,12 +29,27 @@ const CameraGestureDrawing = () => {
   const lastHandsRef = useRef<Array<any>>([]);
   const gestureStateRef = useRef({scaling:false, startDist:0, startScale:1});
   const particlesRef = useRef<Array<any>>([]);
+  const kiBlastsRef = useRef<Array<{
+    x: number;
+    y: number;
+    size: number;
+    startTime: number;
+    maxLifeTime: number;
+    alpha: number;
+    explosionStage: 'exploding' | 'fading';
+    currentExplosionSize: number;
+  }>>([]);
+  const previousHandsRef = useRef<Array<any>>([]); // 用于存储上一帧的手部地标点，检测手势方向
   const lastPanelToggleTimeRef = useRef(0);
   const lastDissolveTimeRef = useRef(0); // 消散手势的防抖时间
   const lastSnapTimeRef = useRef(0); // 响指手势的防抖时间
   const fireActiveRef = useRef(false); // 火焰是否处于激活状态
   const fireStartTimeRef = useRef(0); // 火焰开始时间
   const fireToolActiveRef = useRef(false); // 火焰工具是否开启
+  const kiBlastToolActiveRef = useRef(false); // 爆炸效果工具是否开启
+  const kiBlastChargingRef = useRef(false); // 是否正在聚集爆炸能量
+  const kiBlastSizeRef = useRef(0); // 爆炸能量球大小
+  const kiBlastChargeStartTimeRef = useRef(0); // 聚集能量开始时间
   const selectedStrokesRef = useRef<Array<number>>([]);
   
   // MediaPipe 相关引用
@@ -123,6 +138,18 @@ const CameraGestureDrawing = () => {
     return s.index && !s.middle && !s.ring && !s.pinky && !s.thumb;
   };
   
+  const isFistGesture = (landmarks: Array<any>) => {
+    const s = fingersStatus(landmarks);
+    // 握拳：所有手指都弯曲
+    return !s.thumb && !s.index && !s.middle && !s.ring && !s.pinky;
+  };
+
+  const isOpenHandGesture = (landmarks: Array<any>) => {
+    const s = fingersStatus(landmarks);
+    // 张开手：手指稍微张开即可触发爆炸，食指和中指伸直就足够
+    return (s.index || s.middle) && !(isFistGesture(landmarks));
+  };
+
   const isPinch = (landmarks: Array<any>) => {
     const dx = landmarks[8].x - landmarks[4].x;
     const dy = landmarks[8].y - landmarks[4].y;
@@ -194,25 +221,85 @@ const CameraGestureDrawing = () => {
     let hasPinch = false;
     let hasSnapGesture = false;
     let hasPointingGesture = false;
+    let hasFistGesture = false;
+    let hasOpenHandGesture = false;
     
     // 1. 先检测是否有响指手势（用于触发火焰效果）
-  if(lastHandsRef.current.length > 0) {
-    // 检查响指手势的防抖
-    const now = performance.now();
-    for(const h of lastHandsRef.current) {
-      if(isPointingIndex(h)) {
-        // 只有当火焰工具开启时，才响应食指手势
-        if(fireToolActiveRef.current && now - lastSnapTimeRef.current > 1000) { // 1秒防抖
-          hasSnapGesture = true;
-          // 使用食指指尖坐标作为火焰效果的中心
-          const centerPoint = toScreen(h[8], {forUI: false}); // 食指指尖坐标
-          triggerFireEffect(centerPoint.x, centerPoint.y);
-          lastSnapTimeRef.current = now;
-          break;
+    if(lastHandsRef.current.length > 0) {
+      // 检查响指手势的防抖
+      const now = performance.now();
+      for(const h of lastHandsRef.current) {
+        if(isPointingIndex(h)) {
+          // 只有当火焰工具开启时，才响应食指手势
+          if(fireToolActiveRef.current && now - lastSnapTimeRef.current > 1000) { // 1秒防抖
+            hasSnapGesture = true;
+            // 使用食指指尖坐标作为火焰效果的中心
+            const centerPoint = toScreen(h[8], {forUI: false}); // 食指指尖坐标
+            triggerFireEffect(centerPoint.x, centerPoint.y);
+            lastSnapTimeRef.current = now;
+            break;
+          }
         }
       }
     }
-  }
+
+    // 2. 检测爆炸效果手势
+  if(lastHandsRef.current.length > 0 && kiBlastToolActiveRef.current) {
+      const h = lastHandsRef.current[0];
+      const now = performance.now();
+      
+      // 握拳手势：开始/继续聚集能量
+      if(isFistGesture(h)) {
+        hasFistGesture = true;
+        if(!kiBlastChargingRef.current) {
+          // 开始聚集
+          kiBlastChargingRef.current = true;
+          kiBlastChargeStartTimeRef.current = now;
+          kiBlastSizeRef.current = 0;
+        } else {
+          // 继续聚集，增加能量球大小
+          const chargeDuration = now - kiBlastChargeStartTimeRef.current;
+          // 能量球大小随时间增长，最大100px
+          kiBlastSizeRef.current = Math.min(100, chargeDuration / 50);
+        }
+      } 
+      // 张开手手势：触发爆炸
+    else if(isOpenHandGesture(h) && kiBlastChargingRef.current) {
+        hasOpenHandGesture = true;
+        
+        // 检测手掌的移动方向（推送动作）
+        let angle = Math.PI / 2; // 默认向上
+        
+        // 如果有上一帧的数据，计算移动方向
+        if(previousHandsRef.current.length > 0 && previousHandsRef.current[0]) {
+          const prevPalmCenter = previousHandsRef.current[0][9]; // 上一帧的掌心位置
+          const currPalmCenter = h[9]; // 当前帧的掌心位置
+          
+          // 计算移动向量
+          const dx = currPalmCenter.x - prevPalmCenter.x;
+          const dy = currPalmCenter.y - prevPalmCenter.y;
+          
+          // 只有当移动足够大时才认为是推送动作
+          const moveDistance = Math.sqrt(dx * dx + dy * dy);
+          if(moveDistance > 0.05) { // 移动阈值，可调整
+            // 计算移动方向的角度
+            angle = Math.atan2(dy, dx);
+          }
+        }
+        
+        // 触发爆炸
+          const palmCenter = toScreen({x: h[9].x, y: h[9].y}, {forUI: false}); // 掌心位置
+          triggerKiBlast(palmCenter.x, palmCenter.y, kiBlastSizeRef.current, angle);
+        
+        // 重置状态
+        kiBlastChargingRef.current = false;
+        kiBlastSizeRef.current = 0;
+      }
+      // 其他手势：停止聚集
+      else {
+        kiBlastChargingRef.current = false;
+      }
+    }
     
     // 2. 检测是否有消散手势（最高优先级）
     if(lastHandsRef.current.length > 0 && !hasSnapGesture) {
@@ -261,24 +348,26 @@ const CameraGestureDrawing = () => {
       const currentHands = lastHandsRef.current;
       const activeHands = new Set<number>();
       
-      // 处理每只手的绘画
-      for(let i = 0; i < currentHands.length; i++) {
-        const h = currentHands[i];
-        if(isPinch(h)) {
-          activeHands.add(i);
-          hasPinch = true;
-          const pt = toScreen(h[8], {forUI: false});
-          
-          if(!currentStrokeRef.current[i]) {
-            // 为这只手创建新线条
-            if(selectedToolRef.current.id === 'eraser') {
-              currentStrokeRef.current[i] = {points:[pt], color:'#000000', size:selectedToolRef.current.size, type:'eraser'};
+      // 处理每只手的绘画 - 只有在选中画笔/橡皮擦/随机工具且没有激活火焰或爆炸效果时才能绘画
+      if(['pen', 'eraser', 'settings'].includes(selectedToolRef.current.id) && !fireToolActiveRef.current && !kiBlastToolActiveRef.current) {
+        for(let i = 0; i < currentHands.length; i++) {
+          const h = currentHands[i];
+          if(isPinch(h)) {
+            activeHands.add(i);
+            hasPinch = true;
+            const pt = toScreen(h[8], {forUI: false});
+            
+            if(!currentStrokeRef.current[i]) {
+              // 为这只手创建新线条
+              if(selectedToolRef.current.id === 'eraser') {
+                currentStrokeRef.current[i] = {points:[pt], color:'#000000', size:selectedToolRef.current.size, type:'eraser'};
+              } else {
+                currentStrokeRef.current[i] = {points:[pt], color:selectedToolRef.current.color, size:selectedToolRef.current.size, type:'pen'};
+              }
             } else {
-              currentStrokeRef.current[i] = {points:[pt], color:selectedToolRef.current.color, size:selectedToolRef.current.size, type:'pen'};
+              // 继续绘制这只手的线条
+              currentStrokeRef.current[i].points.push(pt);
             }
-          } else {
-            // 继续绘制这只手的线条
-            currentStrokeRef.current[i].points.push(pt);
           }
         }
       }
@@ -341,7 +430,7 @@ const CameraGestureDrawing = () => {
   const handlePanelPointing = (landmarks: any) => {
     // 以浏览器窗口为中心左右居中计算面板边界，与 drawPanel 函数保持一致
     if(panelBoundsRef.current.length === 0) {
-      const w = 480; const h = 110;
+      const w = 666; const h = 110;
       const left = (window.innerWidth - w) / 2 - 150; // 与drawPanel保持一致，向左偏移150px
       const top = 50; // 固定在上方，距顶部50px
       panelBoundsRef.current = [
@@ -349,7 +438,8 @@ const CameraGestureDrawing = () => {
         {id:'eraser', x:left + 18 + 96, y:top + 10, w:80, h:90},
         {id:'settings', x:left + 18 + 192, y:top + 10, w:80, h:90},
         {id:'background', x:left + 18 + 288, y:top + 10, w:90, h:90},
-        {id:'fire', x:left + 18 + 384, y:top + 10, w:90, h:90}
+        {id:'fire', x:left + 18 + 384, y:top + 10, w:90, h:90},
+        {id:'kiBlast', x:left + 18 + 480, y:top + 10, w:90, h:90}
       ];
     }
     const pt = toScreen(landmarks[8], {forUI: true});
@@ -372,14 +462,43 @@ const CameraGestureDrawing = () => {
       return;
     }
     if(id === 'fire') {
-      // 火焰效果按钮点击处理
-      fireToolActiveRef.current = !fireToolActiveRef.current;
-      return;
+    // 火焰效果按钮点击处理
+    fireToolActiveRef.current = !fireToolActiveRef.current;
+    if(fireToolActiveRef.current) {
+      kiBlastToolActiveRef.current = false; // 关闭爆炸效果
+      // 如果当前选中的是画笔或橡皮或随机工具，确保它们的功能不会与火焰效果冲突
+      if(['pen', 'eraser', 'settings'].includes(selectedToolRef.current.id)) {
+        // 不改变selectedToolRef，只需要确保绘画工具不会在火焰/爆炸激活时生效
+      }
+    } else {
+      // 关闭火焰工具时，重置防抖时间戳，避免手指仍在画面中时触发火焰
+      lastSnapTimeRef.current = performance.now();
     }
+    return;
+  }
+  if(id === 'kiBlast') {
+    // 爆炸效果按钮点击处理
+    kiBlastToolActiveRef.current = !kiBlastToolActiveRef.current;
+    if(kiBlastToolActiveRef.current) {
+      fireToolActiveRef.current = false; // 关闭火焰
+      // 如果当前选中的是画笔或橡皮，取消选中
+      if(['pen', 'eraser'].includes(selectedToolRef.current.id)) {
+        // 不改变selectedToolRef，只需要确保画笔工具不会在火焰/爆炸激活时生效
+      }
+    }
+    return;
+  }
     
     const t = toolsRef.current.find((x: any) => x.id === id);
     if(!t) return;
     selectedToolRef.current = t;
+    // 选择画笔/橡皮/随机工具时，关闭火焰和爆炸效果，并重置火焰防抖时间
+    if(['pen', 'eraser', 'settings'].includes(id)) {
+      fireToolActiveRef.current = false;
+      kiBlastToolActiveRef.current = false;
+      // 关闭火焰工具时，重置防抖时间戳，避免手指仍在画面中时触发火焰
+      lastSnapTimeRef.current = performance.now();
+    }
     if(id === 'settings') {
       // 生成随机颜色
       const generateRandomColor = () => {
@@ -451,6 +570,46 @@ const CameraGestureDrawing = () => {
     fireActiveRef.current = true;
     fireStartTimeRef.current = performance.now();
   };
+
+  // 能量球爆炸效果 - 手掌张开时能量球爆炸
+  const triggerKiBlast = (x: number, y: number, size: number, angle: number) => {
+    // 添加新的能量球爆炸效果
+    kiBlastsRef.current.push({
+      x: x, // 爆炸中心点X
+      y: y, // 爆炸中心点Y
+      size: size, // 能量球原始大小
+      startTime: performance.now(),
+      maxLifeTime: 2000, // 2秒后自动结束
+      alpha: 1,
+      explosionStage: 'exploding', // 初始为爆炸阶段
+      currentExplosionSize: size // 初始爆炸大小与能量球大小一致
+    });
+    
+    // 同时添加大量爆炸粒子效果增强视觉
+    const blastColors = [
+      '#0ea5e9', '#38bdf8', '#7dd3fc', '#bae6fd', '#e0f2fe', '#ffffff'
+    ];
+    
+    // 向所有方向发射的粒子
+    for(let i = 0; i < 100; i++) {
+      const randomAngle = Math.random() * Math.PI * 2;
+      const randomSpeed = 3 + Math.random() * 7;
+      particlesRef.current.push({
+        x: x,
+        y: y,
+        vx: Math.cos(randomAngle) * randomSpeed,
+        vy: Math.sin(randomAngle) * randomSpeed,
+        life: 800 + Math.random() * 400,
+        born: performance.now(),
+        color: blastColors[Math.floor(Math.random() * blastColors.length)],
+        alpha: 1,
+        type: 'explosion',
+        size: 2 + Math.random() * 8,
+        rotation: Math.random() * Math.PI * 2,
+        rotationSpeed: (Math.random() - 0.5) * 0.1
+      });
+    }
+  };
   
   // 适应画布尺寸
   const fitCanvasSize = (canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D | null, mirror: boolean = false) => {
@@ -501,7 +660,7 @@ const CameraGestureDrawing = () => {
     if(!uctx) return;
     
     // 调整面板位置，向左偏移
-  const w = 570; const h = 110;
+  const w = 666; const h = 110;
     const left = (window.innerWidth - w) / 2 - 150; // 向左偏移150px
     const top = 50; // 固定在上方，距顶部50px
     
@@ -520,7 +679,8 @@ const CameraGestureDrawing = () => {
       {id:'eraser', x:left + 18 + 96, y:top + 10, w:80, h:90, label:'橡皮', color:'#f97316', sel:selectedToolRef.current.id==='eraser'},
       {id:'settings', x:left + 18 + 192, y:top + 10, w:80, h:90, label:'随机', color:'#ffffff', sel:selectedToolRef.current.id==='settings'},
       {id:'background', x:left + 18 + 288, y:top + 10, w:90, h:90, label:'背景', color:cameraBackgroundModeRef.current ? '#34d399' : '#94a3b8', sel:false},
-      {id:'fire', x:left + 18 + 384, y:top + 10, w:90, h:90, label:'火焰', color:fireToolActiveRef.current ? '#f97316' : '#f59e0b', sel:fireToolActiveRef.current}
+      {id:'fire', x:left + 18 + 384, y:top + 10, w:90, h:90, label:'火焰', color:fireToolActiveRef.current ? '#f97316' : '#f59e0b', sel:fireToolActiveRef.current},
+      {id:'kiBlast', x:left + 18 + 480, y:top + 10, w:90, h:90, label:'爆炸效果', color:kiBlastToolActiveRef.current ? '#8b5cf6' : '#6366f1', sel:kiBlastToolActiveRef.current}
     ];
     
     for(const b of btns) {
@@ -683,6 +843,155 @@ const CameraGestureDrawing = () => {
       }
     }
     
+    // 绘制能量球（当正在聚集时）
+    if(kiBlastChargingRef.current && lastHandsRef.current.length > 0 && kiBlastToolActiveRef.current) {
+      const h = lastHandsRef.current[0];
+      const palmCenter = toScreen({x: h[9].x, y: h[9].y}, {forUI: false}); // 掌心位置
+      const now = performance.now();
+      
+      // 改为蓝白色能量球
+      const pulseFactor = 1 + Math.sin(now * 0.01) * 0.1;
+      const currentSize = kiBlastSizeRef.current * pulseFactor;
+      
+      // 绘制能量球外层光晕（蓝白色）
+      const gradient = dctx.createRadialGradient(palmCenter.x, palmCenter.y, 0, palmCenter.x, palmCenter.y, currentSize * 2);
+      gradient.addColorStop(0, 'rgba(14, 165, 233, 0.8)');
+      gradient.addColorStop(0.5, 'rgba(56, 189, 248, 0.5)');
+      gradient.addColorStop(1, 'rgba(125, 211, 252, 0)');
+      
+      dctx.save();
+      dctx.fillStyle = gradient;
+      dctx.beginPath();
+      dctx.arc(palmCenter.x, palmCenter.y, currentSize * 2, 0, Math.PI * 2);
+      dctx.fill();
+      dctx.restore();
+      
+      // 绘制能量球核心（蓝白色渐变）
+      const coreGradient = dctx.createRadialGradient(palmCenter.x, palmCenter.y, 0, palmCenter.x, palmCenter.y, currentSize);
+      coreGradient.addColorStop(0, '#ffffff');
+      coreGradient.addColorStop(0.3, '#0ea5e9');
+      coreGradient.addColorStop(0.6, '#bae6fd');
+      coreGradient.addColorStop(1, '#0ea5e9');
+      
+      dctx.save();
+      dctx.fillStyle = coreGradient;
+      dctx.beginPath();
+      dctx.arc(palmCenter.x, palmCenter.y, currentSize, 0, Math.PI * 2);
+      dctx.fill();
+      
+      // 绘制内部能量波纹（脉动）
+      const rippleSize = currentSize * 0.5 * (1 + Math.sin(now * 0.02) * 0.2);
+      dctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
+      dctx.lineWidth = 2;
+      dctx.beginPath();
+      dctx.arc(palmCenter.x, palmCenter.y, rippleSize, 0, Math.PI * 2);
+      dctx.stroke();
+      
+      // 添加第二个波纹
+      const rippleSize2 = currentSize * 0.7 * (1 + Math.sin(now * 0.02 + Math.PI) * 0.15);
+      dctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+      dctx.lineWidth = 1;
+      dctx.beginPath();
+      dctx.arc(palmCenter.x, palmCenter.y, rippleSize2, 0, Math.PI * 2);
+      dctx.stroke();
+      
+      // 绘制能量粒子
+      for(let i = 0; i < 8; i++) {
+        const angle = (i / 8) * Math.PI * 2 + now * 0.01;
+        const radius = currentSize * (1.2 + Math.sin(now * 0.03 + i) * 0.3);
+        const particleX = palmCenter.x + Math.cos(angle) * radius;
+        const particleY = palmCenter.y + Math.sin(angle) * radius;
+        
+        dctx.fillStyle = '#ffffff';
+        dctx.globalAlpha = 0.7;
+        dctx.beginPath();
+        dctx.arc(particleX, particleY, 2, 0, Math.PI * 2);
+        dctx.fill();
+      }
+      
+      dctx.restore();
+    }
+    
+    // 能量球爆炸动画
+    for(let i = kiBlastsRef.current.length - 1; i >= 0; i--) {
+      const blast = kiBlastsRef.current[i];
+      const age = now - blast.startTime;
+      
+      // 检查是否超过生命周期
+      if(age > blast.maxLifeTime) {
+        kiBlastsRef.current.splice(i, 1);
+        continue;
+      }
+      
+      // 更新爆炸状态和大小
+      const explosionDuration = blast.maxLifeTime * 0.4; // 爆炸阶段占40%
+      const fadeDuration = blast.maxLifeTime * 0.6; // 衰减阶段占60%
+      
+      if(blast.explosionStage === 'exploding') {
+        if(age < explosionDuration) {
+          // 爆炸阶段：快速膨胀
+          const explosionProgress = age / explosionDuration;
+          // 使用缓动函数使爆炸更自然
+          const easeOut = 1 - Math.pow(1 - explosionProgress, 3);
+          blast.currentExplosionSize = blast.size + (blast.size * 3) * easeOut;
+        } else {
+          // 进入衰减阶段
+          blast.explosionStage = 'fading';
+        }
+      } else {
+        // 衰减阶段：逐渐消失
+        const fadeProgress = (age - explosionDuration) / fadeDuration;
+        blast.alpha = Math.max(0, 1 - fadeProgress);
+        // 略微继续扩大
+        const fadeEaseOut = 1 - Math.pow(1 - fadeProgress, 2);
+        blast.currentExplosionSize = blast.size + (blast.size * 3) + (blast.size * 1.5) * fadeEaseOut;
+      }
+      
+      // 绘制爆炸效果
+      dctx.save();
+      dctx.translate(blast.x, blast.y);
+      
+      // 爆炸外围光晕效果
+      const glowRadius = blast.currentExplosionSize * 0.8;
+      const glowGradient = dctx.createRadialGradient(0, 0, 0, 0, 0, glowRadius);
+      glowGradient.addColorStop(0, `rgba(14, 165, 233, ${blast.alpha * 0.4})`);
+      glowGradient.addColorStop(0.4, `rgba(56, 189, 248, ${blast.alpha * 0.2})`);
+      glowGradient.addColorStop(0.7, `rgba(125, 211, 252, ${blast.alpha * 0.1})`);
+      glowGradient.addColorStop(1, `rgba(14, 165, 233, 0)`);
+      
+      dctx.fillStyle = glowGradient;
+      dctx.beginPath();
+      dctx.arc(0, 0, glowRadius, 0, Math.PI * 2);
+      dctx.fill();
+      
+      // 爆炸主体（发光圆环）
+      const ringRadius = blast.currentExplosionSize * 0.6;
+      const ringGradient = dctx.createRadialGradient(0, 0, ringRadius * 0.3, 0, 0, ringRadius);
+      ringGradient.addColorStop(0, `rgba(224, 242, 254, ${blast.alpha * 0.3})`);
+      ringGradient.addColorStop(0.5, `rgba(186, 230, 253, ${blast.alpha * 0.8})`);
+      ringGradient.addColorStop(0.7, `rgba(56, 189, 248, ${blast.alpha * 0.9})`);
+      ringGradient.addColorStop(1, `rgba(14, 165, 233, ${blast.alpha * 0.1})`);
+      
+      dctx.fillStyle = ringGradient;
+      dctx.beginPath();
+      dctx.arc(0, 0, ringRadius, 0, Math.PI * 2);
+      dctx.fill();
+      
+      // 爆炸中心亮点
+      const centerRadius = blast.currentExplosionSize * 0.2;
+      const centerGradient = dctx.createRadialGradient(0, 0, 0, 0, 0, centerRadius);
+      centerGradient.addColorStop(0, `rgba(255, 255, 255, ${blast.alpha})`);
+      centerGradient.addColorStop(0.6, `rgba(186, 230, 253, ${blast.alpha * 0.8})`);
+      centerGradient.addColorStop(1, `rgba(56, 189, 248, ${blast.alpha * 0.2})`);
+      
+      dctx.fillStyle = centerGradient;
+      dctx.beginPath();
+      dctx.arc(0, 0, centerRadius, 0, Math.PI * 2);
+      dctx.fill();
+      
+      dctx.restore();
+    }
+
     // 粒子动画
     for(let i = particlesRef.current.length - 1; i >= 0; i--) {
       const pt = particlesRef.current[i];
@@ -701,6 +1010,18 @@ const CameraGestureDrawing = () => {
         pt.rotation += pt.rotationSpeed;
         pt.alpha = 1 - (age / pt.life);
         pt.size = Math.max(0.5, pt.size * (1 - age / pt.life)); // 火焰粒子逐渐变小
+      } else if(pt.type === 'kiBlast' || pt.type === 'kiBlastTrail') {
+        // 爆炸粒子特殊行为
+        pt.x += pt.vx;
+        pt.y += pt.vy;
+        pt.rotation += pt.rotationSpeed;
+        pt.alpha = 1 - (age / pt.life);
+        // 爆炸粒子保持大小或略微增大
+        if(pt.type === 'kiBlast') {
+          pt.size = Math.min(pt.size * 1.01, 15);
+        } else {
+          pt.size = Math.max(0.5, pt.size * (1 - age / pt.life));
+        }
       } else {
         // 普通粒子行为
         pt.x += pt.vx;
@@ -722,6 +1043,30 @@ const CameraGestureDrawing = () => {
         dctx.rect(-pt.size/2, -pt.size/2, pt.size, pt.size * 2); // 长方形火焰形状
         dctx.fill();
         dctx.restore();
+      } else if((pt.type === 'kiBlast' || pt.type === 'kiBlastTrail') && pt.size) {
+        // 爆炸粒子使用圆形渲染，带有发光效果
+        dctx.save();
+        
+        // 添加发光效果
+        if(pt.type === 'kiBlast') {
+          const glowGradient = dctx.createRadialGradient(pt.x, pt.y, 0, pt.x, pt.y, pt.size * 2);
+          glowGradient.addColorStop(0, pt.color);
+          glowGradient.addColorStop(0.5, pt.color + '80');
+          glowGradient.addColorStop(1, pt.color + '00');
+          
+          dctx.fillStyle = glowGradient;
+          dctx.beginPath();
+          dctx.arc(pt.x, pt.y, pt.size * 2, 0, Math.PI * 2);
+          dctx.fill();
+        }
+        
+        // 绘制粒子核心
+        dctx.fillStyle = pt.color;
+        dctx.beginPath();
+        dctx.arc(pt.x, pt.y, pt.size, 0, Math.PI * 2);
+        dctx.fill();
+        
+        dctx.restore();
       } else {
         // 普通粒子使用圆形渲染
         dctx.beginPath();
@@ -738,6 +1083,9 @@ const CameraGestureDrawing = () => {
         drawHandOverlay(h);
       }
     }
+    
+    // 更新上一帧的手部地标点，用于检测手势方向
+    previousHandsRef.current = JSON.parse(JSON.stringify(lastHandsRef.current));
     
     animationFrameRef.current = requestAnimationFrame(render);
   };
