@@ -20,7 +20,8 @@ const CameraGestureDrawing = () => {
   const toolsRef = useRef([
     {id:'pen', color:'#60a5fa', size:6},
     {id:'eraser', color:'#000000', size:36},
-    {id:'settings', color:'#ffffff', size:8}
+    {id:'settings', color:'#ffffff', size:8},
+    {id:'background', color:'#34d399', size:8}
   ]);
   const selectedToolRef = useRef({...toolsRef.current[0]});
   const strokesRef = useRef<Array<any>>([]);
@@ -130,17 +131,44 @@ const CameraGestureDrawing = () => {
     return s.thumb && s.pinky && !s.index && !s.middle && !s.ring;
   };
   
-  // 坐标映射：forUI=true -> 返回视觉坐标（视频经过 CSS 镜像）用于 UI 点击检测
+  // 坐标映射：forUI=true -> 返回视觉坐标用于 UI 点击检测
   // forUI=false -> 返回原始屏幕坐标（用于绘图，配合 drawCanvas 的镜像 transform）
   const toScreen = (pt: any, options: {forUI?: boolean} = {forUI: false}) => {
     // 使用浏览器窗口尺寸，因为面板现在使用基于浏览器窗口的绝对定位
     const w = window.innerWidth, h = window.innerHeight;
+    
+    // 全局基础偏移量：将手部捕捉点整体往左上方向调整
+    // 正值表示向右/向下，负值表示向左/向上
+    const baseOffsetY = -0.07; // y方向向上偏移（所有模式共享）
+    
     if(options.forUI) {
-      return { x: (1 - pt.x) * w, y: pt.y * h };
+      // 无论是否处于摄像头背景模式，视频始终是镜像的，所以UI点击检测始终需要 (1 - pt.x)
+      // UI模式使用默认的x偏移
+      const uiOffsetX = -0.06;
+      return { 
+        x: (1 - pt.x + uiOffsetX) * w, 
+        y: (pt.y + baseOffsetY) * h 
+      };
     } else {
-      // 添加x偏移量，使线条更接近指尖
-      const offsetX = -0.1;
-      return { x: (pt.x + offsetX) * w, y: pt.y * h };
+      // 根据是否处于摄像头背景模式选择不同的x偏移量
+      let xOffset;
+      if (cameraBackgroundModeRef.current) {
+        // 摄像头背景模式下使用较大的偏移量
+        xOffset = -0.06;
+        // 在摄像头背景模式下，使用镜像坐标 + 偏移
+        return { 
+          x: (1 - pt.x + xOffset) * w, 
+          y: (pt.y + baseOffsetY) * h 
+        };
+      } else {
+        // 非摄像头背景模式下使用较小的偏移量
+        xOffset = -0.04;
+        // 非摄像头背景模式下，使用原始坐标 + 偏移
+        return { 
+          x: (pt.x + xOffset) * w, 
+          y: (pt.y + baseOffsetY) * h 
+        };
+      }
     }
   };
   
@@ -273,28 +301,43 @@ const CameraGestureDrawing = () => {
     }
   };
   
+  // 添加防抖引用
+  const lastToolClickRef = useRef({ id: '', time: 0 });
+  
   // 面板指向（使用视觉坐标 forUI=true）
   const handlePanelPointing = (landmarks: any) => {
     // 以浏览器窗口为中心左右居中计算面板边界，与 drawPanel 函数保持一致
     if(panelBoundsRef.current.length === 0) {
-      const w = 360; const h = 110;
+      const w = 480; const h = 110;
       const left = (window.innerWidth - w) / 2 - 150; // 与drawPanel保持一致，向左偏移150px
       const top = 50; // 固定在上方，距顶部50px
       panelBoundsRef.current = [
         {id:'pen', x:left + 18, y:top + 10, w:80, h:90},
         {id:'eraser', x:left + 18 + 96, y:top + 10, w:80, h:90},
-        {id:'settings', x:left + 18 + 192, y:top + 10, w:120, h:90}
+        {id:'settings', x:left + 18 + 192, y:top + 10, w:80, h:90},
+        {id:'background', x:left + 18 + 288, y:top + 10, w:120, h:90}
       ];
     }
     const pt = toScreen(landmarks[8], {forUI: true});
     for(const b of panelBoundsRef.current) {
       if(pt.x >= b.x && pt.x <= b.x + b.w && pt.y >= b.y && pt.y <= b.y + b.h) {
-        selectTool(b.id);
+        const now = performance.now();
+        // 防抖：同一按钮至少1秒后才能再次点击
+        if(b.id !== lastToolClickRef.current.id || now - lastToolClickRef.current.time > 1000) {
+          selectTool(b.id);
+          lastToolClickRef.current = { id: b.id, time: now };
+        }
+        break; // 只点击第一个匹配的按钮
       }
     }
   };
   
   const selectTool = (id: string) => {
+    if(id === 'background') {
+      toggleCameraBackgroundMode();
+      return;
+    }
+    
     const t = toolsRef.current.find((x: any) => x.id === id);
     if(!t) return;
     selectedToolRef.current = t;
@@ -353,7 +396,15 @@ const CameraGestureDrawing = () => {
     canvas.style.height = height + 'px';
     
     if(ctx) {
-      if(mirror) {
+      // 检查是否是drawCanvas并且当前是摄像头背景模式
+      const isDrawCanvas = canvas === drawCanvasRef.current;
+      const isCameraBackground = cameraBackgroundModeRef.current;
+      
+      // 在摄像头背景模式下，取消drawCanvas的镜像变换，因为视频已经是镜像的了
+      // 这避免了双重镜像导致的线条偏移问题
+      const shouldMirror = mirror && !(isDrawCanvas && isCameraBackground);
+      
+      if(shouldMirror) {
         // 镜像：scaleX = -ratio, translateX = canvas.width
         ctx.setTransform(-ratio, 0, 0, ratio, canvas.width, 0);
       } else {
@@ -381,7 +432,7 @@ const CameraGestureDrawing = () => {
     if(!uctx) return;
     
     // 调整面板位置，向左偏移
-    const w = 360; const h = 110;
+  const w = 480; const h = 110;
     const left = (window.innerWidth - w) / 2 - 150; // 向左偏移150px
     const top = 50; // 固定在上方，距顶部50px
     
@@ -398,7 +449,8 @@ const CameraGestureDrawing = () => {
     const btns = [
       {id:'pen', x:left + 18, y:top + 10, w:80, h:90, label:'笔', color:selectedToolRef.current.id==='pen' ? selectedToolRef.current.color : '#60a5fa', sel:selectedToolRef.current.id==='pen'},
       {id:'eraser', x:left + 18 + 96, y:top + 10, w:80, h:90, label:'橡皮', color:'#f97316', sel:selectedToolRef.current.id==='eraser'},
-      {id:'settings', x:left + 18 + 192, y:top + 10, w:120, h:90, label:'随机', color:'#ffffff', sel:selectedToolRef.current.id==='settings'}
+      {id:'settings', x:left + 18 + 192, y:top + 10, w:80, h:90, label:'随机', color:'#ffffff', sel:selectedToolRef.current.id==='settings'},
+      {id:'background', x:left + 18 + 288, y:top + 10, w:120, h:90, label:'背景', color:cameraBackgroundModeRef.current ? '#34d399' : '#94a3b8', sel:false}
     ];
     
     for(const b of btns) {
@@ -557,7 +609,26 @@ const CameraGestureDrawing = () => {
     const previewEl = previewElRef.current;
     const container = document.querySelector('div[style*="position: fixed"]') as HTMLElement;
     
+    if(container) {
+      // 添加过渡效果，与video保持一致
+      container.style.transition = 'background 280ms ease';
+      
+      if(cameraBackgroundModeRef.current) {
+        // 隐藏容器的纯色背景
+        container.style.background = 'transparent';
+      } else {
+        // 恢复容器的纯色背景
+        container.style.background = 'linear-gradient(180deg, #071027 0%, #0b1220 60%)';
+      }
+    }
+    
     if(inputVideo) {
+      // 确保所有video元素都在UI元素之下
+      const uiCanvas = uiCanvasRef.current;
+      if(uiCanvas) {
+        uiCanvas.style.zIndex = '100'; // 确保UI层始终在最上面
+      }
+      
       if(cameraBackgroundModeRef.current) {
         // 将主摄像头 video 拉到容器背景（全屏）
         inputVideo.style.left = '0';
@@ -568,7 +639,9 @@ const CameraGestureDrawing = () => {
         inputVideo.style.borderRadius = '0';
         inputVideo.style.boxShadow = 'none';
         inputVideo.style.zIndex = '0';
-        inputVideo.style.opacity = '0.95';
+        inputVideo.style.opacity = '1';
+        // 全屏模式下保持镜像效果，用户习惯看到镜像的自己
+        inputVideo.style.transform = 'scaleX(-1)';
       } else {
         // 恢复到小预览模式
         inputVideo.style.right = '1rem';
@@ -580,11 +653,29 @@ const CameraGestureDrawing = () => {
         inputVideo.style.boxShadow = '0 8px 30px rgba(2,6,23,0.7)';
         inputVideo.style.zIndex = '60';
         inputVideo.style.opacity = '0.9';
+        // 小预览模式下保持镜像效果
+        inputVideo.style.transform = 'scaleX(-1)';
       }
     }
     
+    // 确保drawCanvas也在UI层之下
+    const drawCanvas = drawCanvasRef.current;
+    if(drawCanvas) {
+      drawCanvas.style.zIndex = '30';
+    }
+    
+    // 确保背景切换后手势检测仍然正常工作
+    // 重置面板边界，确保坐标计算正确
+    panelBoundsRef.current = [];
+    
     if(previewEl) {
       previewEl.style.display = cameraBackgroundModeRef.current ? 'none' : 'flex';
+    }
+    
+    // 重新调整画布大小和镜像设置，确保切换背景模式后坐标正确
+    const ctx = dctxRef.current;
+    if(drawCanvas && ctx) {
+      fitCanvasSize(drawCanvas, ctx, true); // true表示需要考虑镜像（但会根据背景模式自动调整）
     }
   };
   
