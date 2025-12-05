@@ -31,6 +31,10 @@ const CameraGestureDrawing = () => {
   const particlesRef = useRef<Array<any>>([]);
   const lastPanelToggleTimeRef = useRef(0);
   const lastDissolveTimeRef = useRef(0); // 消散手势的防抖时间
+  const lastSnapTimeRef = useRef(0); // 响指手势的防抖时间
+  const fireActiveRef = useRef(false); // 火焰是否处于激活状态
+  const fireStartTimeRef = useRef(0); // 火焰开始时间
+  const fireToolActiveRef = useRef(false); // 火焰工具是否开启
   const selectedStrokesRef = useRef<Array<number>>([]);
   
   // MediaPipe 相关引用
@@ -125,6 +129,14 @@ const CameraGestureDrawing = () => {
     return Math.hypot(dx, dy) < 0.05;
   };
   
+  const isSnapGesture = (landmarks: Array<any>) => {
+    // 响指手势检测：拇指和中指指尖距离很近
+    const dx = landmarks[4].x - landmarks[12].x;
+    const dy = landmarks[4].y - landmarks[12].y;
+    return Math.hypot(dx, dy) < 0.04;
+  };
+  
+
   const isSixGesture = (landmarks: Array<any>) => {
     const s = fingersStatus(landmarks);
     // 比六手势：只伸出拇指和小拇指
@@ -180,9 +192,30 @@ const CameraGestureDrawing = () => {
     let hasPalmOpen = false;
     let hasSixGesture = false;
     let hasPinch = false;
+    let hasSnapGesture = false;
+    let hasPointingGesture = false;
     
-    // 1. 先检测是否有消散手势（最高优先级）
-    if(lastHandsRef.current.length > 0) {
+    // 1. 先检测是否有响指手势（用于触发火焰效果）
+  if(lastHandsRef.current.length > 0) {
+    // 检查响指手势的防抖
+    const now = performance.now();
+    for(const h of lastHandsRef.current) {
+      if(isPointingIndex(h)) {
+        // 只有当火焰工具开启时，才响应食指手势
+        if(fireToolActiveRef.current && now - lastSnapTimeRef.current > 1000) { // 1秒防抖
+          hasSnapGesture = true;
+          // 使用食指指尖坐标作为火焰效果的中心
+          const centerPoint = toScreen(h[8], {forUI: false}); // 食指指尖坐标
+          triggerFireEffect(centerPoint.x, centerPoint.y);
+          lastSnapTimeRef.current = now;
+          break;
+        }
+      }
+    }
+  }
+    
+    // 2. 检测是否有消散手势（最高优先级）
+    if(lastHandsRef.current.length > 0 && !hasSnapGesture) {
       // 检查消散手势的防抖
       const now = performance.now();
       for(const h of lastHandsRef.current) {
@@ -315,7 +348,8 @@ const CameraGestureDrawing = () => {
         {id:'pen', x:left + 18, y:top + 10, w:80, h:90},
         {id:'eraser', x:left + 18 + 96, y:top + 10, w:80, h:90},
         {id:'settings', x:left + 18 + 192, y:top + 10, w:80, h:90},
-        {id:'background', x:left + 18 + 288, y:top + 10, w:120, h:90}
+        {id:'background', x:left + 18 + 288, y:top + 10, w:90, h:90},
+        {id:'fire', x:left + 18 + 384, y:top + 10, w:90, h:90}
       ];
     }
     const pt = toScreen(landmarks[8], {forUI: true});
@@ -335,6 +369,11 @@ const CameraGestureDrawing = () => {
   const selectTool = (id: string) => {
     if(id === 'background') {
       toggleCameraBackgroundMode();
+      return;
+    }
+    if(id === 'fire') {
+      // 火焰效果按钮点击处理
+      fireToolActiveRef.current = !fireToolActiveRef.current;
       return;
     }
     
@@ -375,12 +414,42 @@ const CameraGestureDrawing = () => {
           life: 2000 + Math.random() * 1600, 
           born: performance.now(), 
           color: s.color, 
-          alpha: 1
+          alpha: 1,
+          type: 'dissolve'
         });
       }
     });
     strokesRef.current = [];
     currentStrokeRef.current = {}; // 重置为对象，支持双手绘画
+  };
+  
+  const triggerFireEffect = (x: number, y: number) => {
+    // 触发火焰粒子效果
+    const fireColors = [
+      '#ff4500', '#ff6b35', '#f7931e', '#ffd23f', '#ffeb3b', '#ffffff'
+    ];
+    
+    for(let i = 0; i < 200; i++) {
+      const size = 5 + Math.random() * 10;
+      particlesRef.current.push({
+        x: x + (Math.random() - 0.5) * 40,
+        y: y + (Math.random() - 0.5) * 20,
+        vx: (Math.random() - 0.5) * 1.2,
+        vy: -1 - Math.random() * 3.0, // 火焰向上
+        life: 2000 + Math.random() * 1500,
+        born: performance.now(),
+        color: fireColors[Math.floor(Math.random() * fireColors.length)],
+        alpha: 1,
+        type: 'fire',
+        size: size,
+        rotation: Math.random() * Math.PI * 2,
+        rotationSpeed: (Math.random() - 0.5) * 0.15
+      });
+    }
+    
+    // 设置火焰激活状态，启动持续生成逻辑
+    fireActiveRef.current = true;
+    fireStartTimeRef.current = performance.now();
   };
   
   // 适应画布尺寸
@@ -432,7 +501,7 @@ const CameraGestureDrawing = () => {
     if(!uctx) return;
     
     // 调整面板位置，向左偏移
-  const w = 480; const h = 110;
+  const w = 570; const h = 110;
     const left = (window.innerWidth - w) / 2 - 150; // 向左偏移150px
     const top = 50; // 固定在上方，距顶部50px
     
@@ -450,17 +519,18 @@ const CameraGestureDrawing = () => {
       {id:'pen', x:left + 18, y:top + 10, w:80, h:90, label:'笔', color:selectedToolRef.current.id==='pen' ? selectedToolRef.current.color : '#60a5fa', sel:selectedToolRef.current.id==='pen'},
       {id:'eraser', x:left + 18 + 96, y:top + 10, w:80, h:90, label:'橡皮', color:'#f97316', sel:selectedToolRef.current.id==='eraser'},
       {id:'settings', x:left + 18 + 192, y:top + 10, w:80, h:90, label:'随机', color:'#ffffff', sel:selectedToolRef.current.id==='settings'},
-      {id:'background', x:left + 18 + 288, y:top + 10, w:120, h:90, label:'背景', color:cameraBackgroundModeRef.current ? '#34d399' : '#94a3b8', sel:false}
+      {id:'background', x:left + 18 + 288, y:top + 10, w:90, h:90, label:'背景', color:cameraBackgroundModeRef.current ? '#34d399' : '#94a3b8', sel:false},
+      {id:'fire', x:left + 18 + 384, y:top + 10, w:90, h:90, label:'火焰', color:fireToolActiveRef.current ? '#f97316' : '#f59e0b', sel:fireToolActiveRef.current}
     ];
     
     for(const b of btns) {
       uctx.save();
       roundRect(uctx, b.x, b.y, b.w, b.h, 10);
-      uctx.fillStyle = b.sel ? 'rgba(96,165,250,0.2)' : 'rgba(255,255,255,0.08)'; // 更明显的按钮背景
+      uctx.fillStyle = b.sel ? 'rgba(96,165,250,0.35)' : 'rgba(255,255,255,0.08)'; // 加深选中按钮的背景色
       uctx.fill();
       if(b.sel) {
-        uctx.shadowColor = 'rgba(96,165,250,0.4)'; // 更明显的选中效果
-        uctx.shadowBlur = 25;
+        uctx.shadowColor = 'rgba(96,165,250,0.6)'; // 加深选中按钮的阴影效果
+        uctx.shadowBlur = 35;
       }
       uctx.strokeStyle = 'rgba(255,255,255,0.15)'; // 更明显的按钮边框
       uctx.stroke();
@@ -571,8 +641,49 @@ const CameraGestureDrawing = () => {
       }
     }
     
-    // 粒子动画
+    // 火焰持续生成和自动结束逻辑
     const now = performance.now();
+    
+    // 如果火焰处于激活状态
+    if(fireActiveRef.current) {
+      // 检查是否超过5秒
+      if(now - fireStartTimeRef.current > 5000) {
+        // 5秒后自动结束火焰
+        fireActiveRef.current = false;
+      } else {
+        // 持续生成火焰粒子
+        // 获取当前检测到的主要手部
+        if(lastHandsRef.current.length > 0) {
+          const main = lastHandsRef.current[0];
+          // 检查是否仍然保持食指手势
+          if(isPointingIndex(main)) {
+            // 使用食指指尖位置生成火焰
+            const fingertipPoint = toScreen(main[8], {forUI: false}); // 食指指尖坐标
+            // 每帧生成少量火焰粒子，保持火焰持续效果
+            for(let i = 0; i < 5; i++) {
+              const fireColors = ['#ff4500', '#ff6b35', '#f7931e', '#ffd23f', '#ffeb3b', '#ffffff'];
+              const size = 5 + Math.random() * 10;
+              particlesRef.current.push({
+                x: fingertipPoint.x + (Math.random() - 0.5) * 40,
+                y: fingertipPoint.y + (Math.random() - 0.5) * 20,
+                vx: (Math.random() - 0.5) * 1.2,
+                vy: -1 - Math.random() * 3.0, // 火焰向上
+                life: 2000 + Math.random() * 1500,
+                born: now,
+                color: fireColors[Math.floor(Math.random() * fireColors.length)],
+                alpha: 1,
+                type: 'fire',
+                size: size,
+                rotation: Math.random() * Math.PI * 2,
+                rotationSpeed: (Math.random() - 0.5) * 0.15
+              });
+            }
+          }
+        }
+      }
+    }
+    
+    // 粒子动画
     for(let i = particlesRef.current.length - 1; i >= 0; i--) {
       const pt = particlesRef.current[i];
       const age = now - pt.born;
@@ -580,15 +691,44 @@ const CameraGestureDrawing = () => {
         particlesRef.current.splice(i, 1);
         continue;
       }
-      pt.x += pt.vx;
-      pt.y += pt.vy;
-      pt.vy += 0.01;
-      pt.alpha = 1 - (age / pt.life);
+      
+      // 更新粒子位置和属性
+      if(pt.type === 'fire') {
+        // 火焰粒子特殊行为
+        pt.x += pt.vx + (Math.sin(age * 0.002) * 0.2); // 火焰摇曳效果
+        pt.y += pt.vy + (Math.cos(age * 0.003) * 0.1);
+        pt.vy += 0.005; // 重力影响
+        pt.rotation += pt.rotationSpeed;
+        pt.alpha = 1 - (age / pt.life);
+        pt.size = Math.max(0.5, pt.size * (1 - age / pt.life)); // 火焰粒子逐渐变小
+      } else {
+        // 普通粒子行为
+        pt.x += pt.vx;
+        pt.y += pt.vy;
+        pt.vy += 0.01;
+        pt.alpha = 1 - (age / pt.life);
+      }
+      
+      // 渲染粒子
       dctx.globalAlpha = pt.alpha;
-      dctx.beginPath();
-      dctx.arc(pt.x, pt.y, 2, 0, Math.PI * 2);
       dctx.fillStyle = pt.color;
-      dctx.fill();
+      
+      if(pt.type === 'fire' && pt.size) {
+        // 火焰粒子使用方形或多边形渲染，增加火焰质感
+        dctx.save();
+        dctx.translate(pt.x, pt.y);
+        dctx.rotate(pt.rotation);
+        dctx.beginPath();
+        dctx.rect(-pt.size/2, -pt.size/2, pt.size, pt.size * 2); // 长方形火焰形状
+        dctx.fill();
+        dctx.restore();
+      } else {
+        // 普通粒子使用圆形渲染
+        dctx.beginPath();
+        dctx.arc(pt.x, pt.y, pt.size || 2, 0, Math.PI * 2);
+        dctx.fill();
+      }
+      
       dctx.globalAlpha = 1;
     }
     
