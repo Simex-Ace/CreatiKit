@@ -47,6 +47,7 @@ const CameraGestureDrawing = () => {
   const fireStartTimeRef = useRef(0); // 火焰开始时间
   const fireToolActiveRef = useRef(false); // 火焰工具是否开启
   const kiBlastToolActiveRef = useRef(false); // 爆炸效果工具是否开启
+  const lightningToolActiveRef = useRef(false); // 闪电效果工具是否开启
   const kiBlastChargingRef = useRef(false); // 是否正在聚集爆炸能量
   const kiBlastSizeRef = useRef(0); // 爆炸能量球大小
   const kiBlastChargeStartTimeRef = useRef(0); // 聚集能量开始时间
@@ -243,8 +244,41 @@ const CameraGestureDrawing = () => {
       }
     }
 
-    // 2. 检测爆炸效果手势
-  if(lastHandsRef.current.length > 0 && kiBlastToolActiveRef.current) {
+    // 2. 检测闪电效果手势
+    const now = performance.now();
+    if(lastHandsRef.current.length >= 2 && lightningToolActiveRef.current) {
+      // 两只手都存在时的逻辑
+      const hand1 = lastHandsRef.current[0];
+      const hand2 = lastHandsRef.current[1];
+      
+      // 检查两只手是否都是手掌朝向彼此（可以简化为检查手掌的位置和朝向）
+      const palm1 = toScreen(hand1[9], {forUI: false}); // 第一只手的掌心位置
+      const palm2 = toScreen(hand2[9], {forUI: false}); // 第二只手的掌心位置
+      
+      // 计算两只手之间的距离和方向
+      const dx = palm2.x - palm1.x;
+      const dy = palm2.y - palm1.y;
+      const distance = Math.sqrt(dx * dx + dy * dy);
+      const angle = Math.atan2(dy, dx);
+      
+      // 计算偏移距离（基于手掌心连线向外偏移，使闪电效果远离掌心）
+      const offsetDistance = 30; // 向外偏移30像素
+      
+      // 计算偏移后的闪电起始点和终点
+      const lightningStartX = palm1.x + Math.cos(angle) * offsetDistance;
+      const lightningStartY = palm1.y + Math.sin(angle) * offsetDistance;
+      const lightningEndX = palm2.x - Math.cos(angle) * offsetDistance;
+      const lightningEndY = palm2.y - Math.sin(angle) * offsetDistance;
+      
+      // 大幅增加闪电效果的距离阈值（最远可达2000像素），确保闪电不会轻易中断
+      if(distance > 30 && distance < 2000) {
+        // 将距离参数传递给drawLightningEffect函数，用于调整闪电效果
+        drawLightningEffect(dctxRef.current!, lightningStartX, lightningStartY, lightningEndX, lightningEndY, distance);
+      }
+    }
+    
+    // 3. 检测爆炸效果手势
+    if(lastHandsRef.current.length > 0 && kiBlastToolActiveRef.current) {
       const h = lastHandsRef.current[0];
       const now = performance.now();
       
@@ -430,7 +464,7 @@ const CameraGestureDrawing = () => {
   const handlePanelPointing = (landmarks: any) => {
     // 以浏览器窗口为中心左右居中计算面板边界，与 drawPanel 函数保持一致
     if(panelBoundsRef.current.length === 0) {
-      const w = 666; const h = 110;
+      const w = 762; const h = 110; // 与drawPanel保持一致，宽度调整为762px
       const left = (window.innerWidth - w) / 2 - 150; // 与drawPanel保持一致，向左偏移150px
       const top = 50; // 固定在上方，距顶部50px
       panelBoundsRef.current = [
@@ -439,7 +473,8 @@ const CameraGestureDrawing = () => {
         {id:'settings', x:left + 18 + 192, y:top + 10, w:80, h:90},
         {id:'background', x:left + 18 + 288, y:top + 10, w:90, h:90},
         {id:'fire', x:left + 18 + 384, y:top + 10, w:90, h:90},
-        {id:'kiBlast', x:left + 18 + 480, y:top + 10, w:90, h:90}
+        {id:'kiBlast', x:left + 18 + 480, y:top + 10, w:90, h:90},
+        {id:'lightning', x:left + 18 + 576, y:top + 10, w:90, h:90} // 添加闪电按钮
       ];
     }
     const pt = toScreen(landmarks[8], {forUI: true});
@@ -481,9 +516,23 @@ const CameraGestureDrawing = () => {
     kiBlastToolActiveRef.current = !kiBlastToolActiveRef.current;
     if(kiBlastToolActiveRef.current) {
       fireToolActiveRef.current = false; // 关闭火焰
+      lightningToolActiveRef.current = false; // 关闭闪电
       // 如果当前选中的是画笔或橡皮，取消选中
       if(['pen', 'eraser'].includes(selectedToolRef.current.id)) {
         // 不改变selectedToolRef，只需要确保画笔工具不会在火焰/爆炸激活时生效
+      }
+    }
+    return;
+  }
+  if(id === 'lightning') {
+    // 闪电效果按钮点击处理
+    lightningToolActiveRef.current = !lightningToolActiveRef.current;
+    if(lightningToolActiveRef.current) {
+      fireToolActiveRef.current = false; // 关闭火焰
+      kiBlastToolActiveRef.current = false; // 关闭爆炸效果
+      // 关闭其他绘画工具的影响
+      if(['pen', 'eraser', 'settings'].includes(selectedToolRef.current.id)) {
+        // 不改变selectedToolRef，只需要确保绘画工具不会与闪电效果冲突
       }
     }
     return;
@@ -492,10 +541,11 @@ const CameraGestureDrawing = () => {
     const t = toolsRef.current.find((x: any) => x.id === id);
     if(!t) return;
     selectedToolRef.current = t;
-    // 选择画笔/橡皮/随机工具时，关闭火焰和爆炸效果，并重置火焰防抖时间
+    // 选择画笔/橡皮/随机工具时，关闭火焰、爆炸和闪电效果，并重置火焰防抖时间
     if(['pen', 'eraser', 'settings'].includes(id)) {
       fireToolActiveRef.current = false;
       kiBlastToolActiveRef.current = false;
+      lightningToolActiveRef.current = false;
       // 关闭火焰工具时，重置防抖时间戳，避免手指仍在画面中时触发火焰
       lastSnapTimeRef.current = performance.now();
     }
@@ -542,6 +592,276 @@ const CameraGestureDrawing = () => {
     currentStrokeRef.current = {}; // 重置为对象，支持双手绘画
   };
   
+  // 添加闪电效果相关的引用变量
+  const lightningStartTimeRef = useRef<number>(0);
+  const lastLightningTimeRef = useRef<number>(0);
+  const lastBothHandsDetectedRef = useRef<number>(0); // 记录上一次两只手都被检测到的时间
+  const lightningActiveRef = useRef<boolean>(false); // 记录闪电效果是否应该保持活跃
+
+  // 绘制闪电效果 - 改为绘制多条闪电
+  const drawLightningEffect = (ctx: CanvasRenderingContext2D, x1: number, y1: number, x2: number, y2: number, distance: number = 250) => {
+    const now = performance.now();
+    
+    // 如果是第一次调用或上一次调用时间超过500ms，重置开始时间
+    if (now - lastLightningTimeRef.current > 500) {
+      lightningStartTimeRef.current = now;
+    }
+    
+    // 计算闪电效果持续时间（支持到1分钟）
+    const duration = now - lightningStartTimeRef.current;
+    lastLightningTimeRef.current = now;
+    
+    // 调整强度因子，增加最大值，使闪电达到上限时更剧烈
+    const intensityFactor = 1 + Math.min(1.5, duration / 60000); // 1分钟内从1增长到2.5，增加上限
+    
+    ctx.save();
+    ctx.strokeStyle = '#38bdf8'; // 闪电的主要颜色
+    // 根据距离和强度调整线条宽度，距离越远线条越粗
+    ctx.lineWidth = Math.min(7, 2.5 * intensityFactor + Math.min(2, distance / 500)); // 适当加粗线条，拉远时更粗
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    
+    // 设置闪电数量上限为10条，实现1分钟内从慢到快增加的逻辑
+    const maxLightningCount = 10; // 固定最大闪电数量为10条
+    
+    // 使用更陡峭的指数增长函数实现更明显的从慢到快效果
+    // 调整增长曲线参数，使闪电数量在1分钟内更明显地从1条增加到10条
+    const growthRate = Math.min(1, duration / 60000); // 将时间归一化到0-1范围
+    // 使用更陡峭的增长曲线，使增长速度更明显
+    const normalizedGrowth = 1 - Math.exp(-5 * growthRate); // 0到1的快速增长曲线
+    const lightningCount = Math.max(1, Math.min(maxLightningCount, Math.floor(normalizedGrowth * (maxLightningCount - 1) + 1)));
+    // 确保即使在短时间内也至少有1条闪电
+    
+    // 绘制多条闪电
+    for (let l = 0; l < lightningCount; l++) {
+      // 增加偏移量范围，使闪电达到上限时更剧烈
+      const offsetX1 = (Math.random() - 0.5) * 40 * intensityFactor; // 增加到40，提高剧烈程度
+      const offsetY1 = (Math.random() - 0.5) * 40 * intensityFactor;
+      const offsetX2 = (Math.random() - 0.5) * 40 * intensityFactor;
+      const offsetY2 = (Math.random() - 0.5) * 40 * intensityFactor;
+      
+      // 根据距离计算"平稳度"因子：距离越近，因子越低；距离越远，因子越高
+      // 增加最大值，提高剧烈程度
+      const stabilityFactor = 0.1 + (distance - 30) / (1000 - 30) * 1.8; // 最大值从1.5增加到1.9
+      
+      // 为每条闪电创建略微不同的参数，增加随机性范围
+      const randomFactor = 0.85 + Math.random() * 0.3; // 扩大随机性范围，从0.9-1.1改为0.85-1.15
+      
+      // 增加displacement，提高剧烈程度
+      const displacement = 0.35 * intensityFactor * randomFactor * stabilityFactor; // 从0.25增加到0.35
+      
+      // 增加segments数量，提高闪电复杂度和剧烈程度
+      const segments = Math.min(8, Math.floor(4 + (stabilityFactor - 0.1) * 6 * intensityFactor * randomFactor)); // 增加最小和最大值，系数从5到6
+      
+      // 创建闪电的主路径
+      const path = createLightningPath(
+        x1 + offsetX1,
+        y1 + offsetY1,
+        x2 + offsetX2,
+        y2 + offsetY2,
+        segments,
+        displacement
+      );
+      
+      // 计算脉动因子（添加闪烁效果）
+      const pulseFactor = 0.9 + 0.1 * Math.sin(now * 0.006);
+      
+      // 根据时间生成更明亮的颜色，增强亮度
+      const baseBrightness = Math.min(1.2, 0.8 + duration / 90000); // 增加初始亮度和增长速度
+      
+      // 大幅提高闪电亮度和对比度，让视觉效果更强烈
+      const lightningBrightness = baseBrightness * (1.0 + Math.random() * 0.4); // 增加随机性和亮度
+      const lightningPulseFactor = pulseFactor * (1.0 + Math.random() * 0.3); // 增加闪烁效果
+      
+      // 增强渐变效果，提高透明度和亮度
+      const gradient = ctx.createLinearGradient(path[0][0], path[0][1], path[path.length-1][0], path[path.length-1][1]);
+      gradient.addColorStop(0, `rgba(125, 211, 252, ${0.9 * lightningBrightness})`);
+      gradient.addColorStop(0.5, `rgba(255, 255, 255, ${1.0 * lightningBrightness * lightningPulseFactor})`);
+      gradient.addColorStop(1, `rgba(56, 189, 248, ${0.9 * lightningBrightness})`);
+      
+      // 设置当前闪电的线宽
+      const currentLineWidth = Math.min(5, 3 * intensityFactor * randomFactor);
+      ctx.lineWidth = currentLineWidth;
+      
+      // 绘制主闪电
+      ctx.strokeStyle = gradient;
+      ctx.beginPath();
+      ctx.moveTo(path[0][0], path[0][1]);
+      for (let i = 1; i < path.length; i++) {
+        ctx.lineTo(path[i][0], path[i][1]);
+      }
+      ctx.stroke();
+      
+      // 添加内部更亮的闪电核心
+      ctx.globalAlpha = 0.5 * lightningPulseFactor;
+      ctx.strokeStyle = `rgba(255, 255, 255, ${lightningBrightness})`;
+      ctx.lineWidth = Math.min(2, currentLineWidth * 0.3);
+      ctx.beginPath();
+      ctx.moveTo(path[0][0], path[0][1]);
+      for (let i = 1; i < path.length; i++) {
+        ctx.lineTo(path[i][0], path[i][1]);
+      }
+      ctx.stroke();
+      ctx.globalAlpha = 1; // 重置透明度
+      
+      // 绘制较弱的分支闪电 - 减少分支数量和复杂度
+      ctx.strokeStyle = '#7dd3fc';
+      ctx.lineWidth = Math.min(3, 1.2 * intensityFactor * randomFactor); // 减少分支线宽
+      
+      // 为主路径上的每个点尝试创建分支 - 直接内联实现
+      for (let i = 1; i < path.length - 1; i++) {
+        // 随机决定是否在该点创建分支
+        if (Math.random() > 0.6) { // 降低到40%的概率产生分支
+          // 基于时间和强度计算分支参数
+          const branchSegments = Math.min(2, Math.floor(1.5 * intensityFactor)); // 减少分支段数
+          const branchDisplacement = 0.2 * intensityFactor * randomFactor; // 降低分支位移
+          const branchLengthFactor = 0.3 + Math.random() * 0.15; // 缩短分支长度
+          
+          // 创建分支路径
+          const branchPath = createLightningBranch(
+            path[i][0], path[i][1], 
+            path[i+1][0], path[i+1][1], 
+            branchSegments, 
+            branchDisplacement, 
+            branchLengthFactor
+          );
+          
+          // 确保分支路径有效
+          if (branchPath && branchPath.length > 0) {
+            // 为分支创建渐变效果
+            const branchGradient = ctx.createLinearGradient(
+              branchPath[0][0], branchPath[0][1], 
+              branchPath[branchPath.length-1][0], branchPath[branchPath.length-1][1]
+            );
+            
+            // 设置分支颜色
+            const branchBrightness = lightningBrightness * (0.8 + Math.random() * 0.2) * lightningPulseFactor;
+            branchGradient.addColorStop(0, `rgba(125, 211, 252, ${0.7 * branchBrightness})`);
+            branchGradient.addColorStop(0.5, `rgba(255, 255, 255, ${0.9 * branchBrightness})`);
+            branchGradient.addColorStop(1, `rgba(125, 211, 252, ${0.7 * branchBrightness})`);
+            
+            // 绘制分支
+            ctx.strokeStyle = branchGradient;
+            ctx.beginPath();
+            ctx.moveTo(branchPath[0][0], branchPath[0][1]);
+            for (let j = 1; j < branchPath.length; j++) {
+              ctx.lineTo(branchPath[j][0], branchPath[j][1]);
+            }
+            ctx.stroke();
+          }
+        }
+      }
+    
+    // 绘制额外的闪电分支（这里简化实现，避免重复定义）
+    // 每个闪电已经在内部循环中生成了自己的分支，这里不再需要额外处理
+    
+      // 添加多层次辉光效果 - 降低强度增长速度
+      // 1. 内圈强光 - 降低亮度和范围增长
+      ctx.save();
+      ctx.globalAlpha = 0.6 * baseBrightness * pulseFactor * (0.8 + Math.random() * 0.2); // 降低透明度
+      ctx.shadowColor = '#ffffff';
+      ctx.shadowBlur = Math.min(30, 15 * intensityFactor); // 降低阴影模糊度增长
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = Math.min(4, 1.8 * intensityFactor * randomFactor); // 降低线宽增长
+      ctx.beginPath();
+      ctx.moveTo(path[0][0], path[0][1]);
+      for (let i = 1; i < path.length; i++) {
+        ctx.lineTo(path[i][0], path[i][1]);
+      }
+      ctx.stroke();
+      ctx.restore();
+      
+      // 2. 外圈蓝色辉光 - 降低亮度和扩散范围增长
+      ctx.save();
+      ctx.globalAlpha = 0.4 * baseBrightness * (0.8 + Math.random() * 0.2); // 降低透明度
+      ctx.shadowColor = '#38bdf8';
+      ctx.shadowBlur = Math.min(45, 20 * intensityFactor); // 降低阴影模糊度增长
+      ctx.strokeStyle = 'transparent'; // 只显示阴影产生的辉光
+      ctx.lineWidth = Math.min(5, 2 * intensityFactor * randomFactor); // 降低线宽增长
+      ctx.beginPath();
+      ctx.moveTo(path[0][0], path[0][1]);
+      for (let i = 1; i < path.length; i++) {
+        ctx.lineTo(path[i][0], path[i][1]);
+      }
+      ctx.stroke();
+      ctx.restore();
+      
+      // 3. 超外圈扩散辉光 - 仅在高强度时显示
+      if (intensityFactor > 1.5) {
+        ctx.save();
+        ctx.globalAlpha = 0.2 * baseBrightness * (0.7 + Math.random() * 0.3);
+        ctx.shadowColor = '#7dd3fc';
+        ctx.shadowBlur = Math.min(60, 35 * intensityFactor);
+        ctx.strokeStyle = 'transparent';
+        ctx.lineWidth = Math.min(8, 4 * intensityFactor * randomFactor);
+        ctx.beginPath();
+        ctx.moveTo(path[0][0], path[0][1]);
+        for (let i = 1; i < path.length; i++) {
+          ctx.lineTo(path[i][0], path[i][1]);
+        }
+        ctx.stroke();
+        ctx.restore();
+      }
+    } // 结束闪电循环
+    
+    ctx.restore();
+  };
+  
+  // 创建闪电主路径
+  const createLightningPath = (x1: number, y1: number, x2: number, y2: number, segments: number, displacement: number): number[][] => {
+    const path: number[][] = [[x1, y1]];
+    const dx = x2 - x1;
+    const dy = y2 - y1;
+    
+    // 使用递归细分创建闪电的锯齿状效果
+    subdividePath(path, x1, y1, x2, y2, segments, displacement);
+    
+    path.push([x2, y2]);
+    return path;
+  };
+  
+  // 细分路径创建闪电效果
+  const subdividePath = (path: number[][], x1: number, y1: number, x2: number, y2: number, segments: number, displacement: number) => {
+    if (segments === 0) return;
+    
+    const mx = (x1 + x2) / 2;
+    const my = (y1 + y2) / 2;
+    
+    // 在垂直于线段的方向上添加随机偏移
+    const angle = Math.atan2(y2 - y1, x2 - x1) + Math.PI / 2;
+    const offset = (Math.random() - 0.5) * displacement * Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
+    
+    const mxOffset = mx + Math.cos(angle) * offset;
+    const myOffset = my + Math.sin(angle) * offset;
+    
+    subdividePath(path, x1, y1, mxOffset, myOffset, segments - 1, displacement * 0.6);
+    path.push([mxOffset, myOffset]);
+    subdividePath(path, mxOffset, myOffset, x2, y2, segments - 1, displacement * 0.6);
+  };
+  
+  // 创建闪电分支 - 添加长度因子参数
+  const createLightningBranch = (x1: number, y1: number, x2: number, y2: number, segments: number, displacement: number, lengthFactor: number = 0.5): number[][] => {
+    // 计算主线段的角度
+    const mainAngle = Math.atan2(y2 - y1, x2 - x1);
+    // 分支角度与主角度相差约30-75度，角度范围更大使闪电更自然
+    const branchAngle = mainAngle + (Math.random() * Math.PI / 2.4 - Math.PI / 4.8);
+    
+    // 分支长度为主线段长度的倍数，受lengthFactor影响
+    const mainLength = Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
+    const branchLength = mainLength * (0.3 + Math.random() * 0.5) * lengthFactor;
+    
+    // 计算分支的终点
+    const endX = x1 + Math.cos(branchAngle) * branchLength;
+    const endY = y1 + Math.sin(branchAngle) * branchLength;
+    
+    // 创建分支路径
+    const branchPath: number[][] = [[x1, y1]];
+    subdividePath(branchPath, x1, y1, endX, endY, segments, displacement);
+    branchPath.push([endX, endY]);
+    
+    return branchPath;
+  };
+
   const triggerFireEffect = (x: number, y: number) => {
     // 触发火焰粒子效果
     const fireColors = [
@@ -659,8 +979,8 @@ const CameraGestureDrawing = () => {
     const uctx = uctxRef.current;
     if(!uctx) return;
     
-    // 调整面板位置，向左偏移
-  const w = 666; const h = 110;
+    // 调整面板位置，适应七个按钮
+  const w = 762; const h = 110;
     const left = (window.innerWidth - w) / 2 - 150; // 向左偏移150px
     const top = 50; // 固定在上方，距顶部50px
     
@@ -680,7 +1000,8 @@ const CameraGestureDrawing = () => {
       {id:'settings', x:left + 18 + 192, y:top + 10, w:80, h:90, label:'随机', color:'#ffffff', sel:selectedToolRef.current.id==='settings'},
       {id:'background', x:left + 18 + 288, y:top + 10, w:90, h:90, label:'背景', color:cameraBackgroundModeRef.current ? '#34d399' : '#94a3b8', sel:false},
       {id:'fire', x:left + 18 + 384, y:top + 10, w:90, h:90, label:'火焰', color:fireToolActiveRef.current ? '#f97316' : '#f59e0b', sel:fireToolActiveRef.current},
-      {id:'kiBlast', x:left + 18 + 480, y:top + 10, w:90, h:90, label:'爆炸效果', color:kiBlastToolActiveRef.current ? '#8b5cf6' : '#6366f1', sel:kiBlastToolActiveRef.current}
+      {id:'kiBlast', x:left + 18 + 480, y:top + 10, w:90, h:90, label:'爆炸效果', color:kiBlastToolActiveRef.current ? '#8b5cf6' : '#6366f1', sel:kiBlastToolActiveRef.current},
+      {id:'lightning', x:left + 18 + 576, y:top + 10, w:90, h:90, label:'闪电', color:lightningToolActiveRef.current ? '#38bdf8' : '#94a3b8', sel:lightningToolActiveRef.current}
     ];
     
     for(const b of btns) {
