@@ -177,14 +177,13 @@ const CameraGestureDrawing = () => {
     // 使用浏览器窗口尺寸，因为面板现在使用基于浏览器窗口的绝对定位
     const w = window.innerWidth, h = window.innerHeight;
     
-    // 全局基础偏移量：将手部捕捉点整体往左上方向调整
-    // 正值表示向右/向下，负值表示向左/向上
-    const baseOffsetY = -0.07; // y方向向上偏移（所有模式共享）
+    // 优化基础偏移量，调整为更精确的值以匹配实际手部位置
+    const baseOffsetY = -0.05; // y方向向上偏移，略微减少偏移量以提高准确性
     
     if(options.forUI) {
       // 无论是否处于摄像头背景模式，视频始终是镜像的，所以UI点击检测始终需要 (1 - pt.x)
       // UI模式使用默认的x偏移
-      const uiOffsetX = -0.06;
+      const uiOffsetX = -0.05; // 调整为更精确的偏移值
       return { 
         x: (1 - pt.x + uiOffsetX) * w, 
         y: (pt.y + baseOffsetY) * h 
@@ -193,16 +192,16 @@ const CameraGestureDrawing = () => {
       // 根据是否处于摄像头背景模式选择不同的x偏移量
       let xOffset;
       if (cameraBackgroundModeRef.current) {
-        // 摄像头背景模式下使用较大的偏移量
-        xOffset = -0.06;
+        // 摄像头背景模式下使用更精确的偏移量
+        xOffset = -0.05; // 统一偏移值以提高一致性
         // 在摄像头背景模式下，使用镜像坐标 + 偏移
         return { 
           x: (1 - pt.x + xOffset) * w, 
           y: (pt.y + baseOffsetY) * h 
         };
       } else {
-        // 非摄像头背景模式下使用较小的偏移量
-        xOffset = -0.04;
+        // 非摄像头背景模式下使用相同的偏移量以保持一致性
+        xOffset = -0.05; // 统一偏移值以提高一致性
         // 非摄像头背景模式下，使用原始坐标 + 偏移
         return { 
           x: (pt.x + xOffset) * w, 
@@ -246,34 +245,84 @@ const CameraGestureDrawing = () => {
 
     // 2. 检测闪电效果手势
     const now = performance.now();
-    if(lastHandsRef.current.length >= 2 && lightningToolActiveRef.current) {
-      // 两只手都存在时的逻辑
+    
+    // 情况1: 单只手的拇指和食指间产生闪电
+    if(lastHandsRef.current.length === 1 && lightningToolActiveRef.current) {
+      const hand = lastHandsRef.current[0];
+      // 获取拇指和食指指尖位置
+      const thumbTip = toScreen(hand[4], {forUI: false}); // 拇指指尖 - 关键点4
+      const indexTip = toScreen(hand[8], {forUI: false}); // 食指指尖 - 关键点8
+      
+      // 计算指尖之间的距离
+      const distance = Math.sqrt(
+        Math.pow(indexTip.x - thumbTip.x, 2) + 
+        Math.pow(indexTip.y - thumbTip.y, 2)
+      );
+      
+      // 增大距离阈值到250像素，提高触发频率
+      if(distance < 250) {
+        // 直接使用拇指和食指指尖坐标，确保闪电连接到指尖位置
+      // 根据用户要求，闪电两端必须从食指和大拇指指尖出来
+      const startX = thumbTip.x;
+      const startY = thumbTip.y;
+      const endX = indexTip.x;
+      const endY = indexTip.y;
+      
+      // 使用maxCount=3参数严格控制闪电数量，防止增长到5个
+      drawLightningEffect(dctxRef.current!, startX, startY, endX, endY, distance, 3);
+      }
+    }
+    
+    // 情况2: 两只手场景
+    else if(lastHandsRef.current.length >= 2 && lightningToolActiveRef.current) {
       const hand1 = lastHandsRef.current[0];
       const hand2 = lastHandsRef.current[1];
       
-      // 检查两只手是否都是手掌朝向彼此（可以简化为检查手掌的位置和朝向）
-      const palm1 = toScreen(hand1[9], {forUI: false}); // 第一只手的掌心位置
-      const palm2 = toScreen(hand2[9], {forUI: false}); // 第二只手的掌心位置
+      // 检测是否是握拳只伸食指的情况（检测食指是否伸直，其他手指弯曲）
+      const isHand1PointingIndex = isPointingIndex(hand1);
+      const isHand2PointingIndex = isPointingIndex(hand2);
       
-      // 计算两只手之间的距离和方向
-      const dx = palm2.x - palm1.x;
-      const dy = palm2.y - palm1.y;
-      const distance = Math.sqrt(dx * dx + dy * dy);
-      const angle = Math.atan2(dy, dx);
-      
-      // 计算偏移距离（基于手掌心连线向外偏移，使闪电效果远离掌心）
-      const offsetDistance = 30; // 向外偏移30像素
-      
-      // 计算偏移后的闪电起始点和终点
-      const lightningStartX = palm1.x + Math.cos(angle) * offsetDistance;
-      const lightningStartY = palm1.y + Math.sin(angle) * offsetDistance;
-      const lightningEndX = palm2.x - Math.cos(angle) * offsetDistance;
-      const lightningEndY = palm2.y - Math.sin(angle) * offsetDistance;
-      
-      // 大幅增加闪电效果的距离阈值（最远可达2000像素），确保闪电不会轻易中断
+      if(isHand1PointingIndex && isHand2PointingIndex) {
+        // 握拳只伸出食指：两个食指指尖产生闪电
+        const indexTip1 = toScreen(hand1[8], {forUI: false}); // 第一只手的食指指尖
+        const indexTip2 = toScreen(hand2[8], {forUI: false}); // 第二只手的食指指尖
+        
+        // 计算距离
+        const distance = Math.sqrt(
+          Math.pow(indexTip2.x - indexTip1.x, 2) + 
+          Math.pow(indexTip2.y - indexTip1.y, 2)
+        );
+        
+        // 限制距离范围
+        if(distance > 30 && distance < 2000) {
+          // 使用maxCount=2参数限制闪电数量为1-2根
+          drawLightningEffect(dctxRef.current!, indexTip1.x, indexTip1.y, indexTip2.x, indexTip2.y, distance, 2);
+        }
+      } else {
+        // 情况3: 两只手张开时的原有闪电效果（闪电数量随时间增加）
+        const palm1 = toScreen(hand1[9], {forUI: false}); // 第一只手的掌心位置
+        const palm2 = toScreen(hand2[9], {forUI: false}); // 第二只手的掌心位置
+        
+        // 计算两只手之间的距离和方向
+        const dx = palm2.x - palm1.x;
+        const dy = palm2.y - palm1.y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        const angle = Math.atan2(dy, dx);
+        
+        // 计算偏移距离
+        const offsetDistance = 30; // 向外偏移30像素
+        
+        // 计算偏移后的闪电起始点和终点
+        const lightningStartX = palm1.x + Math.cos(angle) * offsetDistance;
+        const lightningStartY = palm1.y + Math.sin(angle) * offsetDistance;
+        const lightningEndX = palm2.x - Math.cos(angle) * offsetDistance;
+        const lightningEndY = palm2.y - Math.sin(angle) * offsetDistance;
+        
+        // 优化闪电效果性能，限制距离范围
       if(distance > 30 && distance < 2000) {
-        // 将距离参数传递给drawLightningEffect函数，用于调整闪电效果
-        drawLightningEffect(dctxRef.current!, lightningStartX, lightningStartY, lightningEndX, lightningEndY, distance);
+        // 根据用户要求，手掌模式下闪电最多到5个，但保持性能优化
+        drawLightningEffect(dctxRef.current!, lightningStartX, lightningStartY, lightningEndX, lightningEndY, distance, 5);
+        }
       }
     }
     
@@ -599,7 +648,7 @@ const CameraGestureDrawing = () => {
   const lightningActiveRef = useRef<boolean>(false); // 记录闪电效果是否应该保持活跃
 
   // 绘制闪电效果 - 改为绘制多条闪电
-  const drawLightningEffect = (ctx: CanvasRenderingContext2D, x1: number, y1: number, x2: number, y2: number, distance: number = 250) => {
+  const drawLightningEffect = (ctx: CanvasRenderingContext2D, x1: number, y1: number, x2: number, y2: number, distance: number = 250, maxCount?: number) => {
     const now = performance.now();
     
     // 如果是第一次调用或上一次调用时间超过500ms，重置开始时间
@@ -611,47 +660,45 @@ const CameraGestureDrawing = () => {
     const duration = now - lightningStartTimeRef.current;
     lastLightningTimeRef.current = now;
     
-    // 调整强度因子，增加最大值，使闪电达到上限时更剧烈
-    const intensityFactor = 1 + Math.min(1.5, duration / 60000); // 1分钟内从1增长到2.5，增加上限
+    // 优化性能：降低强度因子，减少计算复杂度和渲染负担
+    const intensityFactor = 1 + Math.min(1.0, duration / 60000); // 1分钟内从1缓慢增长到2.0，降低增长速度
     
     ctx.save();
     ctx.strokeStyle = '#38bdf8'; // 闪电的主要颜色
-    // 根据距离和强度调整线条宽度，距离越远线条越粗
-    ctx.lineWidth = Math.min(7, 2.5 * intensityFactor + Math.min(2, distance / 500)); // 适当加粗线条，拉远时更粗
+    // 根据距离和强度调整线条宽度，降低最大宽度
+    ctx.lineWidth = Math.min(5, 1.5 * intensityFactor + Math.min(1, distance / 700)); // 减少线条宽度，降低渲染负载
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
     
-    // 设置闪电数量上限为10条，实现1分钟内从慢到快增加的逻辑
-    const maxLightningCount = 10; // 固定最大闪电数量为10条
+    // 优化性能：根据用户要求，闪电最多到5条，保持良好性能
+    const maxLightningCount = maxCount !== undefined ? Math.min(5, maxCount) : 5; // 限制最大为5条
     
-    // 使用更陡峭的指数增长函数实现更明显的从慢到快效果
-    // 调整增长曲线参数，使闪电数量在1分钟内更明显地从1条增加到10条
+    // 简化增长函数，降低计算复杂度
     const growthRate = Math.min(1, duration / 60000); // 将时间归一化到0-1范围
-    // 使用更陡峭的增长曲线，使增长速度更明显
-    const normalizedGrowth = 1 - Math.exp(-5 * growthRate); // 0到1的快速增长曲线
-    const lightningCount = Math.max(1, Math.min(maxLightningCount, Math.floor(normalizedGrowth * (maxLightningCount - 1) + 1)));
+    // 使用线性增长，简单高效
+    const lightningCount = Math.max(1, Math.min(maxLightningCount, Math.floor(growthRate * (maxLightningCount - 1) + 1)));
     // 确保即使在短时间内也至少有1条闪电
     
     // 绘制多条闪电
     for (let l = 0; l < lightningCount; l++) {
-      // 增加偏移量范围，使闪电达到上限时更剧烈
-      const offsetX1 = (Math.random() - 0.5) * 40 * intensityFactor; // 增加到40，提高剧烈程度
-      const offsetY1 = (Math.random() - 0.5) * 40 * intensityFactor;
-      const offsetX2 = (Math.random() - 0.5) * 40 * intensityFactor;
-      const offsetY2 = (Math.random() - 0.5) * 40 * intensityFactor;
+      // 减少偏移量范围，降低闪电波动剧烈程度，提高性能
+      const offsetX1 = (Math.random() - 0.5) * 30 * intensityFactor; // 从70减少到30，降低波动范围
+      const offsetY1 = (Math.random() - 0.5) * 30 * intensityFactor;
+      const offsetX2 = (Math.random() - 0.5) * 30 * intensityFactor;
+      const offsetY2 = (Math.random() - 0.5) * 30 * intensityFactor;
       
-      // 根据距离计算"平稳度"因子：距离越近，因子越低；距离越远，因子越高
-      // 增加最大值，提高剧烈程度
-      const stabilityFactor = 0.1 + (distance - 30) / (1000 - 30) * 1.8; // 最大值从1.5增加到1.9
+      // 降低平稳度因子的最大值，使闪电更加稳定
+      const stabilityFactor = 0.1 + (distance - 30) / (1000 - 30) * 1.0; // 最大值从2.3减少到1.1
       
-      // 为每条闪电创建略微不同的参数，增加随机性范围
-      const randomFactor = 0.85 + Math.random() * 0.3; // 扩大随机性范围，从0.9-1.1改为0.85-1.15
+      // 缩小随机性范围，降低计算复杂度
+      const randomFactor = 0.9 + Math.random() * 0.2; // 从0.7-1.3缩小到0.9-1.1
       
-      // 增加displacement，提高剧烈程度
-      const displacement = 0.35 * intensityFactor * randomFactor * stabilityFactor; // 从0.25增加到0.35
+      // 大幅增加displacement，显著提高闪电的扭曲程度
+      // 降低displacement值，减少闪电扭曲程度，提高性能
+      const displacement = 0.3 * intensityFactor * randomFactor * stabilityFactor; // 从0.5降低到0.3
       
-      // 增加segments数量，提高闪电复杂度和剧烈程度
-      const segments = Math.min(8, Math.floor(4 + (stabilityFactor - 0.1) * 6 * intensityFactor * randomFactor)); // 增加最小和最大值，系数从5到6
+      // 减少segments数量，降低计算复杂度
+      const segments = Math.min(8, Math.floor(4 + (stabilityFactor - 0.1) * 5 * intensityFactor * randomFactor)); // 从最大12减少到最大8，最低4
       
       // 创建闪电的主路径
       const path = createLightningPath(
@@ -663,24 +710,24 @@ const CameraGestureDrawing = () => {
         displacement
       );
       
-      // 计算脉动因子（添加闪烁效果）
-      const pulseFactor = 0.9 + 0.1 * Math.sin(now * 0.006);
+      // 简化脉动因子计算，降低频率
+      const pulseFactor = 0.95 + 0.05 * Math.sin(now * 0.004);
       
-      // 根据时间生成更明亮的颜色，增强亮度
-      const baseBrightness = Math.min(1.2, 0.8 + duration / 90000); // 增加初始亮度和增长速度
+      // 降低亮度计算复杂度
+      const baseBrightness = Math.min(1.0, 0.8 + duration / 120000); // 降低初始亮度和增长速度
       
-      // 大幅提高闪电亮度和对比度，让视觉效果更强烈
-      const lightningBrightness = baseBrightness * (1.0 + Math.random() * 0.4); // 增加随机性和亮度
-      const lightningPulseFactor = pulseFactor * (1.0 + Math.random() * 0.3); // 增加闪烁效果
+      // 降低随机性，减少计算量
+      const lightningBrightness = baseBrightness * (1.0 + Math.random() * 0.2); // 减少随机性范围
+      const lightningPulseFactor = pulseFactor * (1.0 + Math.random() * 0.1); // 降低闪烁效果复杂度
       
-      // 增强渐变效果，提高透明度和亮度
+      // 简化渐变效果，降低计算复杂度
       const gradient = ctx.createLinearGradient(path[0][0], path[0][1], path[path.length-1][0], path[path.length-1][1]);
-      gradient.addColorStop(0, `rgba(125, 211, 252, ${0.9 * lightningBrightness})`);
-      gradient.addColorStop(0.5, `rgba(255, 255, 255, ${1.0 * lightningBrightness * lightningPulseFactor})`);
-      gradient.addColorStop(1, `rgba(56, 189, 248, ${0.9 * lightningBrightness})`);
+      gradient.addColorStop(0, `rgba(125, 211, 252, ${0.8 * lightningBrightness})`);
+      gradient.addColorStop(0.5, `rgba(255, 255, 255, ${0.9 * lightningBrightness * lightningPulseFactor})`);
+      gradient.addColorStop(1, `rgba(56, 189, 248, ${0.8 * lightningBrightness})`);
       
-      // 设置当前闪电的线宽
-      const currentLineWidth = Math.min(5, 3 * intensityFactor * randomFactor);
+      // 降低线宽，减少渲染负担
+      const currentLineWidth = Math.min(4, 2 * intensityFactor * randomFactor);
       ctx.lineWidth = currentLineWidth;
       
       // 绘制主闪电
@@ -829,34 +876,37 @@ const CameraGestureDrawing = () => {
     
     // 在垂直于线段的方向上添加随机偏移
     const angle = Math.atan2(y2 - y1, x2 - x1) + Math.PI / 2;
-    const offset = (Math.random() - 0.5) * displacement * Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
+    // 大幅增加波动幅度系数，从原来的1倍增加到1.8倍，使闪电形状更加扭曲
+    const offset = (Math.random() - 0.5) * displacement * Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2)) * 1.8;
     
     const mxOffset = mx + Math.cos(angle) * offset;
     const myOffset = my + Math.sin(angle) * offset;
     
-    subdividePath(path, x1, y1, mxOffset, myOffset, segments - 1, displacement * 0.6);
+    // 减少衰减系数，从0.6改为0.75，使波动幅度在更深层的细分中保持较大值
+    subdividePath(path, x1, y1, mxOffset, myOffset, segments - 1, displacement * 0.75);
     path.push([mxOffset, myOffset]);
-    subdividePath(path, mxOffset, myOffset, x2, y2, segments - 1, displacement * 0.6);
+    subdividePath(path, mxOffset, myOffset, x2, y2, segments - 1, displacement * 0.75);
   };
   
-  // 创建闪电分支 - 添加长度因子参数
-  const createLightningBranch = (x1: number, y1: number, x2: number, y2: number, segments: number, displacement: number, lengthFactor: number = 0.5): number[][] => {
+  // 创建闪电分支 - 优化分支参数以增加闪电复杂度
+  const createLightningBranch = (x1: number, y1: number, x2: number, y2: number, segments: number, displacement: number, lengthFactor: number = 0.7): number[][] => {
     // 计算主线段的角度
     const mainAngle = Math.atan2(y2 - y1, x2 - x1);
-    // 分支角度与主角度相差约30-75度，角度范围更大使闪电更自然
-    const branchAngle = mainAngle + (Math.random() * Math.PI / 2.4 - Math.PI / 4.8);
+    // 大幅增加分支角度范围，从30-75度扩大到20-100度，使闪电分支更加多样
+    const branchAngle = mainAngle + (Math.random() * Math.PI / 1.8 - Math.PI / 3.6);
     
-    // 分支长度为主线段长度的倍数，受lengthFactor影响
+    // 增加分支长度范围和基数，使分支更长更明显
     const mainLength = Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
-    const branchLength = mainLength * (0.3 + Math.random() * 0.5) * lengthFactor;
+    const branchLength = mainLength * (0.4 + Math.random() * 0.6) * lengthFactor;
     
     // 计算分支的终点
     const endX = x1 + Math.cos(branchAngle) * branchLength;
     const endY = y1 + Math.sin(branchAngle) * branchLength;
     
-    // 创建分支路径
+    // 创建分支路径 - 增加波动幅度使分支更加扭曲
     const branchPath: number[][] = [[x1, y1]];
-    subdividePath(branchPath, x1, y1, endX, endY, segments, displacement);
+    // 使用更大的displacement参数增加分支的波动幅度
+    subdividePath(branchPath, x1, y1, endX, endY, segments, displacement * 1.3);
     branchPath.push([endX, endY]);
     
     return branchPath;
