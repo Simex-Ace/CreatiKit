@@ -5,22 +5,56 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { Menu, X } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { DevelopmentInProgress } from '@/components/ui/DevelopmentInProgress';
 import { useDevelopmentAlert } from '@/lib/useDevelopmentAlert';
+import { useAuth } from '@/contexts/AuthContext';
+import { AuthModal } from '@/components/auth/AuthModal';
+import { UserMenu } from '@/components/auth/UserMenu';
+import { LogOut } from 'lucide-react';
+import { useToast } from '@/contexts/ToastContext';
 
 export function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [authModalOpen, setAuthModalOpen] = useState(false);
+  const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
   const { showAlert, alertVisible, alertMessage, alertDuration, closeAlert } = useDevelopmentAlert();
+  const { user, loading, signOut } = useAuth();
+  const { toast } = useToast();
 
   const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
   
+  // 当用户登录成功后，自动关闭弹窗
+  useEffect(() => {
+    if (user && authModalOpen) {
+      setAuthModalOpen(false);
+    }
+  }, [user, authModalOpen]);
+  
   const handleLogin = () => {
-    showAlert('登录功能正在开发中，敬请期待！');
+    setAuthMode('login');
+    setAuthModalOpen(true);
   };
   
   const handleRegister = () => {
-    showAlert('注册功能正在开发中，敬请期待！');
+    setAuthMode('register');
+    setAuthModalOpen(true);
+  };
+
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+      toast({
+        title: '已退出登录',
+        description: '期待您的再次使用',
+      });
+    } catch (error) {
+      toast({
+        title: '退出失败',
+        description: '请重试',
+        variant: 'destructive',
+      });
+    }
   };
 
   return (
@@ -49,10 +83,31 @@ export function Header() {
         </div>
         <div className="flex items-center space-x-4">
           <ThemeToggle />
+          {!loading && (
+            <>
+              {user ? (
+                <>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={handleSignOut}
+                    className="hidden sm:inline-flex"
+                    title="退出登录"
+                  >
+                    <LogOut className="h-4 w-4" />
+                  </Button>
+                  <UserMenu />
+                </>
+              ) : (
+                <>
           <Button className="hidden sm:inline-flex" onClick={handleLogin}>登录</Button>
           <Button variant="secondary" className="hidden sm:inline-flex" onClick={handleRegister}>
             注册
           </Button>
+                </>
+              )}
+            </>
+          )}
           <Button variant="ghost" size="icon" className="md:hidden" onClick={toggleMenu}>
             {isMenuOpen ? <X /> : <Menu />}
           </Button>
@@ -75,12 +130,30 @@ export function Header() {
             <Link href="/whiteboard" className="block py-2 text-sm font-medium transition-colors hover:text-primary">
               在线白板
             </Link>
+            {!loading && (
             <div className="pt-2 flex flex-col space-y-2">
+                {user ? (
+                  <>
+                    <Button
+                      variant="outline"
+                      className="w-full flex items-center justify-center gap-2"
+                      onClick={handleSignOut}
+                    >
+                      <LogOut className="h-4 w-4" />
+                      <span>退出登录</span>
+                    </Button>
+                    <UserMenu />
+                  </>
+                ) : (
+                  <>
               <Button className="w-full" onClick={handleLogin}>登录</Button>
               <Button variant="secondary" className="w-full" onClick={handleRegister}>
                 注册
               </Button>
+                  </>
+                )}
             </div>
+            )}
           </div>
         </div>
       )}
@@ -92,6 +165,15 @@ export function Header() {
         duration={alertDuration}
         message={alertMessage}
       />
+      
+      {/* 登录/注册弹窗 - 只在未登录时显示，确保登录后完全移除 */}
+      {!user && (
+        <AuthModal
+          isOpen={authModalOpen}
+          onClose={() => setAuthModalOpen(false)}
+          defaultMode={authMode}
+        />
+      )}
     </header>
   );
 }

@@ -3,10 +3,11 @@
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { Image, Globe, FileCode, Monitor, Lock, Code, BookOpen, Palette, Smile, QrCode, PencilRuler, RotateCw, CloudSun, BarChart2, FlaskConical } from 'lucide-react';
+import { Image, Globe, FileCode, Monitor, Lock, Code, BookOpen, Palette, Smile, QrCode, PencilRuler, RotateCw, CloudSun, BarChart2, FlaskConical, Heart } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { DevelopmentInProgress } from '@/components/ui/DevelopmentInProgress';
 import { useDevelopmentAlert } from '@/lib/useDevelopmentAlert';
+import { ToolCardFavoriteButton } from '@/components/ToolCardFavoriteButton';
 
 export default function Home() {
   const router = useRouter();
@@ -114,7 +115,6 @@ export default function Home() {
 
   return (
     <div className="space-y-12">
-      {/* 英雄区域 */}
       <section className="py-16 text-center space-y-8">
         <h1 className="text-4xl md:text-6xl font-bold tracking-tight">
           <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-purple-600">
@@ -148,8 +148,11 @@ export default function Home() {
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
           {/* 交互式2D化学实验室卡片 */}
           <Card className="relative min-h-[300px] flex flex-col transition-all duration-300 hover:shadow-lg border-2 border-cyan-400 transform hover:-translate-y-1">
-            <div className="absolute -top-3 -right-3 bg-cyan-500 text-white text-xs font-bold px-3 py-1 rounded-full">
+            <div className="absolute -top-3 -right-3 bg-cyan-500 text-white text-xs font-bold px-3 py-1 rounded-full z-20">
               新品
+            </div>
+            <div className="absolute top-4 right-4 z-30">
+              <ToolCardFavoriteButton toolPath="/chemistry-lab" />
             </div>
             <div className="p-6 flex-grow flex flex-col space-y-4">
               <div className="rounded-full bg-cyan-100 p-3 w-fit">
@@ -169,6 +172,9 @@ export default function Home() {
 
           {/* 图片压缩工具卡片 */}
           <Card className="relative min-h-[300px] flex flex-col transition-all duration-300 hover:shadow-lg">
+            <div className="absolute top-4 right-4 z-30">
+              <ToolCardFavoriteButton toolPath="/compress" />
+            </div>
             <div className="p-6 flex-grow flex flex-col space-y-4">
               <div className="rounded-full bg-blue-100 p-3 w-fit">
                 <Image className="h-6 w-6 text-blue-600" />
@@ -187,6 +193,9 @@ export default function Home() {
 
           {/* 3D模型预览器卡片 */}
           <Card className="relative min-h-[300px] flex flex-col transition-all duration-300 hover:shadow-lg">
+            <div className="absolute top-4 right-4 z-30">
+              <ToolCardFavoriteButton toolPath="/model-viewer" />
+            </div>
             <div className="p-6 flex-grow flex flex-col space-y-4">
               <div className="rounded-full bg-purple-100 p-3 w-fit">
                 <Globe className="h-6 w-6 text-purple-600" />
@@ -205,8 +214,11 @@ export default function Home() {
 
           {/* 生物沙盒卡片 */}
           <Card className="relative min-h-[300px] flex flex-col transition-all duration-300 hover:shadow-lg border-2 border-emerald-400 transform hover:-translate-y-1">
-            <div className="absolute -top-3 -right-3 bg-emerald-500 text-white text-xs font-bold px-3 py-1 rounded-full">
+            <div className="absolute -top-3 -right-3 bg-emerald-500 text-white text-xs font-bold px-3 py-1 rounded-full z-20">
               新品
+            </div>
+            <div className="absolute top-4 right-4 z-30">
+              <ToolCardFavoriteButton toolPath="/ecosystem-sandbox" />
             </div>
             <div className="p-6 flex-grow flex flex-col space-y-4">
               <div className="rounded-full bg-emerald-100 p-3 w-fit">
@@ -226,8 +238,11 @@ export default function Home() {
           
           {/* 背景移除工具卡片 */}
           <Card className="relative min-h-[300px] flex flex-col transition-all duration-300 hover:shadow-lg hover:shadow-pink-200 border-2 border-pink-300 transform hover:-translate-y-1 group overflow-hidden">
-            <div className="absolute -top-3 -right-3 bg-pink-500 text-white text-xs font-bold px-3 py-1 rounded-full">
+            <div className="absolute -top-3 -right-3 bg-pink-500 text-white text-xs font-bold px-3 py-1 rounded-full z-20">
               热门
+            </div>
+            <div className="absolute top-4 right-4 z-30">
+              <ToolCardFavoriteButton toolPath="/background-remover" />
             </div>
             <div className="p-6 flex-grow flex flex-col space-y-4">
               <div className="rounded-full bg-pink-100 p-3 w-fit group-hover:scale-110 transition-transform duration-300">
@@ -255,8 +270,11 @@ export default function Home() {
 
           {/* 隔空写字卡片 */}
           <Card className="relative min-h-[300px] flex flex-col transition-all duration-300 hover:shadow-lg border-2 border-blue-400 transform hover:-translate-y-1">
-            <div className="absolute -top-3 -right-3 bg-blue-500 text-white text-xs font-bold px-3 py-1 rounded-full">
+            <div className="absolute -top-3 -right-3 bg-blue-500 text-white text-xs font-bold px-3 py-1 rounded-full z-20">
               新品
+            </div>
+            <div className="absolute top-4 right-4 z-30">
+              <ToolCardFavoriteButton toolPath="/camera-gesture-drawing" />
             </div>
             <div className="p-6 flex-grow flex flex-col space-y-4">
               <div className="rounded-full bg-blue-100 p-3 w-fit">
@@ -276,6 +294,9 @@ export default function Home() {
 
           {/* 代码工具卡片 */}
           <Card className="relative min-h-[300px] flex flex-col transition-all duration-300 hover:shadow-lg">
+            <div className="absolute top-4 right-4 z-10">
+              <ToolCardFavoriteButton toolPath="/code-tools" />
+            </div>
             <div className="p-6 flex-grow flex flex-col space-y-4">
               <div className="rounded-full bg-green-100 p-3 w-fit">
                 <FileCode className="h-6 w-6 text-green-600" />
@@ -294,6 +315,9 @@ export default function Home() {
 
           {/* Markdown编辑器卡片 */}
           <Card className="relative min-h-[300px] flex flex-col transition-all duration-300 hover:shadow-lg">
+            <div className="absolute top-4 right-4 z-10">
+              <ToolCardFavoriteButton toolPath="/markdown-editor" />
+            </div>
             <div className="p-6 flex-grow flex flex-col space-y-4">
               <div className="rounded-full bg-yellow-100 p-3 w-fit">
                 <Code className="h-6 w-6 text-yellow-600" />
@@ -312,6 +336,9 @@ export default function Home() {
 
           {/* 调色板工具卡片 */}
           <Card className="relative min-h-[300px] flex flex-col transition-all duration-300 hover:shadow-lg">
+            <div className="absolute top-4 right-4 z-10">
+              <ToolCardFavoriteButton toolPath="/color-palette" />
+            </div>
             <div className="p-6 flex-grow flex flex-col space-y-4">
               <div className="rounded-full bg-red-100 p-3 w-fit">
                 <Palette className="h-6 w-6 text-red-600" />
@@ -330,6 +357,9 @@ export default function Home() {
 
           {/* 文本分析工具卡片 */}
           <Card className="relative min-h-[300px] flex flex-col transition-all duration-300 hover:shadow-lg">
+            <div className="absolute top-4 right-4 z-10">
+              <ToolCardFavoriteButton toolPath="/text-analyzer" />
+            </div>
             <div className="p-6 flex-grow flex flex-col space-y-4">
               <div className="rounded-full bg-indigo-100 p-3 w-fit">
                 <BookOpen className="h-6 w-6 text-indigo-600" />
@@ -348,6 +378,9 @@ export default function Home() {
           
           {/* 二维码生成器卡片 */}
           <Card className="relative min-h-[300px] flex flex-col transition-all duration-300 hover:shadow-lg">
+            <div className="absolute top-4 right-4 z-10">
+              <ToolCardFavoriteButton toolPath="/qr-code-generator" />
+            </div>
             <div className="p-6 flex-grow flex flex-col space-y-4">
               <div className="rounded-full bg-teal-100 p-3 w-fit">
                 <QrCode className="h-6 w-6 text-teal-600" />
@@ -366,6 +399,9 @@ export default function Home() {
 
           {/* Emoji大全卡片 */}
           <Card className="relative min-h-[300px] flex flex-col transition-all duration-300 hover:shadow-lg">
+            <div className="absolute top-4 right-4 z-10">
+              <ToolCardFavoriteButton toolPath="/emoji-collection" />
+            </div>
             <div className="p-6 flex-grow flex flex-col space-y-4">
               <div className="rounded-full bg-pink-100 p-3 w-fit">
                 <Smile className="h-6 w-6 text-pink-600" />
@@ -384,6 +420,9 @@ export default function Home() {
 
           {/* 像素艺术生成器卡片 */}
           <Card className="relative min-h-[300px] flex flex-col transition-all duration-300 hover:shadow-lg">
+            <div className="absolute top-4 right-4 z-10">
+              <ToolCardFavoriteButton toolPath="/pixel-art-generator" />
+            </div>
             <div className="p-6 flex-grow flex flex-col space-y-4">
               <div className="rounded-full bg-orange-100 p-3 w-fit">
                 <Monitor className="h-6 w-6 text-orange-600" />
@@ -402,6 +441,9 @@ export default function Home() {
 
           {/* 哈希/散列值计算器卡片 */}
           <Card className="relative min-h-[300px] flex flex-col transition-all duration-300 hover:shadow-lg">
+            <div className="absolute top-4 right-4 z-10">
+              <ToolCardFavoriteButton toolPath="/hash-calculator" />
+            </div>
             <div className="p-6 flex-grow flex flex-col space-y-4">
               <div className="rounded-full bg-cyan-100 p-3 w-fit">
                 <Lock className="h-6 w-6 text-cyan-600" />
@@ -420,6 +462,9 @@ export default function Home() {
 
           {/* Unix 时间戳转换器卡片 */}
           <Card className="relative min-h-[300px] flex flex-col transition-all duration-300 hover:shadow-lg">
+            <div className="absolute top-4 right-4 z-10">
+              <ToolCardFavoriteButton toolPath="/timestamp-converter" />
+            </div>
             <div className="p-6 flex-grow flex flex-col space-y-4">
               <div className="rounded-full bg-orange-100 p-3 w-fit">
                 <Monitor className="h-6 w-6 text-orange-600" />
@@ -438,6 +483,9 @@ export default function Home() {
 
           {/* 在线白板工具卡片 */}
           <Card className="relative min-h-[300px] flex flex-col transition-all duration-300 hover:shadow-lg">
+            <div className="absolute top-4 right-4 z-10">
+              <ToolCardFavoriteButton toolPath="/whiteboard" />
+            </div>
             <div className="p-6 flex-grow flex flex-col space-y-4">
               <div className="rounded-full bg-blue-100 p-3 w-fit">
                 <PencilRuler className="h-6 w-6 text-blue-600" />
@@ -456,6 +504,9 @@ export default function Home() {
 
           {/* GIF分解/合成器卡片 */}
           <Card className="relative min-h-[300px] flex flex-col transition-all duration-300 hover:shadow-lg">
+            <div className="absolute top-4 right-4 z-10">
+              <ToolCardFavoriteButton toolPath="/gif-tool" />
+            </div>
             <div className="p-6 flex-grow flex flex-col space-y-4">
               <div className="rounded-full bg-green-100 p-3 w-fit">
                 <RotateCw className="h-6 w-6 text-green-600" />
@@ -474,6 +525,9 @@ export default function Home() {
 
             {/* 天气预报工具卡片 */}
             <Card className="relative min-h-[300px] flex flex-col transition-all duration-300 hover:shadow-lg">
+              <div className="absolute top-4 right-4 z-10">
+                <ToolCardFavoriteButton toolPath="/weather-tool" />
+              </div>
               <div className="p-6 flex-grow flex flex-col space-y-4">
                 <div className="rounded-full bg-sky-100 p-3 w-fit">
                   <CloudSun className="h-6 w-6 text-sky-600" />
@@ -492,6 +546,9 @@ export default function Home() {
 
             {/* 数据转图表工具卡片 */}
             <Card className="relative min-h-[300px] flex flex-col transition-all duration-300 hover:shadow-lg">
+              <div className="absolute top-4 right-4 z-10">
+                <ToolCardFavoriteButton toolPath="/data-to-chart" />
+              </div>
               <div className="p-6 flex-grow flex flex-col space-y-4">
                 <div className="rounded-full bg-purple-100 p-3 w-fit">
                   <BarChart2 className="h-6 w-6 text-purple-600" />
@@ -510,6 +567,9 @@ export default function Home() {
 
             {/* 在线电子钢琴卡片 */}
             <Card className="relative min-h-[300px] flex flex-col transition-all duration-300 hover:shadow-lg">
+              <div className="absolute top-4 right-4 z-10">
+                <ToolCardFavoriteButton toolPath="/piano" />
+              </div>
               <div className="p-6 flex-grow flex flex-col space-y-4">
                 <div className="rounded-full bg-blue-100 p-3 w-fit">
                   <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -532,6 +592,9 @@ export default function Home() {
             
             {/* 交互式2D物理实验室卡片 */}
             <Card className="relative min-h-[300px] flex flex-col transition-all duration-300 hover:shadow-lg">
+              <div className="absolute top-4 right-4 z-10">
+                <ToolCardFavoriteButton toolPath="/physics-lab" />
+              </div>
               <div className="p-6 flex-grow flex flex-col space-y-4">
                 <div className="rounded-full bg-amber-100 p-3 w-fit">
                   <FlaskConical className="h-6 w-6 text-amber-600" />

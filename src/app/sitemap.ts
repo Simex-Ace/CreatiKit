@@ -11,15 +11,41 @@ type RouteItem = {
 
 // 定义站点的所有路由
 const routes: RouteItem[] = [
+  // 首页 - 最高优先级
   { path: '/', lastModified: new Date(), changeFrequency: 'daily', priority: 1.0 },
-  { path: '/compress', lastModified: new Date(), changeFrequency: 'weekly', priority: 0.8 },
-  { path: '/model-viewer', lastModified: new Date(), changeFrequency: 'weekly', priority: 0.8 },
-  { path: '/code-tools', lastModified: new Date(), changeFrequency: 'weekly', priority: 0.7 },
-  { path: '/markdown-editor', lastModified: new Date(), changeFrequency: 'weekly', priority: 0.7 },
+  
+  // 图片处理工具 - 高优先级（热门功能）
+  { path: '/compress', lastModified: new Date(), changeFrequency: 'weekly', priority: 0.9 },
+  { path: '/background-remover', lastModified: new Date(), changeFrequency: 'weekly', priority: 0.9 },
+  { path: '/pixel-art-generator', lastModified: new Date(), changeFrequency: 'weekly', priority: 0.8 },
+  { path: '/gif-tool', lastModified: new Date(), changeFrequency: 'weekly', priority: 0.8 },
+  
+  // 设计工具 - 高优先级
   { path: '/color-palette', lastModified: new Date(), changeFrequency: 'weekly', priority: 0.8 },
-  { path: '/text-analyzer', lastModified: new Date(), changeFrequency: 'weekly', priority: 0.6 },
-  { path: '/emoji-collection', lastModified: new Date(), changeFrequency: 'weekly', priority: 0.6 },
   { path: '/qr-code-generator', lastModified: new Date(), changeFrequency: 'weekly', priority: 0.8 },
+  { path: '/whiteboard', lastModified: new Date(), changeFrequency: 'weekly', priority: 0.7 },
+  
+  // 3D和预览工具
+  { path: '/model-viewer', lastModified: new Date(), changeFrequency: 'weekly', priority: 0.8 },
+  
+  // 文本和代码工具
+  { path: '/markdown-editor', lastModified: new Date(), changeFrequency: 'weekly', priority: 0.7 },
+  { path: '/code-tools', lastModified: new Date(), changeFrequency: 'weekly', priority: 0.7 },
+  { path: '/text-analyzer', lastModified: new Date(), changeFrequency: 'weekly', priority: 0.7 },
+  
+  // 实用工具
+  { path: '/hash-calculator', lastModified: new Date(), changeFrequency: 'weekly', priority: 0.6 },
+  { path: '/timestamp-converter', lastModified: new Date(), changeFrequency: 'weekly', priority: 0.6 },
+  { path: '/weather-tool', lastModified: new Date(), changeFrequency: 'daily', priority: 0.7 },
+  { path: '/data-to-chart', lastModified: new Date(), changeFrequency: 'weekly', priority: 0.7 },
+  
+  // 娱乐和教育工具
+  { path: '/piano', lastModified: new Date(), changeFrequency: 'weekly', priority: 0.6 },
+  { path: '/physics-lab', lastModified: new Date(), changeFrequency: 'weekly', priority: 0.7 },
+  { path: '/chemistry-lab', lastModified: new Date(), changeFrequency: 'weekly', priority: 0.7 },
+  { path: '/ecosystem-sandbox', lastModified: new Date(), changeFrequency: 'weekly', priority: 0.7 },
+  { path: '/emoji-collection', lastModified: new Date(), changeFrequency: 'weekly', priority: 0.6 },
+  { path: '/camera-gesture-drawing', lastModified: new Date(), changeFrequency: 'weekly', priority: 0.6 },
 ];
 
 export default function sitemap(): MetadataRoute.Sitemap {

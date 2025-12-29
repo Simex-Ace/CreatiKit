@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { FileUp, Copy, Download, CheckCircle2, RefreshCw } from 'lucide-react';
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/contexts/ToastContext';
 import { useDevelopmentAlert } from '@/lib/useDevelopmentAlert';
 import CryptoJS from 'crypto-js';
 

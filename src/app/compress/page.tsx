@@ -7,7 +7,7 @@ import { Slider } from '@/components/ui/slider';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Label } from '@/components/ui/label';
 import { Download, Upload, Image as ImageIcon, X } from 'lucide-react';
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/contexts/ToastContext';
 import { DevelopmentInProgress } from '@/components/ui/DevelopmentInProgress';
 import { useDevelopmentAlert } from '@/lib/useDevelopmentAlert';
 
