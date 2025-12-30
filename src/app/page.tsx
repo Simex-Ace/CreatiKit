@@ -237,7 +237,7 @@ export default function Home() {
           </Card>
           
           {/* 背景移除工具卡片 */}
-          <Card className="relative min-h-[300px] flex flex-col transition-all duration-300 hover:shadow-lg hover:shadow-pink-200 border-2 border-pink-300 transform hover:-translate-y-1 group overflow-hidden">
+          <Card className="relative min-h-[300px] flex flex-col transition-all duration-300 hover:shadow-lg hover:shadow-pink-200 border-2 border-pink-300 transform hover:-translate-y-1">
             <div className="absolute -top-3 -right-3 bg-pink-500 text-white text-xs font-bold px-3 py-1 rounded-full z-20">
               热门
             </div>
