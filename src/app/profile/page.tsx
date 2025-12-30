@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Separator } from '@/components/ui/separator';
 import { useAuth } from '@/contexts/AuthContext';
+import { createClient } from '@/lib/supabase/client';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import { useFavorites } from '@/hooks/useFavorites';
 import { AVATAR_OPTIONS, getAvatarEmoji, getAvatarColor } from '@/lib/avatars';
@@ -17,7 +18,7 @@ import { useToast } from '@/contexts/ToastContext';
 import Link from 'next/link';
 
 export default function ProfilePage() {
-  const { user } = useAuth();
+  const { user, resetPassword } = useAuth();
   const { profile, updateProfile, loading: profileLoading } = useUserProfile();
   const { favorites, loading: favoritesLoading, removeFavorite } = useFavorites();
   const router = useRouter();
@@ -384,6 +385,52 @@ export default function ProfilePage() {
                     </div>
                   </>
                 )}
+
+                <Separator />
+
+                <div className="flex items-center justify-between py-2">
+                  <div>
+                    <Label className="text-sm font-medium">密码</Label>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      点击下方按钮修改密码
+                    </p>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={async () => {
+                      if (!user?.email) return;
+                      
+                      const { error } = await resetPassword(user.email);
+                      if (error) {
+                        let errorMessage = '无法发送重置密码邮件';
+                        const errorMsg = (error.message || '').toLowerCase();
+                        
+                        if (errorMsg.includes('rate limit') || errorMsg.includes('too many')) {
+                          errorMessage = '请求过于频繁，请稍后再试';
+                        } else if (errorMsg.includes('configuration') || errorMsg.includes('smtp')) {
+                          errorMessage = '邮件服务配置错误，请联系管理员';
+                        }
+                        
+                        toast({
+                          title: '发送失败',
+                          description: errorMessage,
+                          variant: 'destructive',
+                          duration: 4000,
+                        });
+                      } else {
+                        toast({
+                          title: '已发送重置密码邮件',
+                          description: '请检查您的邮箱（包括垃圾邮件文件夹）以重置密码',
+                          variant: 'info',
+                          duration: 4000,
+                        });
+                      }
+                    }}
+                  >
+                    修改密码
+                  </Button>
+                </div>
               </div>
             </div>
           </Card>

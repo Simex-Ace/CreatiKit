@@ -9,9 +9,11 @@ interface AuthContextType {
   session: Session | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
-  signUp: (email: string, password: string) => Promise<{ error: any }>;
+  signUp: (email: string, password: string) => Promise<{ error: any; data?: any }>;
   signOut: () => Promise<void>;
   signInWithProvider: (provider: 'google' | 'github') => Promise<void>;
+  resetPassword: (email: string) => Promise<{ error: any }>;
+  updatePassword: (newPassword: string) => Promise<{ error: any }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -60,9 +62,119 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signUp = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signUp({
+    // 在注册前，先尝试检查邮箱是否已存在
+    // 通过尝试登录来检查（使用一个不可能正确的密码）
+    // 如果返回 "Invalid login credentials"，说明邮箱已存在
+    const { error: checkError } = await supabase.auth.signInWithPassword({
+      email,
+      password: '__CHECK_EMAIL_EXISTS__' + Date.now(), // 使用时间戳确保唯一
+    });
+    
+    // 如果错误是 "Invalid login credentials"，说明邮箱已存在
+    if (checkError) {
+      const errorMsg = (checkError.message || '').toLowerCase();
+      if (errorMsg.includes('invalid login credentials') || 
+          errorMsg.includes('invalid credentials') ||
+          errorMsg.includes('email not confirmed')) {
+        // 邮箱已存在，返回错误
+        return { 
+          data: null, 
+          error: { 
+            message: 'User already registered',
+            code: 'email_already_exists',
+            status: 422
+          } 
+        };
+      }
+      // 其他错误（如网络错误）可以继续尝试注册
+    } else {
+      // 如果登录成功（不应该发生），说明邮箱已存在
+      // 立即退出登录
+      await supabase.auth.signOut();
+      return { 
+        data: null, 
+        error: { 
+          message: 'User already registered',
+          code: 'email_already_exists',
+          status: 422
+        } 
+      };
+    }
+    
+    // 邮箱不存在，可以注册
+    // 根据环境变量或当前域名确定重定向 URL
+    const siteUrl = typeof window !== 'undefined' 
+      ? (process.env.NEXT_PUBLIC_SITE_URL || window.location.origin)
+      : undefined;
+    
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
+      options: {
+        emailRedirectTo: siteUrl ? `${siteUrl}/auth/callback` : undefined,
+      },
+    });
+    
+    return { data, error };
+  };
+
+  const resetPassword = async (email: string) => {
+    if (typeof window === 'undefined') {
+      return { error: { message: '此功能仅在客户端可用' } };
+    }
+    
+    // 先检查邮箱是否已注册
+    // 通过尝试登录来检查（使用一个不可能正确的密码）
+    const { error: checkError } = await supabase.auth.signInWithPassword({
+      email,
+      password: '__CHECK_EMAIL_EXISTS__' + Date.now(),
+    });
+    
+    // 如果错误不是 "Invalid login credentials"，说明邮箱可能不存在
+    if (checkError) {
+      const errorMsg = (checkError.message || '').toLowerCase();
+      if (!errorMsg.includes('invalid login credentials') && 
+          !errorMsg.includes('invalid credentials') &&
+          !errorMsg.includes('email not confirmed')) {
+        // 邮箱不存在
+        return { 
+          error: { 
+            message: '该邮箱未注册，请先注册账户',
+            code: 'email_not_found',
+            status: 404
+          } 
+        };
+      }
+      // 如果错误是 "Invalid login credentials"，说明邮箱存在，可以继续
+    } else {
+      // 如果登录成功（不应该发生），说明邮箱存在
+      await supabase.auth.signOut();
+    }
+    
+    // 邮箱存在，发送重置密码邮件
+    // 根据环境变量或当前域名确定重定向 URL
+    // 优先使用环境变量中的 SITE_URL，如果没有则使用当前域名
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || window.location.origin;
+    const redirectTo = `${siteUrl}/auth/reset-password`;
+    
+    const { error, data } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo,
+    });
+    
+    // 即使没有错误，也检查是否真的发送成功
+    // Supabase 在某些情况下可能静默失败
+    if (error) {
+      return { error };
+    }
+    
+    // 检查是否有返回数据或错误
+    // 如果没有错误也没有数据，可能是配置问题
+    return { error: null, data };
+  };
+
+  const updatePassword = async (newPassword: string) => {
+    const { error } = await supabase.auth.updateUser({
+      password: newPassword,
     });
     return { error };
   };
@@ -99,6 +211,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         signUp,
         signOut,
         signInWithProvider,
+        resetPassword,
+        updatePassword,
       }}
     >
       {children}
