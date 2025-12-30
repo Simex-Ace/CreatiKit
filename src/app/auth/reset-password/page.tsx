@@ -45,6 +45,11 @@ export default function ResetPasswordPage() {
       // 标记为已检查，防止重复执行
       hasCheckedRef.current = true;
       
+      // 详细日志
+      console.log('[Reset Password] Page loaded, checking session...');
+      console.log('[Reset Password] Full URL:', window.location.href);
+      console.log('[Reset Password] All search params:', Object.fromEntries(searchParams.entries()));
+      
       // 先检查 URL 参数中是否有错误信息
       const error = searchParams.get('error');
       const errorMessage = searchParams.get('message');

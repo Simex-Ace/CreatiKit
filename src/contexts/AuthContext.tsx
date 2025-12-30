@@ -155,14 +155,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // 邮箱存在，发送重置密码邮件
     // 根据环境变量或当前域名确定重定向 URL
     // 优先使用环境变量中的 SITE_URL，如果没有则使用当前域名
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || window.location.origin;
+    let siteUrl = process.env.NEXT_PUBLIC_SITE_URL || window.location.origin;
+    // 移除末尾的斜杠（如果有），避免双重斜杠
+    siteUrl = siteUrl.replace(/\/$/, '');
+    
     // 重要：redirectTo 应该指向 /auth/callback，而不是直接指向 /auth/reset-password
     // 因为 Supabase 会先验证链接，然后重定向到 callback，callback 再处理会话并重定向到 reset-password
     const redirectTo = `${siteUrl}/auth/callback`;
     
+    console.log('[Reset Password] Sending reset email with redirectTo:', redirectTo);
+    
     const { error, data } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo,
     });
+    
+    if (error) {
+      console.error('[Reset Password] Error sending reset email:', error);
+    } else {
+      console.log('[Reset Password] Reset email sent successfully');
+    }
     
     // 即使没有错误，也检查是否真的发送成功
     // Supabase 在某些情况下可能静默失败

@@ -9,12 +9,15 @@ export async function GET(request: Request) {
   const error = requestUrl.searchParams.get('error');
   const errorDescription = requestUrl.searchParams.get('error_description');
 
-  console.log('[Auth Callback]', { 
-    code: code ? 'present' : 'missing', 
-    token: token ? 'present' : 'missing',
+  // 详细日志，记录所有参数
+  console.log('[Auth Callback] Full URL:', requestUrl.toString());
+  console.log('[Auth Callback] Params:', { 
+    code: code ? `${code.substring(0, 20)}...` : 'missing', 
+    token: token ? `${token.substring(0, 20)}...` : 'missing',
     type, 
     error, 
-    errorDescription 
+    errorDescription,
+    allParams: Object.fromEntries(requestUrl.searchParams.entries())
   });
 
   // 如果有错误参数，直接处理错误
@@ -52,11 +55,17 @@ export async function GET(request: Request) {
   }
 
   if (code) {
+    console.log('[Auth Callback] Attempting to exchange code for session...');
     const supabase = await createClient();
     const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
     
     if (exchangeError) {
-      console.error('[Auth Callback] Error exchanging code:', exchangeError);
+      console.error('[Auth Callback] Error exchanging code:', {
+        message: exchangeError.message,
+        status: exchangeError.status,
+        name: exchangeError.name,
+        code: exchangeError.code
+      });
       
       // 检查是否是 OTP 过期错误
       const errorMsg = (exchangeError.message || '').toLowerCase();
