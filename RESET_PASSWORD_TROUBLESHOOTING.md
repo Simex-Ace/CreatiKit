@@ -152,3 +152,4 @@ NEXT_PUBLIC_SITE_URL=https://creatikit.asia
 - 免费版有邮件发送限制，注意不要超过
 - 建议在生产环境使用自定义 SMTP 以提高可靠性
 
+
