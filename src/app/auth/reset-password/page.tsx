@@ -71,10 +71,82 @@ export default function ResetPasswordPage() {
         return;
       }
       
-      // 检查 URL 中是否有 code 参数（可能直接访问了重置密码页面）
+      // 检查 URL 中的参数（支持 code 和 token 两种格式）
       const code = searchParams.get('code');
+      const token = searchParams.get('token'); // Supabase 可能使用 token 而不是 code
       const type = searchParams.get('type');
       
+      // 优先处理 token 参数（如果存在）
+      if (token && type === 'recovery') {
+        console.log('[Reset Password] Found token in URL, attempting to verify...');
+        const { createClient } = await import('@/lib/supabase/client');
+        const supabase = createClient();
+        
+        try {
+          // Supabase 的密码重置 token 需要通过 verifyOtp 验证
+          // type 为 'recovery' 表示密码重置
+          // 注意：Supabase 的 verifyOtp 可能使用 token 或 token_hash，根据实际 API 调整
+          const { data, error: verifyError } = await supabase.auth.verifyOtp({
+            token: token,
+            type: 'recovery'
+          });
+          
+          if (!isMounted) return;
+          
+          if (verifyError) {
+            console.error('[Reset Password] Error verifying token:', verifyError);
+            setIsValidSession(false);
+            if (!toastShownRef.current) {
+              toastShownRef.current = true;
+              const errorMsg = (verifyError.message || '').toLowerCase();
+              if (errorMsg.includes('expired') || errorMsg.includes('invalid')) {
+                toast({
+                  title: '链接已过期',
+                  description: '密码重置链接已过期，请重新申请',
+                  variant: 'destructive',
+                  duration: 5000,
+                });
+              } else {
+                toast({
+                  title: '链接无效',
+                  description: verifyError.message || '请重新申请密码重置',
+                  variant: 'destructive',
+                  duration: 5000,
+                });
+              }
+            }
+            redirectTimeout = setTimeout(() => {
+              if (isMounted) {
+                router.replace('/');
+              }
+            }, 5000);
+            return;
+          }
+          
+          // 验证成功后，检查会话
+          if (data?.session) {
+            console.log('[Reset Password] Token verified, session created');
+            setIsValidSession(true);
+            return;
+          } else {
+            // 验证成功但没有会话，尝试获取会话
+            const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+            if (session) {
+              console.log('[Reset Password] Session found after token verification');
+              setIsValidSession(true);
+              return;
+            } else {
+              console.warn('[Reset Password] Token verified but no session found');
+              // 继续下面的逻辑
+            }
+          }
+        } catch (err: any) {
+          console.error('[Reset Password] Exception verifying token:', err);
+          // 继续下面的逻辑，尝试其他方式
+        }
+      }
+      
+      // 处理 code 参数（新格式）
       if (code && type === 'recovery') {
         // 如果有 code，优先使用 code 交换会话
         // 这样可以确保即使服务端 cookie 不同步，客户端也能获取会话

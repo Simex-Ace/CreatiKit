@@ -4,11 +4,18 @@ import { NextResponse } from 'next/server';
 export async function GET(request: Request) {
   const requestUrl = new URL(request.url);
   const code = requestUrl.searchParams.get('code');
+  const token = requestUrl.searchParams.get('token'); // Supabase 可能使用 token 而不是 code
   const type = requestUrl.searchParams.get('type'); // 'recovery' 表示密码重置
   const error = requestUrl.searchParams.get('error');
   const errorDescription = requestUrl.searchParams.get('error_description');
 
-  console.log('[Auth Callback]', { code: code ? 'present' : 'missing', type, error, errorDescription });
+  console.log('[Auth Callback]', { 
+    code: code ? 'present' : 'missing', 
+    token: token ? 'present' : 'missing',
+    type, 
+    error, 
+    errorDescription 
+  });
 
   // 如果有错误参数，直接处理错误
   if (error) {
@@ -33,6 +40,15 @@ export async function GET(request: Request) {
     
     // 非恢复类型的错误，重定向到首页（但不带错误参数，避免循环）
     return NextResponse.redirect(new URL('/', requestUrl.origin));
+  }
+
+  // 如果有 token 参数（旧格式），直接重定向到重置密码页面并传递参数
+  if (token && type === 'recovery') {
+    console.log('[Auth Callback] Found token parameter, redirecting to reset password page');
+    const redirectUrl = new URL('/auth/reset-password', requestUrl.origin);
+    redirectUrl.searchParams.set('token', token);
+    redirectUrl.searchParams.set('type', 'recovery');
+    return NextResponse.redirect(redirectUrl);
   }
 
   if (code) {
