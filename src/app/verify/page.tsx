@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -12,9 +12,18 @@ export default function VerifyPage() {
   const searchParams = useSearchParams();
   const [status, setStatus] = useState<'loading' | 'success' | 'error' | 'expired'>('loading');
   const [message, setMessage] = useState('正在验证邮箱...');
+  const hasVerifiedRef = useRef(false);
 
   useEffect(() => {
+    // 防止重复执行
+    if (hasVerifiedRef.current) {
+      return;
+    }
+
     const verifyEmail = async () => {
+      // 标记为已执行
+      hasVerifiedRef.current = true;
+
       const token = searchParams.get('token');
       const type = searchParams.get('type');
       const code = searchParams.get('code');

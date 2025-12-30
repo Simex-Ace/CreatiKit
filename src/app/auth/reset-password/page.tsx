@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -27,20 +27,33 @@ export default function ResetPasswordPage() {
   const [confirmPasswordError, setConfirmPasswordError] = useState('');
   const [isValidSession, setIsValidSession] = useState<boolean | null>(null);
 
+  // 使用 ref 来防止重复执行
+  const hasCheckedRef = useRef(false);
+  const toastShownRef = useRef(false);
+
   // 检查是否有有效的重置会话
   useEffect(() => {
+    // 如果已经检查过，不再执行
+    if (hasCheckedRef.current) {
+      return;
+    }
+
     let isMounted = true;
     let redirectTimeout: NodeJS.Timeout | null = null;
     
     const checkSession = async () => {
+      // 标记为已检查，防止重复执行
+      hasCheckedRef.current = true;
+      
       // 先检查 URL 参数中是否有错误信息
       const error = searchParams.get('error');
       const errorMessage = searchParams.get('message');
       
       if (error || errorMessage) {
-        if (!isMounted) return;
+        if (!isMounted || toastShownRef.current) return;
         
         setIsValidSession(false);
+        toastShownRef.current = true;
         toast({
           title: error === 'expired' ? '链接已过期' : '链接无效',
           description: errorMessage || '请重新申请密码重置',
@@ -69,21 +82,26 @@ export default function ResetPasswordPage() {
         setIsValidSession(true);
       } else {
         setIsValidSession(false);
-        const errorMsg = sessionError?.message || '';
-        if (errorMsg.includes('expired') || errorMsg.includes('invalid')) {
-          toast({
-            title: '链接已过期',
-            description: '密码重置链接已过期，请重新申请',
-            variant: 'destructive',
-            duration: 5000,
-          });
-        } else {
-          toast({
-            title: '链接无效',
-            description: '请重新申请密码重置',
-            variant: 'destructive',
-            duration: 5000,
-          });
+        
+        // 只在没有显示过 toast 时显示
+        if (!toastShownRef.current) {
+          toastShownRef.current = true;
+          const errorMsg = sessionError?.message || '';
+          if (errorMsg.includes('expired') || errorMsg.includes('invalid')) {
+            toast({
+              title: '链接已过期',
+              description: '密码重置链接已过期，请重新申请',
+              variant: 'destructive',
+              duration: 5000,
+            });
+          } else {
+            toast({
+              title: '链接无效',
+              description: '请重新申请密码重置',
+              variant: 'destructive',
+              duration: 5000,
+            });
+          }
         }
         
         // 延迟跳转，但只执行一次
@@ -103,7 +121,9 @@ export default function ResetPasswordPage() {
         clearTimeout(redirectTimeout);
       }
     };
-  }, [router, toast, searchParams]);
+    // 使用具体的参数值作为依赖，而不是整个 searchParams 对象
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams.get('error'), searchParams.get('message')]);
 
   // 验证密码
   const validatePassword = (passwordValue: string): boolean => {
