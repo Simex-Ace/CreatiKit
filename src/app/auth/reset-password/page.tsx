@@ -71,6 +71,58 @@ export default function ResetPasswordPage() {
         return;
       }
       
+      // 检查 URL 中是否有 code 参数（可能直接访问了重置密码页面）
+      const code = searchParams.get('code');
+      const type = searchParams.get('type');
+      
+      if (code && type === 'recovery') {
+        // 如果有 code，尝试交换会话
+        console.log('[Reset Password] Found code in URL, attempting to exchange...');
+        const { createClient } = await import('@/lib/supabase/client');
+        const supabase = createClient();
+        
+        const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+        
+        if (!isMounted) return;
+        
+        if (exchangeError) {
+          console.error('[Reset Password] Error exchanging code:', exchangeError);
+          setIsValidSession(false);
+          if (!toastShownRef.current) {
+            toastShownRef.current = true;
+            const errorMsg = (exchangeError.message || '').toLowerCase();
+            if (errorMsg.includes('expired') || errorMsg.includes('invalid') || exchangeError.status === 403) {
+              toast({
+                title: '链接已过期',
+                description: '密码重置链接已过期，请重新申请',
+                variant: 'destructive',
+                duration: 5000,
+              });
+            } else {
+              toast({
+                title: '链接无效',
+                description: exchangeError.message || '请重新申请密码重置',
+                variant: 'destructive',
+                duration: 5000,
+              });
+            }
+          }
+          redirectTimeout = setTimeout(() => {
+            if (isMounted) {
+              router.replace('/');
+            }
+          }, 5000);
+          return;
+        }
+        
+        if (data?.session) {
+          console.log('[Reset Password] Session created from code');
+          setIsValidSession(true);
+          return;
+        }
+      }
+      
+      // 没有 code，检查现有会话
       const { createClient } = await import('@/lib/supabase/client');
       const supabase = createClient();
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
@@ -79,8 +131,10 @@ export default function ResetPasswordPage() {
       
       // 检查是否有有效的会话（通过密码重置链接访问的用户会有临时会话）
       if (session) {
+        console.log('[Reset Password] Valid session found');
         setIsValidSession(true);
       } else {
+        console.warn('[Reset Password] No valid session found', sessionError);
         setIsValidSession(false);
         
         // 只在没有显示过 toast 时显示
@@ -97,7 +151,7 @@ export default function ResetPasswordPage() {
           } else {
             toast({
               title: '链接无效',
-              description: '请重新申请密码重置',
+              description: '请从邮箱中的重置链接进入，或重新申请密码重置',
               variant: 'destructive',
               duration: 5000,
             });
@@ -243,7 +297,7 @@ export default function ResetPasswordPage() {
     const errorMessage = searchParams.get('message');
     
     return (
-      <div className="min-h-screen flex items-center justify-center p-4">
+      <div className="min-h-screen flex items-center justify-center p-4 bg-background">
         <Card className="w-full max-w-md p-6">
           <div className="text-center space-y-4">
             <AlertCircle className="mx-auto h-12 w-12 text-destructive" />
@@ -253,13 +307,25 @@ export default function ResetPasswordPage() {
             <p className="text-muted-foreground">
               {errorMessage || '重置链接已过期或无效，请重新申请密码重置'}
             </p>
-            <div className="space-y-2">
-              <Link href="/">
-                <Button className="w-full">返回首页</Button>
-              </Link>
-              <p className="text-sm text-muted-foreground">
-                提示：密码重置链接通常有效期为 1 小时，请尽快使用
-              </p>
+            <div className="space-y-3 pt-2">
+              <div className="space-y-2">
+                <Link href="/">
+                  <Button className="w-full" variant="default">
+                    返回首页
+                  </Button>
+                </Link>
+                <p className="text-xs text-muted-foreground text-center">
+                  提示：密码重置链接通常有效期为 1 小时，请尽快使用
+                </p>
+              </div>
+              <div className="pt-2 border-t">
+                <p className="text-sm text-muted-foreground mb-2">
+                  需要重新申请密码重置？
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  返回首页后，点击"登录"按钮，然后选择"忘记密码？"即可重新申请
+                </p>
+              </div>
             </div>
           </div>
         </Card>
