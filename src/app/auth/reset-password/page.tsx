@@ -76,36 +76,86 @@ export default function ResetPasswordPage() {
       const type = searchParams.get('type');
       
       if (code && type === 'recovery') {
-        // 如果有 code，尝试交换会话
+        // 如果有 code，优先使用 code 交换会话
+        // 这样可以确保即使服务端 cookie 不同步，客户端也能获取会话
         console.log('[Reset Password] Found code in URL, attempting to exchange...');
         const { createClient } = await import('@/lib/supabase/client');
         const supabase = createClient();
         
-        const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
-        
-        if (!isMounted) return;
-        
-        if (exchangeError) {
-          console.error('[Reset Password] Error exchanging code:', exchangeError);
+        try {
+          const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+          
+          if (!isMounted) return;
+          
+          if (exchangeError) {
+            console.error('[Reset Password] Error exchanging code:', {
+              message: exchangeError.message,
+              status: exchangeError.status,
+              name: exchangeError.name
+            });
+            
+            // 不要立即判断为过期，可能是其他错误
+            setIsValidSession(false);
+            if (!toastShownRef.current) {
+              toastShownRef.current = true;
+              const errorMsg = (exchangeError.message || '').toLowerCase();
+              
+              // 只有明确是过期错误才显示过期提示
+              if (errorMsg.includes('expired') || errorMsg.includes('otp_expired')) {
+                toast({
+                  title: '链接已过期',
+                  description: '密码重置链接已过期，请重新申请',
+                  variant: 'destructive',
+                  duration: 5000,
+                });
+              } else if (errorMsg.includes('invalid') || exchangeError.status === 403) {
+                // 403 可能是配置问题，不一定是过期
+                toast({
+                  title: '链接无效',
+                  description: '请检查链接是否正确，或重新申请密码重置',
+                  variant: 'destructive',
+                  duration: 5000,
+                });
+              } else {
+                // 其他错误（如网络错误），给用户更友好的提示
+                toast({
+                  title: '验证失败',
+                  description: exchangeError.message || '请稍后重试或重新申请密码重置',
+                  variant: 'destructive',
+                  duration: 5000,
+                });
+              }
+            }
+            redirectTimeout = setTimeout(() => {
+              if (isMounted) {
+                router.replace('/');
+              }
+            }, 5000);
+            return;
+          }
+          
+          if (data?.session) {
+            console.log('[Reset Password] Session created from code successfully', {
+              userId: data.session.user?.id
+            });
+            setIsValidSession(true);
+            return;
+          } else {
+            console.warn('[Reset Password] No session after code exchange, but no error');
+            // 即使没有会话，也继续检查现有会话（可能服务端已经设置了 cookie）
+          }
+        } catch (err: any) {
+          console.error('[Reset Password] Exception during code exchange:', err);
+          if (!isMounted) return;
           setIsValidSession(false);
           if (!toastShownRef.current) {
             toastShownRef.current = true;
-            const errorMsg = (exchangeError.message || '').toLowerCase();
-            if (errorMsg.includes('expired') || errorMsg.includes('invalid') || exchangeError.status === 403) {
-              toast({
-                title: '链接已过期',
-                description: '密码重置链接已过期，请重新申请',
-                variant: 'destructive',
-                duration: 5000,
-              });
-            } else {
-              toast({
-                title: '链接无效',
-                description: exchangeError.message || '请重新申请密码重置',
-                variant: 'destructive',
-                duration: 5000,
-              });
-            }
+            toast({
+              title: '验证失败',
+              description: '请重新申请密码重置',
+              variant: 'destructive',
+              duration: 5000,
+            });
           }
           redirectTimeout = setTimeout(() => {
             if (isMounted) {
@@ -114,34 +164,47 @@ export default function ResetPasswordPage() {
           }, 5000);
           return;
         }
-        
-        if (data?.session) {
-          console.log('[Reset Password] Session created from code');
-          setIsValidSession(true);
-          return;
-        }
       }
       
-      // 没有 code，检查现有会话
+      // 检查现有会话（无论是否有 code，都检查一下，因为服务端可能已经设置了 cookie）
       const { createClient } = await import('@/lib/supabase/client');
       const supabase = createClient();
+      
+      // 等待一小段时间，确保 cookie 已同步（特别是在移动端）
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
       
       if (!isMounted) return;
       
       // 检查是否有有效的会话（通过密码重置链接访问的用户会有临时会话）
       if (session) {
-        console.log('[Reset Password] Valid session found');
+        console.log('[Reset Password] Valid session found', {
+          userId: session.user?.id,
+          expiresAt: session.expires_at
+        });
         setIsValidSession(true);
       } else {
-        console.warn('[Reset Password] No valid session found', sessionError);
+        console.warn('[Reset Password] No valid session found', {
+          error: sessionError,
+          hadCode: !!code
+        });
         setIsValidSession(false);
         
         // 只在没有显示过 toast 时显示
         if (!toastShownRef.current) {
           toastShownRef.current = true;
           const errorMsg = sessionError?.message || '';
-          if (errorMsg.includes('expired') || errorMsg.includes('invalid')) {
+          
+          // 如果有 code 但交换失败，说明可能是其他问题，不是过期
+          if (code) {
+            toast({
+              title: '验证失败',
+              description: '请检查网络连接，或重新申请密码重置',
+              variant: 'destructive',
+              duration: 5000,
+            });
+          } else if (errorMsg.includes('expired') || errorMsg.includes('invalid')) {
             toast({
               title: '链接已过期',
               description: '密码重置链接已过期，请重新申请',

@@ -66,21 +66,41 @@ export async function GET(request: Request) {
     
     // 成功交换 code，检查是否有会话
     if (data?.session) {
-      console.log('[Auth Callback] Session created successfully');
+      console.log('[Auth Callback] Session created successfully', {
+        userId: data.session.user?.id,
+        expiresAt: data.session.expires_at
+      });
+      
       // 如果是密码重置，重定向到重置密码页面
+      // 注意：即使服务端成功交换了 code，客户端可能还需要重新交换以确保 cookie 同步
+      // 所以我们将 code 也传递给重置密码页面，让客户端也能交换
       if (type === 'recovery') {
-        return NextResponse.redirect(new URL('/auth/reset-password', requestUrl.origin));
+        const redirectUrl = new URL('/auth/reset-password', requestUrl.origin);
+        // 将 code 也传递过去，以防客户端 cookie 不同步
+        redirectUrl.searchParams.set('code', code);
+        redirectUrl.searchParams.set('type', 'recovery');
+        return NextResponse.redirect(redirectUrl);
       }
       
       // 其他情况（如邮箱验证）重定向到首页
       return NextResponse.redirect(new URL('/', requestUrl.origin));
     } else {
-      // 没有会话，可能是 OTP 已过期
-      console.warn('[Auth Callback] No session after code exchange');
+      // 没有会话，可能是 OTP 已过期或其他问题
+      console.warn('[Auth Callback] No session after code exchange', {
+        hasData: !!data,
+        exchangeError: exchangeError
+      });
+      
       if (type === 'recovery') {
         const redirectUrl = new URL('/auth/reset-password', requestUrl.origin);
-        redirectUrl.searchParams.set('error', 'expired');
-        redirectUrl.searchParams.set('message', '链接已过期，请重新申请密码重置');
+        // 即使没有会话，也尝试传递 code，让客户端再试一次
+        if (code) {
+          redirectUrl.searchParams.set('code', code);
+          redirectUrl.searchParams.set('type', 'recovery');
+        } else {
+          redirectUrl.searchParams.set('error', 'expired');
+          redirectUrl.searchParams.set('message', '链接已过期，请重新申请密码重置');
+        }
         return NextResponse.redirect(redirectUrl);
       }
       
