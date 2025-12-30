@@ -29,21 +29,31 @@ export default function ResetPasswordPage() {
 
   // 检查是否有有效的重置会话
   useEffect(() => {
+    let isMounted = true;
+    let redirectTimeout: NodeJS.Timeout | null = null;
+    
     const checkSession = async () => {
       // 先检查 URL 参数中是否有错误信息
       const error = searchParams.get('error');
       const errorMessage = searchParams.get('message');
       
-      if (error === 'expired' || errorMessage) {
+      if (error || errorMessage) {
+        if (!isMounted) return;
+        
         setIsValidSession(false);
         toast({
-          title: '链接已过期',
+          title: error === 'expired' ? '链接已过期' : '链接无效',
           description: errorMessage || '请重新申请密码重置',
           variant: 'destructive',
           duration: 5000,
         });
-        setTimeout(() => {
-          router.push('/');
+        
+        // 延迟跳转，但只执行一次
+        redirectTimeout = setTimeout(() => {
+          if (isMounted) {
+            // 使用 replace 而不是 push，避免在历史记录中留下记录
+            router.replace('/');
+          }
         }, 5000);
         return;
       }
@@ -51,6 +61,8 @@ export default function ResetPasswordPage() {
       const { createClient } = await import('@/lib/supabase/client');
       const supabase = createClient();
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      
+      if (!isMounted) return;
       
       // 检查是否有有效的会话（通过密码重置链接访问的用户会有临时会话）
       if (session) {
@@ -73,13 +85,24 @@ export default function ResetPasswordPage() {
             duration: 5000,
           });
         }
-        setTimeout(() => {
-          router.push('/');
+        
+        // 延迟跳转，但只执行一次
+        redirectTimeout = setTimeout(() => {
+          if (isMounted) {
+            router.replace('/');
+          }
         }, 5000);
       }
     };
     
     checkSession();
+    
+    return () => {
+      isMounted = false;
+      if (redirectTimeout) {
+        clearTimeout(redirectTimeout);
+      }
+    };
   }, [router, toast, searchParams]);
 
   // 验证密码

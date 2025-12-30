@@ -111,7 +111,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       email,
       password,
       options: {
-        emailRedirectTo: siteUrl ? `${siteUrl}/auth/callback` : undefined,
+        // 邮箱验证链接指向 /verify 页面
+        emailRedirectTo: siteUrl ? `${siteUrl}/verify` : undefined,
       },
     });
     

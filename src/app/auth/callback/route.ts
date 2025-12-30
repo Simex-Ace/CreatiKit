@@ -8,22 +8,31 @@ export async function GET(request: Request) {
   const error = requestUrl.searchParams.get('error');
   const errorDescription = requestUrl.searchParams.get('error_description');
 
+  console.log('[Auth Callback]', { code: code ? 'present' : 'missing', type, error, errorDescription });
+
   // 如果有错误参数，直接处理错误
   if (error) {
     const errorMsg = errorDescription || error;
-    console.error('Auth callback error:', error, errorDescription);
+    console.error('[Auth Callback] Error received:', error, errorDescription);
     
     // 如果是 OTP 过期错误，重定向到重置密码页面并显示错误
     if (error === 'otp_expired' || errorMsg?.toLowerCase().includes('expired')) {
-      return NextResponse.redirect(
-        new URL(`/auth/reset-password?error=expired&message=${encodeURIComponent('链接已过期，请重新申请密码重置')}`, requestUrl.origin)
-      );
+      const redirectUrl = new URL('/auth/reset-password', requestUrl.origin);
+      redirectUrl.searchParams.set('error', 'expired');
+      redirectUrl.searchParams.set('message', '链接已过期，请重新申请密码重置');
+      return NextResponse.redirect(redirectUrl);
     }
     
-    // 其他错误重定向到首页
-    return NextResponse.redirect(
-      new URL(`/?error=${encodeURIComponent(errorMsg || 'auth_error')}`, requestUrl.origin)
-    );
+    // 其他错误也重定向到重置密码页面（如果是恢复类型）或首页
+    if (type === 'recovery') {
+      const redirectUrl = new URL('/auth/reset-password', requestUrl.origin);
+      redirectUrl.searchParams.set('error', 'invalid');
+      redirectUrl.searchParams.set('message', errorMsg || '链接无效，请重新申请密码重置');
+      return NextResponse.redirect(redirectUrl);
+    }
+    
+    // 非恢复类型的错误，重定向到首页（但不带错误参数，避免循环）
+    return NextResponse.redirect(new URL('/', requestUrl.origin));
   }
 
   if (code) {
@@ -31,25 +40,33 @@ export async function GET(request: Request) {
     const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
     
     if (exchangeError) {
-      console.error('Error exchanging code for session:', exchangeError);
+      console.error('[Auth Callback] Error exchanging code:', exchangeError);
       
       // 检查是否是 OTP 过期错误
       const errorMsg = (exchangeError.message || '').toLowerCase();
       if (errorMsg.includes('expired') || errorMsg.includes('invalid') || exchangeError.status === 403) {
         // OTP 过期或无效，重定向到重置密码页面并显示错误
-        return NextResponse.redirect(
-          new URL(`/auth/reset-password?error=expired&message=${encodeURIComponent('链接已过期，请重新申请密码重置')}`, requestUrl.origin)
-        );
+        const redirectUrl = new URL('/auth/reset-password', requestUrl.origin);
+        redirectUrl.searchParams.set('error', 'expired');
+        redirectUrl.searchParams.set('message', '链接已过期，请重新申请密码重置');
+        return NextResponse.redirect(redirectUrl);
       }
       
-      // 其他错误重定向到首页
-      return NextResponse.redirect(
-        new URL(`/?error=${encodeURIComponent(exchangeError.message || 'auth_error')}`, requestUrl.origin)
-      );
+      // 其他错误，如果是恢复类型，也重定向到重置密码页面
+      if (type === 'recovery') {
+        const redirectUrl = new URL('/auth/reset-password', requestUrl.origin);
+        redirectUrl.searchParams.set('error', 'invalid');
+        redirectUrl.searchParams.set('message', exchangeError.message || '链接无效，请重新申请密码重置');
+        return NextResponse.redirect(redirectUrl);
+      }
+      
+      // 非恢复类型的错误，重定向到首页（不带错误参数）
+      return NextResponse.redirect(new URL('/', requestUrl.origin));
     }
     
     // 成功交换 code，检查是否有会话
     if (data?.session) {
+      console.log('[Auth Callback] Session created successfully');
       // 如果是密码重置，重定向到重置密码页面
       if (type === 'recovery') {
         return NextResponse.redirect(new URL('/auth/reset-password', requestUrl.origin));
@@ -59,15 +76,22 @@ export async function GET(request: Request) {
       return NextResponse.redirect(new URL('/', requestUrl.origin));
     } else {
       // 没有会话，可能是 OTP 已过期
+      console.warn('[Auth Callback] No session after code exchange');
       if (type === 'recovery') {
-        return NextResponse.redirect(
-          new URL(`/auth/reset-password?error=expired&message=${encodeURIComponent('链接已过期，请重新申请密码重置')}`, requestUrl.origin)
-        );
+        const redirectUrl = new URL('/auth/reset-password', requestUrl.origin);
+        redirectUrl.searchParams.set('error', 'expired');
+        redirectUrl.searchParams.set('message', '链接已过期，请重新申请密码重置');
+        return NextResponse.redirect(redirectUrl);
       }
+      
+      // 非恢复类型，重定向到首页
+      return NextResponse.redirect(new URL('/', requestUrl.origin));
     }
   }
 
-  // 没有 code 也没有错误，重定向到首页
+  // 没有 code 也没有错误，可能是直接访问回调页面
+  // 重定向到首页（不带任何参数，避免循环）
+  console.warn('[Auth Callback] No code and no error, redirecting to home');
   return NextResponse.redirect(new URL('/', requestUrl.origin));
 }
 
