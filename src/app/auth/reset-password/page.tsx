@@ -93,17 +93,27 @@ export default function ResetPasswordPage() {
           
           try {
             // 使用 verifyOtp 验证密码重置 token
-            // Supabase 的 verifyOtp 对于 recovery 类型，使用 token_hash
-            const verifyParams: {
-              token_hash: string;
-              type: 'recovery';
-            } = {
-              token_hash: token,
-              type: 'recovery',
-            };
+            // Supabase 的 verifyOtp 对于 recovery 类型：
+            // - 如果有 email：使用 { email, token, type: 'recovery' }
+            // - 如果没有 email：使用 { token_hash: token, type: 'recovery' }
+            let verifyParams: { email: string; token: string; type: 'recovery' } | { token_hash: string; type: 'recovery' };
+            
+            if (email) {
+              verifyParams = {
+                email: email,
+                token: token,
+                type: 'recovery',
+              };
+            } else {
+              verifyParams = {
+                token_hash: token,
+                type: 'recovery',
+              };
+            }
             
             console.log('[Reset Password] Calling verifyOtp with params:', {
               hasToken: !!token,
+              hasEmail: !!email,
               type: 'recovery'
             });
             
