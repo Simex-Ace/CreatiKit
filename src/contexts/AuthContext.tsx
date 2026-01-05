@@ -159,9 +159,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // 移除末尾的斜杠（如果有），避免双重斜杠
     siteUrl = siteUrl.replace(/\/$/, '');
     
-    // 重要：redirectTo 应该指向 /auth/callback，而不是直接指向 /auth/reset-password
-    // 因为 Supabase 会先验证链接，然后重定向到 callback，callback 再处理会话并重定向到 reset-password
-    const redirectTo = `${siteUrl}/auth/callback`;
+    // redirectTo 可以直接指向重置密码页面
+    // Supabase 会在链接中添加 token 和 type=recovery 参数
+    // 也可以指向 /auth/callback，callback 会正确处理 recovery 类型并重定向
+    const redirectTo = `${siteUrl}/auth/reset-password`;
     
     console.log('[Reset Password] Sending reset email with redirectTo:', redirectTo);
     

@@ -45,17 +45,41 @@ export async function GET(request: Request) {
     return NextResponse.redirect(new URL('/', requestUrl.origin));
   }
 
-  // 如果有 token 参数（旧格式），直接重定向到重置密码页面并传递参数
-  if (token && type === 'recovery') {
-    console.log('[Auth Callback] Found token parameter, redirecting to reset password page');
+  // 【关键修复】密码重置（recovery 类型）不应该使用 exchangeCodeForSession
+  // exchangeCodeForSession 仅用于 OAuth 和邮箱验证，密码重置需要使用 verifyOtp
+  // 如果检测到 recovery 类型，直接透传 token/email 到重置页，跳过 code 交换
+  if (type === 'recovery') {
+    console.log('[Auth Callback] Recovery type detected, bypassing exchangeCodeForSession');
     const redirectUrl = new URL('/auth/reset-password', requestUrl.origin);
-    redirectUrl.searchParams.set('token', token);
+    
+    // 透传所有相关参数到重置页
+    if (token) {
+      redirectUrl.searchParams.set('token', token);
+    }
+    if (code) {
+      // 如果 Supabase 发送的是 code，也传递过去（但重置页会优先使用 token）
+      redirectUrl.searchParams.set('code', code);
+    }
     redirectUrl.searchParams.set('type', 'recovery');
+    
+    // 尝试获取 email 参数（如果 Supabase 提供了）
+    const email = requestUrl.searchParams.get('email');
+    if (email) {
+      redirectUrl.searchParams.set('email', email);
+    }
+    
+    console.log('[Auth Callback] Redirecting to reset password page with params:', {
+      hasToken: !!token,
+      hasCode: !!code,
+      hasEmail: !!email
+    });
+    
     return NextResponse.redirect(redirectUrl);
   }
 
+  // 非 recovery 类型（OAuth、邮箱验证等）才使用 exchangeCodeForSession
   if (code) {
-    console.log('[Auth Callback] Attempting to exchange code for session...');
+    console.log('[Auth Callback] Non-recovery type, attempting to exchange code for session...');
     const supabase = await createClient();
     const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
     
@@ -67,71 +91,19 @@ export async function GET(request: Request) {
         code: exchangeError.code
       });
       
-      // 检查是否是 OTP 过期错误
-      const errorMsg = (exchangeError.message || '').toLowerCase();
-      if (errorMsg.includes('expired') || errorMsg.includes('invalid') || exchangeError.status === 403) {
-        // OTP 过期或无效，重定向到重置密码页面并显示错误
-        const redirectUrl = new URL('/auth/reset-password', requestUrl.origin);
-        redirectUrl.searchParams.set('error', 'expired');
-        redirectUrl.searchParams.set('message', '链接已过期，请重新申请密码重置');
-        return NextResponse.redirect(redirectUrl);
-      }
-      
-      // 其他错误，如果是恢复类型，也重定向到重置密码页面
-      if (type === 'recovery') {
-        const redirectUrl = new URL('/auth/reset-password', requestUrl.origin);
-        redirectUrl.searchParams.set('error', 'invalid');
-        redirectUrl.searchParams.set('message', exchangeError.message || '链接无效，请重新申请密码重置');
-        return NextResponse.redirect(redirectUrl);
-      }
-      
-      // 非恢复类型的错误，重定向到首页（不带错误参数）
+      // 非 recovery 类型的错误处理
       return NextResponse.redirect(new URL('/', requestUrl.origin));
     }
     
-    // 成功交换 code，检查是否有会话
+    // 成功交换 code，重定向到首页（邮箱验证等）
     if (data?.session) {
       console.log('[Auth Callback] Session created successfully', {
         userId: data.session.user?.id,
         expiresAt: data.session.expires_at
       });
-      
-      // 如果是密码重置，重定向到重置密码页面
-      // 注意：即使服务端成功交换了 code，客户端可能还需要重新交换以确保 cookie 同步
-      // 所以我们将 code 也传递给重置密码页面，让客户端也能交换
-      if (type === 'recovery') {
-        const redirectUrl = new URL('/auth/reset-password', requestUrl.origin);
-        // 将 code 也传递过去，以防客户端 cookie 不同步
-        redirectUrl.searchParams.set('code', code);
-        redirectUrl.searchParams.set('type', 'recovery');
-        return NextResponse.redirect(redirectUrl);
-      }
-      
-      // 其他情况（如邮箱验证）重定向到首页
-      return NextResponse.redirect(new URL('/', requestUrl.origin));
-    } else {
-      // 没有会话，可能是 OTP 已过期或其他问题
-      console.warn('[Auth Callback] No session after code exchange', {
-        hasData: !!data,
-        exchangeError: exchangeError
-      });
-      
-      if (type === 'recovery') {
-        const redirectUrl = new URL('/auth/reset-password', requestUrl.origin);
-        // 即使没有会话，也尝试传递 code，让客户端再试一次
-        if (code) {
-          redirectUrl.searchParams.set('code', code);
-          redirectUrl.searchParams.set('type', 'recovery');
-        } else {
-          redirectUrl.searchParams.set('error', 'expired');
-          redirectUrl.searchParams.set('message', '链接已过期，请重新申请密码重置');
-        }
-        return NextResponse.redirect(redirectUrl);
-      }
-      
-      // 非恢复类型，重定向到首页
-      return NextResponse.redirect(new URL('/', requestUrl.origin));
     }
+    
+    return NextResponse.redirect(new URL('/', requestUrl.origin));
   }
 
   // 没有 code 也没有错误，可能是直接访问回调页面
