@@ -107,6 +107,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       ? (process.env.NEXT_PUBLIC_SITE_URL || window.location.origin)
       : undefined;
     
+    console.log('[Sign Up] Attempting to sign up:', { email, siteUrl });
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
@@ -115,6 +116,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         emailRedirectTo: siteUrl ? `${siteUrl}/verify` : undefined,
       },
     });
+    
+    if (error) {
+      console.error('[Sign Up] Error:', {
+        message: error.message,
+        status: error.status,
+        name: error.name
+      });
+    } else {
+      console.log('[Sign Up] Success:', { 
+        userId: data.user?.id, 
+        email: data.user?.email,
+        emailConfirmed: !!data.user?.email_confirmed_at
+      });
+    }
     
     return { data, error };
   };

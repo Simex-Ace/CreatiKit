@@ -13,6 +13,16 @@ export function createClient() {
     );
   }
 
+  // 检查 ANON_KEY 格式（应该是 JWT token，以 eyJ 开头）
+  if (supabaseAnonKey && !supabaseAnonKey.startsWith('eyJ')) {
+    console.warn(
+      '[Supabase Client] Warning: ANON_KEY format may be incorrect.\n' +
+      'Expected JWT token (starts with "eyJ"), but got: ' + 
+      supabaseAnonKey.substring(0, 20) + '...\n' +
+      'Please check if you are using the correct "anon public" key from Supabase Dashboard.'
+    );
+  }
+
   return createBrowserClient(supabaseUrl, supabaseAnonKey);
 }
 
