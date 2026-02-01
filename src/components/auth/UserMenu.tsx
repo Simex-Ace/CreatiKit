@@ -52,6 +52,11 @@ export function UserMenu() {
             <p className="text-xs leading-none text-muted-foreground">
               {userEmail}
             </p>
+            {user.app_metadata?.provider && (
+              <p className="text-xs leading-none text-muted-foreground/70 mt-0.5">
+                通过 {user.app_metadata.provider === 'google' ? 'Google' : user.app_metadata.provider === 'github' ? 'GitHub' : '邮箱'} 登录
+              </p>
+            )}
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />

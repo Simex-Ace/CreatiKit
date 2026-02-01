@@ -25,6 +25,19 @@ export async function GET(request: Request) {
     const errorMsg = errorDescription || error;
     console.error('[Auth Callback] Error received:', error, errorDescription);
     
+    // 检查是否是用户取消 OAuth 登录
+    const isUserCancelled = 
+      error === 'access_denied' || 
+      errorMsg?.toLowerCase().includes('access_denied') ||
+      errorMsg?.toLowerCase().includes('user cancelled') ||
+      errorMsg?.toLowerCase().includes('user denied');
+    
+    if (isUserCancelled && type !== 'recovery') {
+      // 用户取消了 OAuth 登录，重定向到首页并清除错误参数
+      console.log('[Auth Callback] User cancelled OAuth login');
+      return NextResponse.redirect(new URL('/', requestUrl.origin));
+    }
+    
     // 如果是 OTP 过期错误，重定向到重置密码页面并显示错误
     if (error === 'otp_expired' || errorMsg?.toLowerCase().includes('expired')) {
       const redirectUrl = new URL('/auth/reset-password', requestUrl.origin);

@@ -1,5 +1,19 @@
 # GitHub 和 Google 登录配置指南
 
+## 📋 关于第三方登录账号
+
+### 账号机制说明
+- **独立账号**：每个第三方登录方式（Google、GitHub）都会创建一个独立的 Supabase 用户账号
+- **邮箱自动获取**：Supabase 会自动从第三方平台获取邮箱地址（如果用户授权）
+- **账号绑定**：如果同一个邮箱用不同方式登录，Supabase 会创建不同的账号（除非配置了账号链接）
+- **邮箱显示**：登录后会在用户菜单和个人中心显示绑定的邮箱地址
+
+### 当前实现
+- ✅ 自动获取第三方平台的邮箱
+- ✅ 显示登录方式（Google/GitHub/邮箱）
+- ✅ 在用户菜单和个人中心显示邮箱
+- ⚠️ 不同登录方式创建独立账号（如需绑定，需要额外配置）
+
 ## 📋 需要配置的内容
 
 ### 1. Supabase Dashboard 配置
@@ -27,9 +41,13 @@
    - **Authorized JavaScript origins**:
      - `https://creatikit.asia`
      - `http://localhost:3000`（开发环境）
-   - **Authorized redirect URIs**:
-     - `https://kfsaonqqgobjorbdwopk.supabase.co/auth/v1/callback`
-     - `https://creatikit.asia/auth/callback`
+   - **Authorized redirect URIs**（⚠️ 重要：必须完全匹配）:
+     - `https://kfsaonqqgobjorbdwopk.supabase.co/auth/v1/callback`（这是 Supabase 的回调地址，必须添加）
+     - `https://creatikit.asia/auth/callback`（可选，用于直接回调）
+     - `http://localhost:3000/auth/callback`（开发环境）
+   - ⚠️ **注意**：Supabase 的回调地址格式为 `https://[你的项目ID].supabase.co/auth/v1/callback`
+     - 你可以在 Supabase Dashboard → Settings → API 中找到你的项目 ID
+     - 或者查看你的 `NEXT_PUBLIC_SUPABASE_URL`，提取其中的项目 ID
 7. 点击 **Create**，复制 **Client ID** 和 **Client Secret**
 
 **在 Supabase 中配置：**

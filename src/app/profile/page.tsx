@@ -145,8 +145,15 @@ export default function ProfilePage() {
                 <h2 className="text-xl font-bold">{displayName}</h2>
                 <div className="flex items-center justify-center text-sm text-muted-foreground">
                   <Mail className="mr-2 h-4 w-4" />
-                  {userEmail}
+                  {userEmail || '未绑定邮箱'}
                 </div>
+                {user.app_metadata?.provider && (
+                  <div className="flex items-center justify-center text-xs text-muted-foreground">
+                    <span>
+                      通过 {user.app_metadata.provider === 'google' ? 'Google' : user.app_metadata.provider === 'github' ? 'GitHub' : '邮箱'} 登录
+                    </span>
+                  </div>
+                )}
                 {profile?.created_at && (
                   <div className="flex items-center justify-center text-xs text-muted-foreground">
                     <Calendar className="mr-2 h-3 w-3" />

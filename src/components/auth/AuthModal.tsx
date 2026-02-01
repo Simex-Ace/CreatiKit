@@ -25,6 +25,51 @@ export function AuthModal({ isOpen, onClose, defaultMode = 'login' }: AuthModalP
       setMode(defaultMode);
     }
   }, [defaultMode]);
+  
+  // 监听弹窗关闭，重置 loading 状态
+  React.useEffect(() => {
+    if (!isOpen) {
+      setLoading(false);
+    }
+  }, [isOpen]);
+  
+  // 监听页面焦点变化和可见性变化，检测用户是否从 OAuth 页面返回
+  React.useEffect(() => {
+    if (!isOpen || !loading) return;
+    
+    let checkTimeout: NodeJS.Timeout;
+    
+    const checkOAuthStatus = () => {
+      // 延迟检查，给回调时间处理
+      checkTimeout = setTimeout(() => {
+        const urlParams = new URLSearchParams(window.location.search);
+        // 如果 URL 中没有 code 或 error 参数，说明用户可能取消了登录
+        if (!urlParams.has('code') && !urlParams.has('error')) {
+          setLoading(false);
+        }
+      }, 2000);
+    };
+    
+    const handleFocus = () => {
+      checkOAuthStatus();
+    };
+    
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        checkOAuthStatus();
+      }
+    };
+    
+    window.addEventListener('focus', handleFocus);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      if (checkTimeout) clearTimeout(checkTimeout);
+    };
+  }, [isOpen, loading]);
+  
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -301,8 +346,23 @@ export function AuthModal({ isOpen, onClose, defaultMode = 'login' }: AuthModalP
   const handleProviderSignIn = async (provider: 'google' | 'github') => {
     try {
       setLoading(true);
+      
+      // 设置超时，如果 10 秒内没有重定向，自动重置 loading 状态
+      // 正常情况下 OAuth 会立即重定向，所以 10 秒足够检测问题
+      const timeoutId = setTimeout(() => {
+        if (loading) {
+          setLoading(false);
+          console.warn('[OAuth] Timeout: OAuth redirect took too long, resetting loading state');
+        }
+      }, 10000);
+      
       await signInWithProvider(provider);
-      // OAuth 会重定向，所以这里不需要关闭弹窗
+      
+      // 正常情况下，OAuth 会立即重定向，所以这里不会执行
+      // 但如果 signInWithProvider 没有立即重定向，清除超时
+      clearTimeout(timeoutId);
+      
+      // OAuth 会重定向到第三方登录页面，所以这里不需要关闭弹窗或重置 loading
     } catch (error: any) {
       setLoading(false);
       toast({
