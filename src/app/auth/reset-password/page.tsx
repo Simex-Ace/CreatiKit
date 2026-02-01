@@ -96,25 +96,60 @@ export default function ResetPasswordPage() {
           
           try {
             // 使用 verifyOtp 验证密码重置 token
-            // Supabase 的 verifyOtp 对于 recovery 类型：
-            // - 如果有 email：使用 { email, token, type: 'recovery' }
-            // - 如果没有 email：使用 { token_hash: token, type: 'recovery' }
-            let verifyParams: { email: string; token: string; type: 'recovery' } | { token_hash: string; type: 'recovery' };
+            // Supabase 的 verifyOtp 对于 recovery 类型，必须提供 email
+            // 如果 URL 中没有 email，我们需要先尝试从 token 中提取，或者使用其他方式
+            let verifyParams: { email: string; token: string; type: 'recovery' };
             
-            if (email && email.trim() !== '') {
-              verifyParams = {
-                email: email.trim(),
-                token: token,
-                type: 'recovery',
-              };
-              console.log('[Reset Password] Using email + token verification');
-            } else {
-              verifyParams = {
-                token_hash: token,
-                type: 'recovery',
-              };
-              console.log('[Reset Password] Using token_hash verification (no email provided)');
+            // 尝试从 URL 中获取 email，如果没有，尝试从 localStorage 或其他地方获取
+            let userEmail = email?.trim();
+            
+            if (!userEmail) {
+              // 尝试从 localStorage 获取（如果之前保存过）
+              // 使用 try-catch 处理 QQ 邮箱等内置浏览器可能不支持 localStorage 的情况
+              try {
+                if (typeof window !== 'undefined' && window.localStorage) {
+                  const storedEmail = localStorage.getItem('reset_password_email');
+                  if (storedEmail) {
+                    userEmail = storedEmail;
+                    console.log('[Reset Password] Using email from localStorage');
+                  }
+                }
+              } catch (e) {
+                console.warn('[Reset Password] localStorage not available, may be in email client browser:', e);
+              }
             }
+            
+            if (!userEmail) {
+              // 如果没有 email，无法验证，显示错误
+              console.error('[Reset Password] No email provided, cannot verify token');
+              setIsValidSession(false);
+              if (!toastShownRef.current) {
+                toastShownRef.current = true;
+                toast({
+                  title: '链接无效',
+                  description: '链接缺少邮箱信息，请重新申请密码重置',
+                  variant: 'destructive',
+                  duration: 5000,
+                });
+              }
+              redirectTimeout = setTimeout(() => {
+                if (isMounted) {
+                  router.replace('/');
+                }
+              }, 5000);
+              return;
+            }
+            
+            verifyParams = {
+              email: userEmail,
+              token: token,
+              type: 'recovery',
+            };
+            
+            console.log('[Reset Password] Using email + token verification', {
+              email: userEmail.substring(0, 3) + '***', // 只显示前3个字符，保护隐私
+              tokenLength: token.length
+            });
             
             const { data: verifyData, error: verifyError } = await supabase.auth.verifyOtp(verifyParams);
             
@@ -171,6 +206,15 @@ export default function ResetPasswordPage() {
                 userId: verifyData.session.user?.id,
                 expiresAt: verifyData.session.expires_at
               });
+              // 清理 localStorage 中的 email（验证成功，不再需要）
+              try {
+                if (typeof window !== 'undefined' && window.localStorage) {
+                  localStorage.removeItem('reset_password_email');
+                }
+              } catch (e) {
+                // 忽略 localStorage 错误（可能在受限环境中）
+                console.warn('[Reset Password] Could not clear localStorage:', e);
+              }
               setIsValidSession(true);
               return;
             } else {
@@ -178,6 +222,15 @@ export default function ResetPasswordPage() {
               const { data: { session }, error: sessionError } = await supabase.auth.getSession();
               if (session) {
                 console.log('[Reset Password] Session found after OTP verification');
+                // 清理 localStorage 中的 email（验证成功，不再需要）
+                try {
+                  if (typeof window !== 'undefined' && window.localStorage) {
+                    localStorage.removeItem('reset_password_email');
+                  }
+                } catch (e) {
+                  // 忽略 localStorage 错误（可能在受限环境中）
+                  console.warn('[Reset Password] Could not clear localStorage:', e);
+                }
                 setIsValidSession(true);
                 return;
               } else {
@@ -476,6 +529,14 @@ export default function ResetPasswordPage() {
                     返回首页
                   </Button>
                 </Link>
+                <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg p-3 mt-2">
+                  <p className="text-xs text-blue-800 dark:text-blue-200 font-medium mb-1">
+                    💡 提示：如果在邮箱内置浏览器中无法使用
+                  </p>
+                  <p className="text-xs text-blue-700 dark:text-blue-300">
+                    请复制链接地址，然后在 Chrome、Edge 等外部浏览器中打开
+                  </p>
+                </div>
                 <p className="text-xs text-muted-foreground text-center">
                   提示：密码重置链接通常有效期为 1 小时，请尽快使用
                 </p>

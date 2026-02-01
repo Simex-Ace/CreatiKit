@@ -175,9 +175,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     siteUrl = siteUrl.replace(/\/$/, '');
     
     // redirectTo 指向重置密码页面
-    // Supabase 会在链接中添加 token、type=recovery 和 email 参数
-    // 重置页面会使用 verifyOtp 验证 token 并获取会话
+    // Supabase 会在链接中添加 token 和 type=recovery 参数
+    // 注意：Supabase 可能不会在 URL 中包含 email，所以我们需要保存到 localStorage
     const redirectTo = `${siteUrl}/auth/reset-password`;
+    
+    // 保存 email 到 localStorage，以便在重置页面验证时使用
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('reset_password_email', email);
+      console.log('[Reset Password] Saved email to localStorage for verification');
+    }
     
     console.log('[Reset Password] Sending reset email with redirectTo:', redirectTo);
     
