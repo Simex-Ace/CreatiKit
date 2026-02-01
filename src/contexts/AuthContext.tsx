@@ -220,13 +220,37 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const signInWithProvider = async (provider: 'google' | 'github') => {
-    await supabase.auth.signInWithOAuth({
+  const signInWithProvider = async (provider: 'google' | 'github'): Promise<void> => {
+    // 根据环境变量或当前域名确定重定向 URL
+    const siteUrl = typeof window !== 'undefined' 
+      ? (process.env.NEXT_PUBLIC_SITE_URL || window.location.origin)
+      : undefined;
+    
+    const redirectTo = siteUrl 
+      ? `${siteUrl}/auth/callback`
+      : `${window.location.origin}/auth/callback`;
+    
+    console.log('[OAuth] Signing in with provider:', { provider, redirectTo });
+    
+    const { data, error } = await supabase.auth.signInWithOAuth({
       provider,
       options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
+        redirectTo,
+        // 可选：请求额外的权限范围
+        queryParams: {
+          access_type: 'offline',
+          prompt: 'consent',
+        },
       },
     });
+    
+    if (error) {
+      console.error('[OAuth] Error:', error);
+      throw error;
+    }
+    
+    // OAuth 会重定向到第三方登录页面，所以这里不需要返回数据
+    // 用户授权后会重定向回 /auth/callback，然后自动登录
   };
 
   return (
