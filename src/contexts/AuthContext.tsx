@@ -62,46 +62,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signUp = async (email: string, password: string) => {
-    // 在注册前，先尝试检查邮箱是否已存在
-    // 通过尝试登录来检查（使用一个不可能正确的密码）
-    // 如果返回 "Invalid login credentials"，说明邮箱已存在
-    const { error: checkError } = await supabase.auth.signInWithPassword({
-      email,
-      password: '__CHECK_EMAIL_EXISTS__' + Date.now(), // 使用时间戳确保唯一
-    });
-    
-    // 如果错误是 "Invalid login credentials"，说明邮箱已存在
-    if (checkError) {
-      const errorMsg = (checkError.message || '').toLowerCase();
-      if (errorMsg.includes('invalid login credentials') || 
-          errorMsg.includes('invalid credentials') ||
-          errorMsg.includes('email not confirmed')) {
-        // 邮箱已存在，返回错误
-        return { 
-          data: null, 
-          error: { 
-            message: 'User already registered',
-            code: 'email_already_exists',
-            status: 422
-          } 
-        };
-      }
-      // 其他错误（如网络错误）可以继续尝试注册
-    } else {
-      // 如果登录成功（不应该发生），说明邮箱已存在
-      // 立即退出登录
-      await supabase.auth.signOut();
-      return { 
-        data: null, 
-        error: { 
-          message: 'User already registered',
-          code: 'email_already_exists',
-          status: 422
-        } 
-      };
-    }
-    
-    // 邮箱不存在，可以注册
+    // 直接尝试注册，Supabase 会返回明确的错误信息
+    // 移除不可靠的邮箱检查逻辑（之前的检查方法会导致误判）
     // 根据环境变量或当前域名确定重定向 URL
     const siteUrl = typeof window !== 'undefined' 
       ? (process.env.NEXT_PUBLIC_SITE_URL || window.location.origin)
@@ -123,6 +85,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         status: error.status,
         name: error.name
       });
+      
+      // 检查是否是邮箱已存在的错误
+      const errorMsg = (error.message || '').toLowerCase();
+      if (errorMsg.includes('user already registered') || 
+          errorMsg.includes('already registered') ||
+          errorMsg.includes('email already exists') ||
+          error.status === 422) {
+        // 返回明确的错误信息
+        return {
+          data: null,
+          error: {
+            message: '该邮箱已被注册，请直接登录或使用忘记密码功能',
+            code: 'email_already_exists',
+            status: 422
+          }
+        };
+      }
     } else {
       console.log('[Sign Up] Success:', { 
         userId: data.user?.id, 
@@ -139,35 +118,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return { error: { message: '此功能仅在客户端可用' } };
     }
     
-    // 先检查邮箱是否已注册
-    // 通过尝试登录来检查（使用一个不可能正确的密码）
-    const { error: checkError } = await supabase.auth.signInWithPassword({
-      email,
-      password: '__CHECK_EMAIL_EXISTS__' + Date.now(),
-    });
-    
-    // 如果错误不是 "Invalid login credentials"，说明邮箱可能不存在
-    if (checkError) {
-      const errorMsg = (checkError.message || '').toLowerCase();
-      if (!errorMsg.includes('invalid login credentials') && 
-          !errorMsg.includes('invalid credentials') &&
-          !errorMsg.includes('email not confirmed')) {
-        // 邮箱不存在
-        return { 
-          error: { 
-            message: '该邮箱未注册，请先注册账户',
-            code: 'email_not_found',
-            status: 404
-          } 
-        };
-      }
-      // 如果错误是 "Invalid login credentials"，说明邮箱存在，可以继续
-    } else {
-      // 如果登录成功（不应该发生），说明邮箱存在
-      await supabase.auth.signOut();
-    }
-    
-    // 邮箱存在，发送重置密码邮件
+    // 直接发送重置密码邮件，Supabase 会处理邮箱是否存在的检查
+    // 移除不可靠的邮箱检查逻辑（之前的检查方法会导致误判）
     // 根据环境变量或当前域名确定重定向 URL
     // 优先使用环境变量中的 SITE_URL，如果没有则使用当前域名
     let siteUrl = process.env.NEXT_PUBLIC_SITE_URL || window.location.origin;
@@ -192,7 +144,39 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
     
     if (error) {
-      console.error('[Reset Password] Error sending reset email:', error);
+      console.error('[Reset Password] Error sending reset email:', {
+        message: error.message,
+        status: error.status,
+        name: error.name
+      });
+      
+      // 检查是否是频率限制错误
+      const errorMsg = (error.message || '').toLowerCase();
+      if (errorMsg.includes('rate limit') || 
+          errorMsg.includes('too many') ||
+          errorMsg.includes('too frequent') ||
+          error.status === 429) {
+        return {
+          error: {
+            message: '请求过于频繁，请稍后再试（通常需要等待几分钟）',
+            code: 'rate_limit_exceeded',
+            status: 429
+          }
+        };
+      }
+      
+      // 检查是否是邮箱未注册的错误
+      if (errorMsg.includes('user not found') || 
+          errorMsg.includes('email not found') ||
+          error.status === 404) {
+        return {
+          error: {
+            message: '该邮箱未注册，请先注册账户',
+            code: 'email_not_found',
+            status: 404
+          }
+        };
+      }
     } else {
       console.log('[Reset Password] Reset email sent successfully');
     }

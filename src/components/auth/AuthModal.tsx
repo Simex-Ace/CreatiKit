@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import * as React from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -17,6 +18,13 @@ interface AuthModalProps {
 
 export function AuthModal({ isOpen, onClose, defaultMode = 'login' }: AuthModalProps) {
   const [mode, setMode] = useState<'login' | 'register' | 'forgot'>(defaultMode);
+  
+  // 当 defaultMode 改变时，更新 mode（修复注册按钮问题）
+  React.useEffect(() => {
+    if (defaultMode === 'login' || defaultMode === 'register') {
+      setMode(defaultMode);
+    }
+  }, [defaultMode]);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -217,21 +225,29 @@ export function AuthModal({ isOpen, onClose, defaultMode = 'login' }: AuthModalP
           
           if (errorMsg.includes('email not found') || 
               errorMsg.includes('未注册') ||
-              errorCode === 'email_not_found') {
+              errorCode === 'email_not_found' ||
+              error.status === 404) {
             errorMessage = '该邮箱未注册，请先注册账户';
-          } else if (errorMsg.includes('rate limit') || errorMsg.includes('too many')) {
-            errorMessage = '请求过于频繁，请稍后再试';
+          } else if (errorMsg.includes('rate limit') || 
+                     errorMsg.includes('too many') ||
+                     errorMsg.includes('too frequent') ||
+                     errorCode === 'rate_limit_exceeded' ||
+                     error.status === 429) {
+            errorMessage = error.message || '请求过于频繁，请稍后再试（通常需要等待几分钟）';
           } else if (errorMsg.includes('invalid email')) {
             errorMessage = '邮箱格式不正确';
           } else if (errorMsg.includes('configuration') || errorMsg.includes('smtp')) {
             errorMessage = '邮件服务配置错误，请联系管理员';
+          } else {
+            // 使用原始错误消息
+            errorMessage = error.message || errorMessage;
           }
           
           toast({
             title: '发送失败',
             description: errorMessage,
             variant: 'destructive',
-            duration: 4000,
+            duration: 5000,
           });
         } else {
           toast({
