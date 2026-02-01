@@ -161,6 +161,22 @@ export function AuthModal({ isOpen, onClose, defaultMode = 'login' }: AuthModalP
             fullError: error
           });
           
+          // 首先检查是否是频率限制错误（429）
+          if (errorStatus === 429 || 
+              errorMsg.includes('rate limit') || 
+              errorMsg.includes('too many requests') ||
+              errorMsg.includes('email rate limit exceeded')) {
+            errorMessage = '请求过于频繁，请稍后再试（通常需要等待几分钟）';
+            toast({
+              title: '注册失败',
+              description: errorMessage,
+              variant: 'destructive',
+              duration: 5000,
+            });
+            setLoading(false);
+            return;
+          }
+          
           // 只检查 Supabase 明确返回的"用户已注册"错误
           // 移除过于宽泛的条件，避免误判
           const isEmailAlreadyRegistered = 
