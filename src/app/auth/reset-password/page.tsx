@@ -87,47 +87,70 @@ export default function ResetPasswordPage() {
         const { createClient } = await import('@/lib/supabase/client');
         const supabase = createClient();
         
-        // 【关键修复】Supabase 密码重置链接点击后，Supabase 会自动验证并设置临时会话（通过 cookie）
-        // 我们不需要调用 verifyOtp，只需要检查会话是否存在
+        // 【关键修复】Supabase 密码重置链接点击后，需要手动验证 token 才能获取会话
+        // 使用 verifyOtp 验证 token，成功后 Supabase 会设置会话
         if (token) {
-          console.log('[Reset Password] Found token, checking session (Supabase should have set it via cookie)...');
+          console.log('[Reset Password] Found token, verifying with verifyOtp...');
+          console.log('[Reset Password] Token (first 20 chars):', token.substring(0, 20));
+          console.log('[Reset Password] Email from URL:', email);
           
           try {
-            // 等待一小段时间，确保 Supabase 设置的 cookie 已同步
-            await new Promise(resolve => setTimeout(resolve, 300));
+            // 使用 verifyOtp 验证密码重置 token
+            // Supabase 的 verifyOtp 对于 recovery 类型：
+            // - 如果有 email：使用 { email, token, type: 'recovery' }
+            // - 如果没有 email：使用 { token_hash: token, type: 'recovery' }
+            let verifyParams: { email: string; token: string; type: 'recovery' } | { token_hash: string; type: 'recovery' };
             
-            // 直接检查会话（Supabase 已经通过 cookie 设置了临时会话）
-            const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+            if (email && email.trim() !== '') {
+              verifyParams = {
+                email: email.trim(),
+                token: token,
+                type: 'recovery',
+              };
+              console.log('[Reset Password] Using email + token verification');
+            } else {
+              verifyParams = {
+                token_hash: token,
+                type: 'recovery',
+              };
+              console.log('[Reset Password] Using token_hash verification (no email provided)');
+            }
+            
+            const { data: verifyData, error: verifyError } = await supabase.auth.verifyOtp(verifyParams);
             
             if (!isMounted) return;
             
-            if (session) {
-              console.log('[Reset Password] Session found (token was valid)', {
-                userId: session.user?.id,
-                expiresAt: session.expires_at
+            if (verifyError) {
+              console.error('[Reset Password] Error verifying OTP:', {
+                message: verifyError.message,
+                status: verifyError.status,
+                name: verifyError.name,
+                code: verifyError.code
               });
-              setIsValidSession(true);
-              return;
-            } else {
-              // 没有会话，说明 token 无效或已过期
-              console.warn('[Reset Password] No session found, token may be invalid or expired', sessionError);
               
               setIsValidSession(false);
               if (!toastShownRef.current) {
                 toastShownRef.current = true;
-                const errorMsg = (sessionError?.message || '').toLowerCase();
+                const errorMsg = (verifyError.message || '').toLowerCase();
                 
-                if (errorMsg.includes('expired') || errorMsg.includes('otp_expired')) {
+                if (errorMsg.includes('expired') || errorMsg.includes('otp_expired') || verifyError.code === 'token_expired') {
                   toast({
                     title: '链接已过期',
                     description: '密码重置链接已过期，请重新申请',
                     variant: 'destructive',
                     duration: 5000,
                   });
-                } else {
+                } else if (errorMsg.includes('invalid') || verifyError.code === 'invalid_token') {
                   toast({
                     title: '链接无效',
                     description: '请检查链接是否正确，或重新申请密码重置',
+                    variant: 'destructive',
+                    duration: 5000,
+                  });
+                } else {
+                  toast({
+                    title: '验证失败',
+                    description: verifyError.message || '请稍后重试或重新申请密码重置',
                     variant: 'destructive',
                     duration: 5000,
                   });
@@ -141,15 +164,51 @@ export default function ResetPasswordPage() {
               }, 5000);
               return;
             }
+            
+            // 验证成功，检查会话
+            if (verifyData?.session) {
+              console.log('[Reset Password] OTP verified successfully, session created', {
+                userId: verifyData.session.user?.id,
+                expiresAt: verifyData.session.expires_at
+              });
+              setIsValidSession(true);
+              return;
+            } else {
+              // 验证成功但没有会话，再次检查现有会话
+              const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+              if (session) {
+                console.log('[Reset Password] Session found after OTP verification');
+                setIsValidSession(true);
+                return;
+              } else {
+                console.warn('[Reset Password] OTP verified but no session found', sessionError);
+                setIsValidSession(false);
+                if (!toastShownRef.current) {
+                  toastShownRef.current = true;
+                  toast({
+                    title: '验证失败',
+                    description: '会话创建失败，请重新申请密码重置',
+                    variant: 'destructive',
+                    duration: 5000,
+                  });
+                }
+                redirectTimeout = setTimeout(() => {
+                  if (isMounted) {
+                    router.replace('/');
+                  }
+                }, 5000);
+                return;
+              }
+            }
           } catch (err: any) {
-            console.error('[Reset Password] Exception checking session:', err);
+            console.error('[Reset Password] Exception during OTP verification:', err);
             if (!isMounted) return;
             setIsValidSession(false);
             if (!toastShownRef.current) {
               toastShownRef.current = true;
               toast({
                 title: '验证失败',
-                description: '请重新申请密码重置',
+                description: err?.message || '请重新申请密码重置',
                 variant: 'destructive',
                 duration: 5000,
               });

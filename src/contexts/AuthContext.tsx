@@ -174,9 +174,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // 移除末尾的斜杠（如果有），避免双重斜杠
     siteUrl = siteUrl.replace(/\/$/, '');
     
-    // redirectTo 可以直接指向重置密码页面
-    // Supabase 会在链接中添加 token 和 type=recovery 参数
-    // 也可以指向 /auth/callback，callback 会正确处理 recovery 类型并重定向
+    // redirectTo 指向重置密码页面
+    // Supabase 会在链接中添加 token、type=recovery 和 email 参数
+    // 重置页面会使用 verifyOtp 验证 token 并获取会话
     const redirectTo = `${siteUrl}/auth/reset-password`;
     
     console.log('[Reset Password] Sending reset email with redirectTo:', redirectTo);
