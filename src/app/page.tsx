@@ -3,7 +3,7 @@
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { Image, Globe, FileCode, Monitor, Lock, Code, BookOpen, Palette, Smile, QrCode, PencilRuler, RotateCw, CloudSun, BarChart2, FlaskConical, Heart } from 'lucide-react';
+import { Image, Globe, FileCode, Monitor, Lock, Code, BookOpen, Palette, Smile, QrCode, PencilRuler, RotateCw, CloudSun, BarChart2, FlaskConical, Heart, Music, Sparkles, Shapes } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { DevelopmentInProgress } from '@/components/ui/DevelopmentInProgress';
 import { useDevelopmentAlert } from '@/lib/useDevelopmentAlert';
@@ -106,6 +106,22 @@ export default function Home() {
 
   const handleCameraGestureDrawing = () => {
     router.push('/camera-gesture-drawing');
+  };
+
+  const handleAudioVisualizer = () => {
+    router.push('/audio-visualizer');
+  };
+
+  const handleCSSAnimator = () => {
+    router.push('/css-animator');
+  };
+
+  const handleSVGEditor = () => {
+    router.push('/svg-editor');
+  };
+
+  const handleParticleEditor = () => {
+    router.push('/particle-editor');
   };
 
   const handleFreeUse = () => {
@@ -287,6 +303,102 @@ export default function Home() {
               <div className="mt-auto pt-4">
                 <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold" onClick={handleCameraGestureDrawing}>
                   开始体验
+                </Button>
+              </div>
+            </div>
+          </Card>
+
+          {/* 音频可视化器卡片 */}
+          <Card className="relative min-h-[300px] flex flex-col transition-all duration-300 hover:shadow-lg border-2 border-indigo-400 transform hover:-translate-y-1">
+            <div className="absolute -top-3 -right-3 bg-indigo-500 text-white text-xs font-bold px-3 py-1 rounded-full z-20">
+              新品
+            </div>
+            <div className="absolute top-4 right-4 z-30">
+              <ToolCardFavoriteButton toolPath="/audio-visualizer" />
+            </div>
+            <div className="p-6 flex-grow flex flex-col space-y-4">
+              <div className="rounded-full bg-indigo-100 p-3 w-fit">
+                <Music className="h-6 w-6 text-indigo-600" />
+              </div>
+              <h3 className="text-xl font-bold text-indigo-700">音频可视化器</h3>
+              <p className="text-muted-foreground flex-grow">
+                上传音频文件，实时生成多种可视化效果，支持频谱、波形、圆形、粒子和瀑布图等模式
+              </p>
+              <div className="mt-auto pt-4">
+                <Button className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold" onClick={handleAudioVisualizer}>
+                  开始可视化
+                </Button>
+              </div>
+            </div>
+          </Card>
+
+          {/* CSS动画生成器卡片 */}
+          <Card className="relative min-h-[300px] flex flex-col transition-all duration-300 hover:shadow-lg border-2 border-pink-400 transform hover:-translate-y-1">
+            <div className="absolute -top-3 -right-3 bg-pink-500 text-white text-xs font-bold px-3 py-1 rounded-full z-20">
+              新品
+            </div>
+            <div className="absolute top-4 right-4 z-30">
+              <ToolCardFavoriteButton toolPath="/css-animator" />
+            </div>
+            <div className="p-6 flex-grow flex flex-col space-y-4">
+              <div className="rounded-full bg-pink-100 p-3 w-fit">
+                <Sparkles className="h-6 w-6 text-pink-600" />
+              </div>
+              <h3 className="text-xl font-bold text-pink-700">CSS动画生成器</h3>
+              <p className="text-muted-foreground flex-grow">
+                可视化创建CSS动画，实时预览效果，支持多种动画类型和缓动函数，导出代码直接使用
+              </p>
+              <div className="mt-auto pt-4">
+                <Button className="w-full bg-pink-600 hover:bg-pink-700 text-white font-bold" onClick={handleCSSAnimator}>
+                  创建动画
+                </Button>
+              </div>
+            </div>
+          </Card>
+
+          {/* SVG路径编辑器卡片 */}
+          <Card className="relative min-h-[300px] flex flex-col transition-all duration-300 hover:shadow-lg border-2 border-purple-400 transform hover:-translate-y-1">
+            <div className="absolute -top-3 -right-3 bg-purple-500 text-white text-xs font-bold px-3 py-1 rounded-full z-20">
+              新品
+            </div>
+            <div className="absolute top-4 right-4 z-30">
+              <ToolCardFavoriteButton toolPath="/svg-editor" />
+            </div>
+            <div className="p-6 flex-grow flex flex-col space-y-4">
+              <div className="rounded-full bg-purple-100 p-3 w-fit">
+                <Shapes className="h-6 w-6 text-purple-600" />
+              </div>
+              <h3 className="text-xl font-bold text-purple-700">SVG路径编辑器</h3>
+              <p className="text-muted-foreground flex-grow">
+                可视化编辑SVG路径，创建矢量图形，支持多种形状工具，导出SVG代码
+              </p>
+              <div className="mt-auto pt-4">
+                <Button className="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold" onClick={handleSVGEditor}>
+                  开始编辑
+                </Button>
+              </div>
+            </div>
+          </Card>
+
+          {/* 粒子系统编辑器卡片 */}
+          <Card className="relative min-h-[300px] flex flex-col transition-all duration-300 hover:shadow-lg border-2 border-orange-400 transform hover:-translate-y-1">
+            <div className="absolute -top-3 -right-3 bg-orange-500 text-white text-xs font-bold px-3 py-1 rounded-full z-20">
+              新品
+            </div>
+            <div className="absolute top-4 right-4 z-30">
+              <ToolCardFavoriteButton toolPath="/particle-editor" />
+            </div>
+            <div className="p-6 flex-grow flex flex-col space-y-4">
+              <div className="rounded-full bg-orange-100 p-3 w-fit">
+                <Sparkles className="h-6 w-6 text-orange-600" />
+              </div>
+              <h3 className="text-xl font-bold text-orange-700">粒子系统编辑器</h3>
+              <p className="text-muted-foreground flex-grow">
+                创建和编辑粒子效果，实时预览，支持多种形状和混合模式，可导出为图片
+              </p>
+              <div className="mt-auto pt-4">
+                <Button className="w-full bg-orange-600 hover:bg-orange-700 text-white font-bold" onClick={handleParticleEditor}>
+                  创建粒子
                 </Button>
               </div>
             </div>
