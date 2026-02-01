@@ -83,15 +83,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.error('[Sign Up] Error:', {
         message: error.message,
         status: error.status,
-        name: error.name
+        name: error.name,
+        code: error.code
       });
       
-      // 检查是否是邮箱已存在的错误
+      // 只检查 Supabase 明确返回的"用户已注册"错误
+      // 不要使用过于宽泛的条件，避免误判
       const errorMsg = (error.message || '').toLowerCase();
-      if (errorMsg.includes('user already registered') || 
-          errorMsg.includes('already registered') ||
-          errorMsg.includes('email already exists') ||
-          error.status === 422) {
+      const errorCode = error.code || '';
+      const isEmailAlreadyRegistered = 
+        errorMsg.includes('user already registered') || 
+        errorMsg.includes('email address is already registered') ||
+        (errorCode === 'email_already_exists') ||
+        (error.status === 422 && (errorMsg.includes('already registered') || errorCode === 'email_already_exists'));
+      
+      if (isEmailAlreadyRegistered) {
         // 返回明确的错误信息
         return {
           data: null,
@@ -102,6 +108,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           }
         };
       }
+      
+      // 其他错误直接返回，让调用方处理
     } else {
       console.log('[Sign Up] Success:', { 
         userId: data.user?.id, 

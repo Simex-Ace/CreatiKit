@@ -153,16 +153,24 @@ export function AuthModal({ isOpen, onClose, defaultMode = 'login' }: AuthModalP
           const errorCode = error.code || '';
           const errorStatus = error.status || 0;
           
-          // 检查各种可能的错误情况
-          // Supabase 在邮箱已存在时可能返回不同的错误格式
-          if (errorMsg.includes('user already registered') || 
-              errorMsg.includes('already registered') ||
-              errorMsg.includes('email address is already registered') ||
-              errorMsg.includes('already exists') ||
-              errorMsg.includes('duplicate') ||
-              errorCode === 'signup_disabled' ||
-              errorStatus === 422 ||
-              (errorStatus >= 400 && errorStatus < 500 && errorMsg.includes('email'))) {
+          // 详细日志，帮助调试
+          console.log('[AuthModal] Sign up error details:', {
+            message: error.message,
+            code: errorCode,
+            status: errorStatus,
+            fullError: error
+          });
+          
+          // 只检查 Supabase 明确返回的"用户已注册"错误
+          // 移除过于宽泛的条件，避免误判
+          const isEmailAlreadyRegistered = 
+            errorMsg.includes('user already registered') || 
+            errorMsg.includes('email address is already registered') ||
+            (errorCode === 'email_already_exists') ||
+            (errorStatus === 422 && errorMsg.includes('already registered')) ||
+            (errorStatus === 422 && errorCode === 'email_already_exists');
+          
+          if (isEmailAlreadyRegistered) {
             // 邮箱已被注册
             errorMessage = '该邮箱已被注册，请直接登录';
             setMode('login');
@@ -176,12 +184,15 @@ export function AuthModal({ isOpen, onClose, defaultMode = 'login' }: AuthModalP
             setConfirmPassword('');
             setLoading(false);
             return;
-          } else if (errorMsg.includes('password')) {
+          } else if (errorMsg.includes('password') || errorMsg.includes('weak password')) {
             errorMessage = '密码不符合要求，请使用更复杂的密码';
-          } else if (errorMsg.includes('email')) {
-            errorMessage = '邮箱格式不正确或已被使用';
-          } else if (errorMsg.includes('invalid')) {
-            errorMessage = '输入信息无效，请检查后重试';
+          } else if (errorMsg.includes('invalid email') || errorMsg.includes('email format')) {
+            errorMessage = '邮箱格式不正确';
+          } else if (errorMsg.includes('network') || errorMsg.includes('fetch')) {
+            errorMessage = '网络连接失败，请检查网络后重试';
+          } else {
+            // 其他错误，显示原始错误消息
+            errorMessage = error.message || '注册失败，请重试';
           }
           
           toast({
