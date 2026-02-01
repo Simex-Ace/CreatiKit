@@ -529,13 +529,16 @@ export default function ResetPasswordPage() {
                     返回首页
                   </Button>
                 </Link>
-                <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg p-3 mt-2">
-                  <p className="text-xs text-blue-800 dark:text-blue-200 font-medium mb-1">
-                    💡 提示：如果在邮箱内置浏览器中无法使用
-                  </p>
-                  <p className="text-xs text-blue-700 dark:text-blue-300">
-                    请复制链接地址，然后在 Chrome、Edge 等外部浏览器中打开
-                  </p>
+                <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg p-3 mt-2">
+                  <div className="flex items-start gap-2">
+                    <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0" />
+                    <div className="text-xs text-amber-800 dark:text-amber-300 space-y-1">
+                      <p className="font-medium">⚠️ 常见问题解决方案</p>
+                      <p className="text-amber-700 dark:text-amber-400">
+                        如果在邮件内置浏览器（如 QQ 邮箱、Gmail 内置浏览器）中点击链接后显示"链接已过期"或"链接无效"，请复制链接地址，然后在 Chrome、Edge、Safari 等外部浏览器中打开。这是邮件客户端内置浏览器的兼容性问题。
+                      </p>
+                    </div>
+                  </div>
                 </div>
                 <p className="text-xs text-muted-foreground text-center">
                   提示：密码重置链接通常有效期为 1 小时，请尽快使用
@@ -566,6 +569,19 @@ export default function ResetPasswordPage() {
           <p className="text-sm text-muted-foreground">
             请输入您的新密码
           </p>
+        </div>
+
+        {/* 提示：如果遇到问题 */}
+        <div className="p-3 rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800">
+          <div className="flex items-start gap-2">
+            <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0" />
+            <div className="text-xs text-amber-800 dark:text-amber-300 space-y-1">
+              <p className="font-medium">⚠️ 如果链接无法打开</p>
+              <p className="text-amber-700 dark:text-amber-400">
+                如果您在邮件内置浏览器（如 QQ 邮箱、Gmail 内置浏览器）中点击链接后无法使用，请复制链接地址，然后在 Chrome、Edge、Safari 等外部浏览器中打开。
+              </p>
+            </div>
+          </div>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">

@@ -18,6 +18,16 @@ interface AuthModalProps {
 
 export function AuthModal({ isOpen, onClose, defaultMode = 'login' }: AuthModalProps) {
   const [mode, setMode] = useState<'login' | 'register' | 'forgot'>(defaultMode);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [emailError, setEmailError] = useState('');
+  const [passwordError, setPasswordError] = useState('');
+  const { signIn, signUp, signInWithProvider, resetPassword } = useAuth();
+  const { toast } = useToast();
   
   // 当 defaultMode 改变时，更新 mode（修复注册按钮问题）
   React.useEffect(() => {
@@ -26,10 +36,12 @@ export function AuthModal({ isOpen, onClose, defaultMode = 'login' }: AuthModalP
     }
   }, [defaultMode]);
   
-  // 监听弹窗关闭，重置 loading 状态
+  // 监听弹窗关闭，重置 loading 状态和模式
   React.useEffect(() => {
     if (!isOpen) {
       setLoading(false);
+      // 关闭弹窗时重置为登录模式
+      setMode('login');
     }
   }, [isOpen]);
   
@@ -69,17 +81,6 @@ export function AuthModal({ isOpen, onClose, defaultMode = 'login' }: AuthModalP
       if (checkTimeout) clearTimeout(checkTimeout);
     };
   }, [isOpen, loading]);
-  
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [emailError, setEmailError] = useState('');
-  const [passwordError, setPasswordError] = useState('');
-  const { signIn, signUp, signInWithProvider, resetPassword } = useAuth();
-  const { toast } = useToast();
 
   // 密码强度检查
   const passwordStrength = mode === 'register' && password ? checkPasswordStrength(password) : null;
@@ -437,6 +438,21 @@ export function AuthModal({ isOpen, onClose, defaultMode = 'login' }: AuthModalP
             )}
           </div>
 
+          {/* 忘记密码模式提示 */}
+          {mode === 'forgot' && (
+            <div className="p-3 rounded-lg bg-orange-50 dark:bg-orange-950/30 border border-orange-200 dark:border-orange-800">
+              <div className="flex items-start gap-2">
+                <AlertCircle className="h-4 w-4 text-orange-600 dark:text-orange-400 mt-0.5 flex-shrink-0" />
+                <div className="text-xs text-orange-800 dark:text-orange-300 space-y-1">
+                  <p className="font-medium">📧 重要提示</p>
+                  <p className="text-orange-700 dark:text-orange-400">
+                    收到重置邮件后，如果点击链接在邮件内置浏览器中无法打开，请复制链接地址到 Chrome、Edge 等外部浏览器中打开，避免兼容性问题。
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
           {mode !== 'forgot' && (
             <>
               <div className="space-y-2">
@@ -599,6 +615,37 @@ export function AuthModal({ isOpen, onClose, defaultMode = 'login' }: AuthModalP
                 </span>
               </div>
             </div>
+
+            {/* 第三方登录推荐提示 - 注册模式 */}
+            {mode === 'register' && (
+              <div className="mt-2 mb-3 p-3 rounded-lg bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800">
+                <div className="flex items-start gap-2">
+                  <AlertCircle className="h-4 w-4 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
+                  <div className="text-xs text-blue-800 dark:text-blue-300 space-y-1">
+                    <p className="font-medium">💡 推荐使用第三方登录</p>
+                    <p className="text-blue-700 dark:text-blue-400">
+                      邮箱登录可能遇到验证链接在邮件内置浏览器中无法打开的问题，建议复制链接到外部浏览器打开，或直接使用 Google/GitHub 登录，更稳定便捷。
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* 第三方登录推荐提示 - 登录模式（不同样式） */}
+            {mode === 'login' && (
+              <div className="mt-2 mb-3 p-2.5 rounded-md bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-950/20 dark:to-emerald-950/20 border-l-3 border-green-500 dark:border-green-400">
+                <div className="flex items-center gap-2">
+                  <div className="flex-shrink-0 w-5 h-5 rounded-full bg-green-100 dark:bg-green-900/50 flex items-center justify-center">
+                    <svg className="w-3 h-3 text-green-600 dark:text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                  <div className="text-xs text-green-800 dark:text-green-300">
+                    <span className="font-medium">提示：</span> 使用 Google/GitHub 登录更稳定，避免邮箱验证链接在邮件内置浏览器中无法打开的问题
+                  </div>
+                </div>
+              </div>
+            )}
 
             <div className="grid grid-cols-2 gap-3 pt-1">
               <Button
