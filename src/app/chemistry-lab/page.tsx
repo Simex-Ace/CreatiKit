@@ -1176,8 +1176,8 @@ const ChemistryLab: React.FC = () => {
 
   // 获取翻译后的物质名称
   const getTranslatedSolutionName = useCallback((solutionType: string): string => {
-    const key = solutionType.replace('(固)', '_solid') as keyof typeof predefinedSolutions;
-    return t(`chemistryLabPage.solutions.${key}`) || predefinedSolutions.find(s => s.type === solutionType)?.name || solutionType;
+    const key = solutionType.replace('(固)', '_solid');
+    return t(`chemistryLabPage.solutions.${String(key)}`) || predefinedSolutions.find(s => s.type === solutionType)?.name || solutionType;
   }, [t]);
 
   // 显示toast提示
@@ -1609,7 +1609,7 @@ const ChemistryLab: React.FC = () => {
             <h3 className="text-lg font-semibold mb-2 text-yellow-400">{t('chemistryLabPage.solidSubstances')}</h3>
             <div className="grid grid-cols-4 gap-2 mb-6">
               {predefinedSolutions.filter(s => s.isSolid).map((solution, index) => {
-                const solutionKey = solution.type.replace('(固)', '_solid') as keyof typeof predefinedSolutions;
+                const solutionKey = solution.type.replace('(固)', '_solid');
                 return (
                 <button
                   key={index}
@@ -1625,7 +1625,7 @@ const ChemistryLab: React.FC = () => {
                   <span className="text-xs font-medium">{getTranslatedSolutionName(solution.type)}</span>
                   <span className="text-xs text-yellow-400">{t('chemistryLabPage.solid')}</span>
                   {solution.description && (
-                    <span className="text-xs text-gray-500 line-clamp-2 text-center">{t(`chemistryLabPage.solutionDescriptions.${solutionKey}`) || solution.description}</span>
+                    <span className="text-xs text-gray-500 line-clamp-2 text-center">{t(`chemistryLabPage.solutionDescriptions.${String(solutionKey)}`) || solution.description}</span>
                   )}
                 </button>
               )})}
