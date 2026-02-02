@@ -35,7 +35,7 @@ export default function ParticleEditor() {
   const [shape, setShape] = useState<ParticleShape>('circle');
   const [colorStart, setColorStart] = useState('#ff0000');
   const [colorEnd, setColorEnd] = useState('#ffff00');
-  const [blendMode, setBlendMode] = useState<'normal' | 'screen' | 'multiply' | 'additive'>('screen');
+  const [blendMode, setBlendMode] = useState<GlobalCompositeOperation>('screen');
   
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const particlesRef = useRef<Particle[]>([]);
@@ -496,15 +496,15 @@ export default function ParticleEditor() {
             {/* 混合模式 */}
             <div className="space-y-2">
               <Label>混合模式</Label>
-              <Select value={blendMode} onValueChange={(value) => setBlendMode(value as any)}>
+              <Select value={blendMode} onValueChange={(value) => setBlendMode(value as GlobalCompositeOperation)}>
                 <SelectTrigger className="w-full">
                   <SelectValue placeholder="选择混合模式" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="normal">正常</SelectItem>
+                  <SelectItem value="source-over">正常</SelectItem>
                   <SelectItem value="screen">屏幕</SelectItem>
                   <SelectItem value="multiply">正片叠底</SelectItem>
-                  <SelectItem value="additive">叠加</SelectItem>
+                  <SelectItem value="lighter">叠加</SelectItem>
                 </SelectContent>
               </Select>
             </div>
