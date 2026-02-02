@@ -1,12 +1,14 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useI18n } from '@/contexts/I18nContext';
 
 interface StarLoaderProps {
   onAnimationComplete: () => void;
 }
 
 export function StarLoader({ onAnimationComplete }: StarLoaderProps) {
+  const { t } = useI18n();
   const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
@@ -82,9 +84,9 @@ export function StarLoader({ onAnimationComplete }: StarLoaderProps) {
         </div>
         
         <div className="text-center">
-          <h2 className="text-xl font-bold text-yellow-300">欢迎来到CreatiKit</h2>
+          <h2 className="text-xl font-bold text-yellow-300">{t('loaderPage.welcomeToCreatiKit')}</h2>
           <p className="text-gray-300 mt-2">
-            创意工具集合，激发无限可能！
+            {t('loaderPage.creativeToolsUnlimited')}
           </p>
         </div>
       </div>

@@ -23,10 +23,12 @@ import {
 
 // 导入必要的库
 import html2canvas from 'html2canvas';
+import { useI18n } from '@/contexts/I18nContext';
 
 type ChartType = 'bar' | 'line' | 'pie' | 'scatter' | 'area';
 
 const DataToChartPage = () => {
+  const { t } = useI18n();
   // 状态管理
   const [input, setInput] = useState('name,value\n产品A,100\n产品B,200\n产品C,150\n产品D,300\n产品E,250');
   const [chartType, setChartType] = useState<ChartType>('bar');
@@ -37,7 +39,7 @@ const DataToChartPage = () => {
   const [columns, setColumns] = useState<string[]>([]);
   const [data, setData] = useState<any[]>([]);
   const [error, setError] = useState('');
-  const [chartTitle, setChartTitle] = useState('数据图表');
+  const [chartTitle, setChartTitle] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   // 使用useRef引用图表容器
   const chartRef = useRef<HTMLDivElement>(null);
@@ -149,7 +151,7 @@ const DataToChartPage = () => {
       if (headers.length > 1 && !yField) setYField(headers[1]);
       if (headers.length > 2 && !zField) setZField(headers[2]);
     } catch {
-      setError('请输入有效的CSV或JSON数据');
+      setError(t('dataToChartPage.enterValidData'));
       setData([]);
       setColumns([]);
     }
@@ -346,10 +348,13 @@ const DataToChartPage = () => {
   // 饼图颜色 - 使用更现代的配色方案
   const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4'];
 
-  // 添加页面标题
+  // 添加页面标题和初始化chartTitle
   useEffect(() => {
-    document.title = '数据转图表 - CreatiKit';
-  }, []);
+    document.title = t('dataToChartPage.title') + ' - CreatiKit';
+    if (!chartTitle) {
+      setChartTitle(t('dataToChartPage.chartTitle'));
+    }
+  }, [t, chartTitle]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 py-8 transition-colors duration-300">
@@ -364,8 +369,8 @@ const DataToChartPage = () => {
               <path d="M8 17v-3"/>
             </svg>
           </div>
-          <h1 className="text-4xl font-bold text-gray-900 mb-2 tracking-tight">数据转图表演示</h1>
-          <p className="text-gray-600 max-w-2xl mx-auto">轻松将CSV或JSON数据转换为精美的交互式图表，支持多种图表类型和自定义配置</p>
+          <h1 className="text-4xl font-bold text-gray-900 mb-2 tracking-tight">{t('dataToChartPage.title')}</h1>
+          <p className="text-gray-600 max-w-2xl mx-auto">{t('dataToChartPage.subtitle')}</p>
         </header>
         
         {/* 主内容卡片 */}
@@ -382,7 +387,7 @@ const DataToChartPage = () => {
                         <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/>
                         <polyline points="14 2 14 8 20 8"/>
                       </svg>
-                      输入数据 (CSV/JSON)
+                      {t('dataToChartPage.inputData')}
                     </h3>
                   </div>
                   <div className="p-5 space-y-4">
@@ -392,14 +397,14 @@ const DataToChartPage = () => {
                         disabled={isLoading}
                         className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
                       >
-                        加载示例数据
+                        {t('dataToChartPage.loadSample')}
                       </button>
                       <button
                         onClick={triggerFileUpload}
                         disabled={isLoading}
                         className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium"
                       >
-                        导入文件
+                        {t('dataToChartPage.importFile')}
                       </button>
                       <input
                         type="file"
@@ -412,7 +417,7 @@ const DataToChartPage = () => {
                     <textarea
                       value={input}
                       onChange={(e) => setInput(e.target.value)}
-                      placeholder="请输入CSV或JSON格式数据"
+                      placeholder={t('dataToChartPage.inputPlaceholder')}
                       className="w-full h-48 p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono"
                       disabled={isLoading}
                     />
@@ -432,7 +437,7 @@ const DataToChartPage = () => {
                 {/* 图表标题输入 */}
                 <div className="bg-gray-50 p-5 rounded-xl border border-gray-100 shadow-sm">
                   <label htmlFor="chart-title" className="block text-sm font-medium text-gray-700 mb-1.5">
-                    图表标题
+                    {t('dataToChartPage.chartTitle')}
                   </label>
                   <input
                     id="chart-title"
@@ -440,7 +445,7 @@ const DataToChartPage = () => {
                     value={chartTitle}
                     onChange={(e) => setChartTitle(e.target.value)}
                     className="w-full p-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm transition-all duration-200"
-                    placeholder="输入图表标题"
+                    placeholder={t('dataToChartPage.chartTitlePlaceholder')}
                   />
                 </div>
                 
@@ -452,13 +457,13 @@ const DataToChartPage = () => {
                         <path d="M21.21 15.89A10 10 0 1 1 8 2.83"/>
                         <path d="M22 12A10 10 0 0 0 12 2v10z"/>
                       </svg>
-                      图表配置
+                      {t('dataToChartPage.chartConfig')}
                     </h3>
                     
                     <div className="space-y-5">
                       {/* 图表类型选择 */}
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">图表类型</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">{t('dataToChartPage.chartType')}</label>
                         <div className="flex flex-wrap gap-2">
                           {(['bar', 'line', 'pie', 'scatter', 'area'] as ChartType[]).map(type => (
                             <button
@@ -468,11 +473,11 @@ const DataToChartPage = () => {
                                 ? 'bg-blue-600 text-white shadow-md scale-105' 
                                 : 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-50 hover:shadow-sm'}`}
                             >
-                              {type === 'bar' && '柱状图'}
-                              {type === 'line' && '折线图'}
-                              {type === 'pie' && '饼图'}
-                              {type === 'scatter' && '散点图'}
-                              {type === 'area' && '面积图'}
+                              {type === 'bar' && t('dataToChartPage.bar')}
+                              {type === 'line' && t('dataToChartPage.line')}
+                              {type === 'pie' && t('dataToChartPage.pie')}
+                              {type === 'scatter' && t('dataToChartPage.scatter')}
+                              {type === 'area' && t('dataToChartPage.area')}
                             </button>
                           ))}
                         </div>
@@ -481,7 +486,7 @@ const DataToChartPage = () => {
                       {/* X轴/分类字段选择 */}
                        <div>
                          <label htmlFor="x-field" className="block text-sm font-medium text-gray-700 mb-2">
-                           {chartType === 'pie' ? '分类字段 (Category Field)' : chartType === 'scatter' ? 'X值字段' : 'X轴字段'}
+                           {chartType === 'pie' ? t('dataToChartPage.categoryField') : chartType === 'scatter' ? t('dataToChartPage.xValueField') : t('dataToChartPage.xAxisField')}
                          </label>
                          <select
                            id="x-field"
@@ -499,7 +504,7 @@ const DataToChartPage = () => {
                        {chartType !== 'pie' && (
                          <div>
                            <label htmlFor="y-field" className="block text-sm font-medium text-gray-700 mb-2">
-                             {chartType === 'scatter' ? 'Y值字段' : 'Y轴字段'}
+                             {chartType === 'scatter' ? t('dataToChartPage.yValueField') : t('dataToChartPage.yAxisField')}
                            </label>
                            <select
                              id="y-field"
@@ -518,7 +523,7 @@ const DataToChartPage = () => {
                        {chartType === 'pie' && (
                          <div>
                            <label htmlFor="pie-value-field" className="block text-sm font-medium text-gray-700 mb-2">
-                             值字段 (Value Field)
+                             {t('dataToChartPage.valueField')}
                            </label>
                            <select
                              id="pie-value-field"
@@ -537,7 +542,7 @@ const DataToChartPage = () => {
                        {chartType === 'scatter' && columns.length > 2 && (
                          <div>
                            <label htmlFor="z-field" className="block text-sm font-medium text-gray-700 mb-2">
-                             点大小字段 (可选)
+                             {t('dataToChartPage.pointSizeField')}
                            </label>
                            <select
                              id="z-field"
@@ -545,7 +550,7 @@ const DataToChartPage = () => {
                              onChange={(e) => setZField(e.target.value)}
                              className="w-full p-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm transition-all duration-200 appearance-none bg-white pr-8"
                            >
-                             <option value="">不使用</option>
+                             <option value="">{t('dataToChartPage.notUsed')}</option>
                              {columns.filter(col => col !== xField && col !== yField).map(col => (
                                <option key={col} value={col}>{col}</option>
                              ))}
@@ -557,7 +562,7 @@ const DataToChartPage = () => {
                        {chartType !== 'pie' && chartType !== 'scatter' && (
                          <div>
                            <label htmlFor="group-field" className="block text-sm font-medium text-gray-700 mb-2">
-                             分组字段 (Group By) (可选)
+                             {t('dataToChartPage.groupField')}
                            </label>
                            <select
                              id="group-field"
@@ -565,7 +570,7 @@ const DataToChartPage = () => {
                              onChange={(e) => setGroupField(e.target.value)}
                              className="w-full p-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm transition-all duration-200 appearance-none bg-white pr-8"
                            >
-                             <option value="">不分组</option>
+                             <option value="">{t('dataToChartPage.noGroup')}</option>
                              {columns.filter(col => col !== xField && col !== yField).map(col => (
                                <option key={col} value={col}>{col}</option>
                              ))}

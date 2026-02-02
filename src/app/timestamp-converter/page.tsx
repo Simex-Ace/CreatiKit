@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Copy, RefreshCw, ArrowDownUp, Calendar, Clock } from 'lucide-react';
 import { useToast } from '@/contexts/ToastContext';
+import { useI18n } from '@/contexts/I18nContext';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import utc from 'dayjs/plugin/utc';
@@ -20,6 +21,7 @@ dayjs.extend(utc);
 dayjs.extend(timezone);
 
 export default function TimestampConverter() {
+  const { t } = useI18n();
   // 状态管理
   const [dateInput, setDateInput] = useState('');
   const [timestampInput, setTimestampInput] = useState('');
@@ -37,7 +39,7 @@ export default function TimestampConverter() {
 
   // 常用时区列表
   const timezones = [
-    { value: 'local', label: '本地时区' },
+    { value: 'local', label: t('timestampConverterPage.localTimezone') },
     { value: 'UTC', label: 'UTC' },
     { value: 'Asia/Shanghai', label: '中国标准时间 (CST)' },
     { value: 'America/New_York', label: '东部标准时间 (EST)' },
@@ -54,7 +56,7 @@ export default function TimestampConverter() {
   // 日期时间转换为时间戳
   const convertDateToTimestamp = () => {
     if (!dateInput.trim()) {
-      toast({ title: '请输入日期时间', variant: 'destructive' });
+      toast({ title: t('timestampConverterPage.enterDateTime'), variant: 'destructive' });
       return;
     }
 
@@ -67,7 +69,7 @@ export default function TimestampConverter() {
       }
 
       if (!date.isValid()) {
-        toast({ title: '无效的日期时间格式', variant: 'destructive' });
+        toast({ title: t('timestampConverterPage.invalidDateTime'), variant: 'destructive' });
         return;
       }
 
@@ -82,14 +84,14 @@ export default function TimestampConverter() {
       
       setTimestampInput(timestamp.toString());
     } catch (error) {
-      toast({ title: '转换失败', variant: 'destructive' });
+      toast({ title: t('timestampConverterPage.convertFailed'), variant: 'destructive' });
     }
   };
 
   // 时间戳转换为日期时间
   const convertTimestampToDate = () => {
     if (!timestampInput.trim()) {
-      toast({ title: '请输入时间戳', variant: 'destructive' });
+      toast({ title: t('timestampConverterPage.enterTimestamp'), variant: 'destructive' });
       return;
     }
 
@@ -98,7 +100,7 @@ export default function TimestampConverter() {
       
       // 验证时间戳
       if (isNaN(timestamp)) {
-        toast({ title: '无效的时间戳', variant: 'destructive' });
+        toast({ title: t('timestampConverterPage.invalidTimestamp'), variant: 'destructive' });
         return;
       }
 
@@ -115,7 +117,7 @@ export default function TimestampConverter() {
       }
 
       if (!date.isValid()) {
-        toast({ title: '无效的时间戳', variant: 'destructive' });
+        toast({ title: t('timestampConverterPage.invalidTimestamp'), variant: 'destructive' });
         return;
       }
 
@@ -129,7 +131,7 @@ export default function TimestampConverter() {
       
       setDateInput(date.format(dateFormat));
     } catch (error) {
-      toast({ title: '转换失败', variant: 'destructive' });
+      toast({ title: t('timestampConverterPage.convertFailed'), variant: 'destructive' });
     }
   };
 
@@ -137,10 +139,10 @@ export default function TimestampConverter() {
   const copyToClipboard = (text: string, label: string) => {
     navigator.clipboard.writeText(text)
       .then(() => {
-        toast({ title: `${label} 已复制到剪贴板` });
+        toast({ title: t('timestampConverterPage.copied', { label }) });
       })
       .catch(() => {
-        toast({ title: '复制失败', variant: 'destructive' });
+        toast({ title: t('timestampConverterPage.copyFailed'), variant: 'destructive' });
       });
   };
 
@@ -210,8 +212,8 @@ export default function TimestampConverter() {
 
   return (
     <div className="container mx-auto py-8 px-4">
-      <h1 className="text-3xl font-bold mb-2">Unix 时间戳转换器</h1>
-      <p className="text-gray-600 dark:text-gray-300 mb-8">在标准日期时间和Unix时间戳之间进行转换，并显示相对时间</p>
+      <h1 className="text-3xl font-bold mb-2">{t('timestampConverterPage.title')}</h1>
+      <p className="text-gray-600 dark:text-gray-300 mb-8">{t('timestampConverterPage.subtitle')}</p>
 
       <Card className="p-6 mb-6">
         {/* 输入区域 */}
@@ -219,27 +221,27 @@ export default function TimestampConverter() {
           <TabsList className="grid grid-cols-2 mb-6 bg-gray-100 dark:bg-gray-700">
             <TabsTrigger value="date" className="flex items-center text-gray-900 dark:text-white">
               <Calendar className="mr-2 h-4 w-4" />
-              日期时间输入
+              {t('timestampConverterPage.tabDate')}
             </TabsTrigger>
             <TabsTrigger value="timestamp" className="flex items-center text-gray-900 dark:text-white">
               <Clock className="mr-2 h-4 w-4" />
-              时间戳输入
+              {t('timestampConverterPage.tabTimestamp')}
             </TabsTrigger>
           </TabsList>
 
           <TabsContent value="date" className="space-y-4">
             <div className="space-y-2 mb-8">
             <div className="flex justify-between items-center">
-              <Label htmlFor="date-input" className="text-gray-900 dark:text-white">日期时间 (YYYY-MM-DD HH:mm:ss)</Label>
+              <Label htmlFor="date-input" className="text-gray-900 dark:text-white">{t('timestampConverterPage.dateTime')}</Label>
               <Button variant="ghost" size="sm" onClick={fillCurrentTime} className="text-gray-900 dark:text-white">
-                当前时间
+                {t('timestampConverterPage.currentTime')}
               </Button>
             </div>
               <Input
                 id="date-input"
                 value={dateInput}
                 onChange={(e) => setDateInput(e.target.value)}
-                placeholder="例如: 2025-10-28 10:00:00"
+                placeholder={t('timestampConverterPage.datePlaceholder')}
                 className="text-lg"
               />
             </div>
@@ -248,7 +250,7 @@ export default function TimestampConverter() {
           <TabsContent value="timestamp" className="space-y-4">
             <div className="space-y-2 mb-8">
               <div className="flex justify-between items-center">
-                <Label htmlFor="timestamp-input" className="text-gray-900 dark:text-white">Unix 时间戳</Label>
+                <Label htmlFor="timestamp-input" className="text-gray-900 dark:text-white">{t('timestampConverterPage.timestamp')}</Label>
                 <div className="flex items-center space-x-2">
                   <Label htmlFor="ms-toggle" className="text-sm cursor-pointer flex items-center text-gray-900 dark:text-white">
                     <input
@@ -258,7 +260,7 @@ export default function TimestampConverter() {
                       onChange={toggleTimestampUnit}
                       className="mr-2 h-4 w-4 rounded border-input text-primary focus:ring-primary"
                     />
-                    毫秒
+                    {t('timestampConverterPage.milliseconds')}
                   </Label>
                 </div>
               </div>
@@ -266,7 +268,7 @@ export default function TimestampConverter() {
                 id="timestamp-input"
                 value={timestampInput}
                 onChange={(e) => setTimestampInput(e.target.value)}
-                placeholder={`例如: ${isTimestampMs ? '1761770400000' : '1761770400'}`}
+                placeholder={t('timestampConverterPage.timestampPlaceholder', { example: isTimestampMs ? '1761770400000' : '1761770400' })}
                 className="text-lg"
               />
             </div>
@@ -275,7 +277,7 @@ export default function TimestampConverter() {
 
           {/* 时区选择 */}
           <div className="space-y-2 mb-8">
-            <Label htmlFor="timezone-select" className="text-gray-900 dark:text-white">时区选择</Label>
+            <Label htmlFor="timezone-select" className="text-gray-900 dark:text-white">{t('timestampConverterPage.timezone')}</Label>
             <select
               id="timezone-select"
               value={selectedTimezone}
@@ -296,13 +298,13 @@ export default function TimestampConverter() {
             className="flex-1"
             onClick={activeTab === 'date' ? convertDateToTimestamp : convertTimestampToDate}
           >
-            转换
+            {t('timestampConverterPage.convert')}
           </Button>
           <Button 
             variant="secondary"
             onClick={clearAll}
           >
-            清空
+            {t('timestampConverterPage.clear')}
           </Button>
           <Button 
             variant="ghost"
@@ -311,7 +313,7 @@ export default function TimestampConverter() {
             }}
           >
             <ArrowDownUp className="mr-1 h-4 w-4" />
-            切换输入
+            {t('timestampConverterPage.switchInput')}
           </Button>
         </div>
       </Card>
@@ -319,21 +321,21 @@ export default function TimestampConverter() {
       {/* 结果显示 */}
       {result.timestamp || result.date ? (
         <Card className="p-6 bg-white dark:bg-gray-800">
-          <h2 className="text-xl font-semibold mb-4 text-gray-900 dark:text-white">转换结果</h2>
+          <h2 className="text-xl font-semibold mb-4 text-gray-900 dark:text-white">{t('timestampConverterPage.results')}</h2>
           
           <div className="grid gap-4 md:grid-cols-2">
             {/* 时间戳结果 */}
             <div className="relative group">
               <div className="flex justify-between items-center bg-gray-100 dark:bg-gray-700 rounded-lg p-4 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
                 <div>
-                  <div className="font-medium mb-1 text-gray-900 dark:text-white">Unix 时间戳 ({isTimestampMs ? '毫秒' : '秒'})</div>
+                  <div className="font-medium mb-1 text-gray-900 dark:text-white">{t('timestampConverterPage.timestampResult', { unit: isTimestampMs ? t('timestampConverterPage.milliseconds') : t('timestampConverterPage.seconds') })}</div>
                   <div className="text-sm font-mono break-all text-gray-700 dark:text-gray-200">{result.timestamp}</div>
                 </div>
                 <Button
                   size="icon"
                   variant="ghost"
                   className="opacity-0 group-hover:opacity-100 transition-opacity text-gray-900 dark:text-white"
-                  onClick={() => copyToClipboard(result.timestamp, '时间戳')}
+                  onClick={() => copyToClipboard(result.timestamp, t('timestampConverterPage.timestamp'))}
                 >
                   <Copy className="h-4 w-4" />
                 </Button>
@@ -344,14 +346,14 @@ export default function TimestampConverter() {
             <div className="relative group">
               <div className="flex justify-between items-center bg-gray-100 dark:bg-gray-700 rounded-lg p-4 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
                 <div>
-                  <div className="font-medium mb-1 text-gray-900 dark:text-white">标准日期时间</div>
+                  <div className="font-medium mb-1 text-gray-900 dark:text-white">{t('timestampConverterPage.dateTimeResult')}</div>
                   <div className="text-sm font-mono text-gray-700 dark:text-gray-200">{result.date}</div>
                 </div>
                 <Button
                   size="icon"
                   variant="ghost"
                   className="opacity-0 group-hover:opacity-100 transition-opacity text-gray-900 dark:text-white"
-                  onClick={() => copyToClipboard(result.date, '日期时间')}
+                  onClick={() => copyToClipboard(result.date, t('timestampConverterPage.dateTime'))}
                 >
                   <Copy className="h-4 w-4" />
                 </Button>
@@ -362,14 +364,14 @@ export default function TimestampConverter() {
             <div className="relative group md:col-span-2">
               <div className="flex justify-between items-center bg-blue-100 dark:bg-blue-900/40 rounded-lg p-4 hover:bg-blue-200 dark:hover:bg-blue-800/40 transition-colors">
                 <div>
-                  <div className="font-medium mb-1 text-gray-900 dark:text-white">相对时间</div>
+                  <div className="font-medium mb-1 text-gray-900 dark:text-white">{t('timestampConverterPage.relativeTime')}</div>
                   <div className="text-sm font-semibold text-gray-700 dark:text-gray-200">{result.relative}</div>
                 </div>
                 <Button
                   size="icon"
                   variant="ghost"
                   className="opacity-0 group-hover:opacity-100 transition-opacity text-gray-900 dark:text-white"
-                  onClick={() => copyToClipboard(result.relative, '相对时间')}
+                  onClick={() => copyToClipboard(result.relative, t('timestampConverterPage.relativeTime'))}
                 >
                   <Copy className="h-4 w-4" />
                 </Button>
@@ -379,16 +381,16 @@ export default function TimestampConverter() {
 
           {/* 转换信息 */}
           <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-900/40 rounded-lg text-sm text-gray-700 dark:text-gray-200">
-            <p className="text-gray-900 dark:text-white">• 时间戳计算基于 {selectedTimezone === 'local' ? '您的本地时区' : selectedTimezone} 时区</p>
-            <p className="text-gray-900 dark:text-white">• 相对时间会动态更新，显示与当前时间的差值</p>
-            <p className="text-gray-900 dark:text-white">• 输入纯数字时会自动检测是否为时间戳</p>
+            <p className="text-gray-900 dark:text-white">• {t('timestampConverterPage.info1', { timezone: selectedTimezone === 'local' ? t('timestampConverterPage.localTimezone') : selectedTimezone })}</p>
+            <p className="text-gray-900 dark:text-white">• {t('timestampConverterPage.info2')}</p>
+            <p className="text-gray-900 dark:text-white">• {t('timestampConverterPage.info3')}</p>
           </div>
         </Card>
       ) : null}
 
       {/* 快捷工具 */}
       <Card className="p-6 mt-6 bg-white dark:bg-gray-800">
-        <h2 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">快捷工具</h2>
+        <h2 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">{t('timestampConverterPage.quickTools')}</h2>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           <Button 
             variant="secondary" 
@@ -399,7 +401,7 @@ export default function TimestampConverter() {
               setActiveTab('timestamp');
             }}
           >
-            当前时间戳
+            {t('timestampConverterPage.currentTimestamp')}
           </Button>
           <Button 
             variant="secondary" 
@@ -410,7 +412,7 @@ export default function TimestampConverter() {
               setActiveTab('date');
             }}
           >
-            昨天
+            {t('timestampConverterPage.yesterday')}
           </Button>
           <Button 
             variant="secondary" 
@@ -421,7 +423,7 @@ export default function TimestampConverter() {
               setActiveTab('date');
             }}
           >
-            明天
+            {t('timestampConverterPage.tomorrow')}
           </Button>
           <Button 
             variant="secondary" 
@@ -430,7 +432,7 @@ export default function TimestampConverter() {
               setIsTimestampMs(!isTimestampMs);
             }}
           >
-            切换{isTimestampMs ? '秒' : '毫秒'}模式
+            {t('timestampConverterPage.switchMode', { unit: isTimestampMs ? t('timestampConverterPage.seconds') : t('timestampConverterPage.milliseconds') })}
           </Button>
         </div>
       </Card>

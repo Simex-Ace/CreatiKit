@@ -1,12 +1,14 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useI18n } from '@/contexts/I18nContext';
 
 interface ModelViewerLoaderProps {
   onAnimationComplete?: () => void;
 }
 
 export function ModelViewerLoader({ onAnimationComplete }: ModelViewerLoaderProps) {
+  const { t } = useI18n();
   const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
@@ -264,9 +266,9 @@ export function ModelViewerLoader({ onAnimationComplete }: ModelViewerLoaderProp
           
           {/* 文字信息 */}
           <div className="loading-text">
-            <h2 className="loading-title">正在准备3D模型查看器</h2>
+            <h2 className="loading-title">{t('loaderPage.preparing3DViewer')}</h2>
             <p className="loading-subtitle">
-              3D渲染引擎初始化中
+              {t('loaderPage.initializing3DEngine')}
               <span className="loading-dots">
                 <span className="dot"></span>
                 <span className="dot"></span>

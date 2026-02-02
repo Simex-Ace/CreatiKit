@@ -13,12 +13,15 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { ColorHarmony } from '@/components/color-palette/color-harmony';
 import { Eye, EyeOff, Copy, Check, Upload, Download, Plus, Minus, RefreshCw, X } from 'lucide-react';
 import { HexColorPicker } from '@/components/ui/color-picker/hex-color-picker';
+import { useI18n } from '@/contexts/I18nContext';
 import { Eyedropper } from '@/components/ui/color-picker/eyedropper';
 import { ColorHarmonyGenerator } from '@/components/ui/color-picker/color-harmony';
 import { ContrastChecker } from '@/components/ui/color-picker/contrast-checker';
 import { CodeExporter } from '@/components/ui/color-picker/code-exporter';
 
 export default function ColorPalette() {
+  const { t } = useI18n();
+  
   // 状态管理
   const [selectedColor, setSelectedColor] = useState('#3B82F6');
   const [colorPalette, setColorPalette] = useState<string[]>(['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6']);
@@ -152,7 +155,7 @@ export default function ColorPalette() {
     <div className="min-h-screen">
       <div className="max-w-6xl mx-auto">
         <h1 className="text-3xl font-bold mb-8 bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-purple-600">
-          专业调色板
+          {t('colorPalettePage.title')}
         </h1>
         
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -160,7 +163,7 @@ export default function ColorPalette() {
           <div className="lg:col-span-1 space-y-6">
             <Card className="overflow-hidden">
               <div className="p-6 space-y-4">
-                <h2 className="text-xl font-semibold">颜色选择</h2>
+                <h2 className="text-xl font-semibold">{t('colorPalettePage.colorSelection')}</h2>
                 
                 <div className="flex flex-col items-center space-y-6">
                   {/* 颜色预览 */}
@@ -171,7 +174,7 @@ export default function ColorPalette() {
                   
                   {/* 颜色输入 */}
                   <div className="w-full">
-                    <Label htmlFor="hex-color">十六进制颜色</Label>
+                    <Label htmlFor="hex-color">{t('colorPalettePage.hexColor')}</Label>
                     <div className="flex space-x-2 mt-1">
                       <Input 
                         id="hex-color"
@@ -191,7 +194,7 @@ export default function ColorPalette() {
                             </Button>
                           </TooltipTrigger>
                           <TooltipContent>
-                            <p>{copied ? '已复制!' : '复制颜色值'}</p>
+                            <p>{copied ? t('colorPalettePage.copied') : t('colorPalettePage.copyColorValue')}</p>
                           </TooltipContent>
                         </Tooltip>
                       </TooltipProvider>
@@ -211,7 +214,7 @@ export default function ColorPalette() {
                       className="flex items-center gap-2"
                     >
                       <Plus size={16} />
-                      添加到调色板
+                      {t('colorPalettePage.addToPalette')}
                     </Button>
                     <Button 
                       variant="secondary"
@@ -219,7 +222,7 @@ export default function ColorPalette() {
                       className="flex items-center gap-2"
                     >
                       <RefreshCw size={16} />
-                      随机颜色
+                      {t('colorPalettePage.randomColor')}
                     </Button>
                     
                     {/* 取色器按钮 */}
@@ -237,7 +240,7 @@ export default function ColorPalette() {
             {/* 图片取色 */}
             <Card>
               <div className="p-6 space-y-4">
-                <h2 className="text-xl font-semibold">图片取色</h2>
+                <h2 className="text-xl font-semibold">{t('colorPalettePage.imageColorPicker')}</h2>
                 
                 <div className="space-y-4">
                   <div className="relative border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-lg p-4 text-center">
@@ -245,7 +248,7 @@ export default function ColorPalette() {
                       <div className="space-y-2">
                         <img 
                           src={uploadedImage} 
-                          alt="上传的图片" 
+                          alt={t('colorPalettePage.uploadedImage')} 
                           className="max-h-80 mx-auto rounded-lg object-contain"
                         />
                         <Button 
@@ -253,17 +256,17 @@ export default function ColorPalette() {
                           onClick={() => setUploadedImage(null)}
                           className="mt-2"
                         >
-                          移除图片
+                          {t('colorPalettePage.removeImage')}
                         </Button>
                       </div>
                     ) : (
                       <div className="py-8">
                         <Upload className="mx-auto h-12 w-12 text-gray-400" />
                         <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-                          拖放图片或点击上传
+                          {t('colorPalettePage.dragDropOrClick')}
                         </p>
                         <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                          支持 JPG, PNG, WEBP 格式
+                          {t('colorPalettePage.supportedFormats')}
                         </p>
                         <input
                           ref={imageInputRef}
@@ -277,7 +280,7 @@ export default function ColorPalette() {
                           onClick={() => imageInputRef.current?.click()}
                           className="mt-4"
                         >
-                          选择图片
+                          {t('colorPalettePage.selectImage')}
                         </Button>
                       </div>
                     )}
@@ -297,14 +300,14 @@ export default function ColorPalette() {
             <Card>
               <div className="p-6">
                 <div className="flex justify-between items-center mb-4">
-                  <h2 className="text-xl font-semibold">我的调色板</h2>
+                  <h2 className="text-xl font-semibold">{t('colorPalettePage.myPalette')}</h2>
                   <Button 
                     variant="secondary" 
                     size="sm"
                     onClick={clearPalette}
                     className="text-sm"
                   >
-                    清空
+                    {t('colorPalettePage.clear')}
                   </Button>
                 </div>
                 
@@ -341,7 +344,7 @@ export default function ColorPalette() {
                     ))
                   ) : (
                     <div className="col-span-5 text-center py-8 text-gray-500 dark:text-gray-400">
-                      调色板为空，请添加颜色
+                      {t('colorPalettePage.paletteEmpty')}
                     </div>
                   )}
                 </div>
@@ -351,17 +354,17 @@ export default function ColorPalette() {
             {/* 功能标签页 */}
             <Tabs defaultValue="harmony" value={activeTab} onValueChange={setActiveTab}>
               <TabsList className="grid grid-cols-3 mb-6">
-                <TabsTrigger value="harmony">配色方案</TabsTrigger>
-                <TabsTrigger value="contrast">对比度检查</TabsTrigger>
-                <TabsTrigger value="code">代码导出</TabsTrigger>
+                <TabsTrigger value="harmony">{t('colorPalettePage.colorHarmony')}</TabsTrigger>
+                <TabsTrigger value="contrast">{t('colorPalettePage.contrastCheck')}</TabsTrigger>
+                <TabsTrigger value="code">{t('colorPalettePage.codeExport')}</TabsTrigger>
               </TabsList>
               
               {/* 配色方案生成 */}
               <TabsContent value="harmony" className="space-y-4">
                 <Card>
                   <CardHeader>
-                    <CardTitle>配色方案生成器</CardTitle>
-                    <CardDescription>基于色彩学规则自动生成和谐的配色方案</CardDescription>
+                    <CardTitle>{t('colorPalettePage.harmonyGenerator')}</CardTitle>
+                    <CardDescription>{t('colorPalettePage.harmonyGeneratorDesc')}</CardDescription>
                   </CardHeader>
                   <CardContent>
                     <ColorHarmony 

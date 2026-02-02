@@ -4,12 +4,14 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/componen
 import { useRouter, useSearchParams } from 'next/navigation';
 import { DevelopmentInProgress } from '@/components/ui/DevelopmentInProgress';
 import { useDevelopmentAlert } from '@/lib/useDevelopmentAlert';
+import { useI18n } from '@/contexts/I18nContext';
 
 const ThreeJSModelViewer = () => {
+  const { t } = useI18n();
   // 状态管理
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [modelName, setModelName] = useState('默认立方体');
+  const [modelName, setModelName] = useState(t('modelViewerPage.defaultCube'));
   const [fileInput, setFileInput] = useState<string>('');
   const [isUnmounted, setIsUnmounted] = useState(false); // 跟踪组件卸载状态
   
@@ -236,7 +238,7 @@ const ThreeJSModelViewer = () => {
       
     } catch (err) {
       console.error('初始化Three.js时出错:', err);
-      setError('无法初始化3D查看器');
+      setError(t('modelViewerPage.initFailed'));
     }
   };
   
@@ -267,7 +269,7 @@ const ThreeJSModelViewer = () => {
     } catch (e) {
       console.error('初始化模型加载失败:', e);
       if (!isUnmounted) {
-        setError('模型加载器初始化失败');
+        setError(t('modelViewerPage.loaderInitFailed'));
         setIsLoading(false);
       }
       return;
@@ -301,12 +303,12 @@ const ThreeJSModelViewer = () => {
         controlsRef.current.reset();
         
         setIsLoading(false);
-        setModelName(url.split('/').pop() || 'Model');
+        setModelName(url.split('/').pop() || t('modelViewerPage.defaultCube'));
       },
       undefined,
       (error: Error) => {
         console.error('加载模型时出错:', error);
-        setError('无法加载模型，请尝试其他文件');
+        setError(t('modelViewerPage.loadFailed'));
         setIsLoading(false);
       }
     );
@@ -334,7 +336,7 @@ const ThreeJSModelViewer = () => {
         fileUrlsRef.current.push(fileUrl);
     } catch (err) {
       console.error('处理文件上传时出错:', err);
-      setError('文件上传失败');
+      setError(t('modelViewerPage.uploadFailed'));
     }
   };
   
@@ -363,7 +365,7 @@ const ThreeJSModelViewer = () => {
         fileUrlsRef.current.push(fileUrl);
     } catch (err) {
       console.error('处理文件上传时出错:', err);
-      setError('文件上传失败');
+      setError(t('modelViewerPage.uploadFailed'));
     }
   };
   
@@ -382,7 +384,7 @@ const ThreeJSModelViewer = () => {
       } catch (err) {
         console.error('初始化失败:', err);
         if (!isUnmounted) {
-          setError('3D查看器初始化失败');
+          setError(t('modelViewerPage.initFailed'));
         }
       }
     };
@@ -444,20 +446,20 @@ const ThreeJSModelViewer = () => {
   // 下载模型处理函数
   const handleDownloadModel = () => {
     if (currentModelRef.current) {
-      showAlert('模型下载功能将在后续版本中实现');
+      showAlert(t('modelViewerPage.downloadFeatureComing'));
     } else {
-      showAlert('请先上传或加载一个模型');
+      showAlert(t('modelViewerPage.uploadModelFirst'));
     }
   };
   
   return (
     <Card className="w-full max-w-6xl mx-auto">
       <CardHeader>
-        <CardTitle className="text-2xl font-bold">3D 模型查看器</CardTitle>
+        <CardTitle className="text-2xl font-bold">{t('modelViewerPage.title')}</CardTitle>
       </CardHeader>
       <CardContent>
         <div className="mb-4">
-          <p className="text-sm text-gray-500 dark:text-white mb-2">支持格式: glTF, GLB, OBJ (推荐使用glTF/GLB)</p>
+          <p className="text-sm text-gray-500 dark:text-white mb-2">{t('modelViewerPage.supportedFormats')}</p>
           
           <div 
             ref={containerRef} 
@@ -471,7 +473,7 @@ const ThreeJSModelViewer = () => {
             {isLoading && (
               <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-10">
                 <div className="bg-white p-4 rounded-lg">
-                  <p className="text-gray-900">正在加载模型...</p>
+                  <p className="text-gray-900">{t('modelViewerPage.loadingModel')}</p>
                 </div>
               </div>
             )}
@@ -481,7 +483,7 @@ const ThreeJSModelViewer = () => {
               <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-10" onClick={clearError}>
                 <div className="bg-red-50 dark:bg-white p-4 rounded-lg border border-red-200 dark:border-red-300">
                   <p className="text-red-600 dark:text-red-700">{error}</p>
-                  <p className="text-xs text-gray-500 dark:text-gray-900 mt-1">点击任意位置关闭</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-900 mt-1">{t('modelViewerPage.clickToClose')}</p>
                 </div>
               </div>
             )}
@@ -498,41 +500,41 @@ const ThreeJSModelViewer = () => {
             />
             <label htmlFor="model-upload">
               <Button variant="default" className="cursor-pointer">
-                选择文件
+                {t('modelViewerPage.selectFile')}
               </Button>
             </label>
           </div>
           
           {/* 上传提示 */}
           <p className="text-xs text-gray-400 dark:text-white mt-2">
-            或直接将文件拖放到3D视图区域
+            {t('modelViewerPage.dragDropHint')}
           </p>
           
           {/* 模型信息 */}
           {modelName && (
             <div className="mt-4 p-2 bg-gray-50 dark:bg-white rounded">
-              <p className="text-sm font-medium dark:text-gray-900">当前模型: {modelName}</p>
+              <p className="text-sm font-medium dark:text-gray-900">{t('modelViewerPage.currentModel', { name: modelName })}</p>
             </div>
           )}
         </div>
         
         {/* 控制器说明 */}
         <div className="mt-6 bg-gray-50 dark:bg-white p-4 rounded-lg">
-          <h3 className="text-sm font-bold mb-2 dark:text-gray-900">控制器说明:</h3>
+          <h3 className="text-sm font-bold mb-2 dark:text-gray-900">{t('modelViewerPage.controllerTitle')}</h3>
           <ul className="text-xs text-gray-600 dark:text-gray-900 space-y-1">
-            <li>• 鼠标左键: 旋转视角</li>
-            <li>• 鼠标右键: 平移视图</li>
-            <li>• 鼠标滚轮: 缩放视图</li>
-            <li>• 双击: 重置视角</li>
+            <li>• {t('modelViewerPage.controllerRotate')}</li>
+            <li>• {t('modelViewerPage.controllerPan')}</li>
+            <li>• {t('modelViewerPage.controllerZoom')}</li>
+            <li>• {t('modelViewerPage.controllerReset')}</li>
           </ul>
         </div>
       </CardContent>
       <CardFooter className="flex justify-between">
           <Button variant="default" onClick={() => router.back()}>
-            返回
+            {t('modelViewerPage.back')}
           </Button>
           <Button variant="default" onClick={handleDownloadModel}>
-            下载模型
+            {t('modelViewerPage.downloadModel')}
           </Button>
         </CardFooter>
       

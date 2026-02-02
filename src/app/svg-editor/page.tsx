@@ -11,6 +11,7 @@ import { Slider } from '@/components/ui/slider';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Copy, Check, Download, Upload, Trash2, Move, PenTool, Shapes, Circle, Square, Minus, Type, MousePointer2 } from 'lucide-react';
 import { useToast } from '@/contexts/ToastContext';
+import { useI18n } from '@/contexts/I18nContext';
 
 type Tool = 'select' | 'path' | 'circle' | 'rect' | 'line' | 'text';
 
@@ -21,6 +22,7 @@ interface SVGElement {
 }
 
 export default function SVGEditor() {
+  const { t } = useI18n();
   const [tool, setTool] = useState<Tool>('select');
   const [svgElements, setSvgElements] = useState<SVGElement[]>([]);
   const [selectedElement, setSelectedElement] = useState<string | null>(null);
@@ -217,8 +219,8 @@ export default function SVGEditor() {
     navigator.clipboard.writeText(svgCode);
     setCopied(true);
     toast({
-      title: '已复制',
-      description: 'SVG代码已复制到剪贴板',
+      title: t('svgEditorPage.copied'),
+      description: t('svgEditorPage.copiedDescription'),
       variant: 'success',
     });
     setTimeout(() => setCopied(false), 2000);
@@ -254,8 +256,8 @@ export default function SVGEditor() {
         const parserError = svgDoc.querySelector('parsererror');
         if (parserError) {
           toast({
-            title: '解析失败',
-            description: 'SVG文件格式错误',
+            title: t('svgEditorPage.parseFailed'),
+            description: t('svgEditorPage.parseFailedDescription'),
             variant: 'destructive',
           });
           return;
@@ -328,30 +330,30 @@ export default function SVGEditor() {
           if (newElements.length > 0) {
             setSvgElements(newElements);
             toast({
-              title: '导入成功',
-              description: `已导入 ${newElements.length} 个SVG元素`,
+              title: t('svgEditorPage.importSuccess'),
+              description: t('svgEditorPage.importSuccessDescription', { count: newElements.length }),
               variant: 'success',
             });
           } else {
             console.warn('未找到可编辑的SVG元素，原始SVG:', svgText);
             toast({
-              title: '导入警告',
-              description: 'SVG代码已导入，但未找到可编辑的元素。请检查SVG文件格式。',
+              title: t('svgEditorPage.importWarning'),
+              description: t('svgEditorPage.importWarningDescription'),
               variant: 'destructive',
             });
           }
         } else {
           toast({
-            title: '导入失败',
-            description: '未找到SVG根元素',
+            title: t('svgEditorPage.importFailed'),
+            description: t('svgEditorPage.importFailedNoRoot'),
             variant: 'destructive',
           });
         }
       } catch (error) {
         console.error('SVG导入错误:', error);
         toast({
-          title: '导入失败',
-          description: '无法解析SVG文件: ' + (error instanceof Error ? error.message : '未知错误'),
+          title: t('svgEditorPage.importFailed'),
+          description: t('svgEditorPage.importFailedParse', { error: error instanceof Error ? error.message : '未知错误' }),
           variant: 'destructive',
         });
       }
@@ -373,22 +375,22 @@ export default function SVGEditor() {
       <div className="mb-8 text-center">
         <h1 className="text-3xl font-bold mb-2 flex items-center justify-center gap-2">
           <Shapes className="h-8 w-8" />
-          SVG 路径编辑器
+          {t('svgEditorPage.title')}
         </h1>
         <p className="text-muted-foreground max-w-2xl mx-auto">
-          可视化编辑SVG路径，创建矢量图形，导出SVG代码
+          {t('svgEditorPage.subtitle')}
         </p>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">
         {/* 工具栏 */}
         <Card className="p-6 lg:col-span-1">
-          <h2 className="text-xl font-semibold mb-4 text-center">工具</h2>
+          <h2 className="text-xl font-semibold mb-4 text-center">{t('svgEditorPage.tools')}</h2>
           
           <div className="space-y-4">
             {/* 工具选择 */}
             <div className="space-y-2">
-              <Label className="text-sm font-medium">绘图工具</Label>
+              <Label className="text-sm font-medium">{t('svgEditorPage.drawingTools')}</Label>
               <div className="grid grid-cols-3 gap-2">
                 <Button
                   variant={tool === 'select' ? 'default' : 'outline'}
@@ -397,11 +399,11 @@ export default function SVGEditor() {
                     setTool('select');
                     if (pathPoints.length > 0) finishPath();
                   }}
-                  title="选择/移动工具：点击元素选择，拖拽移动"
+                  title={t('svgEditorPage.selectTooltip')}
                   className="flex flex-col items-center gap-1 h-auto py-2"
                 >
                   <MousePointer2 className="h-4 w-4" />
-                  <span className="text-xs">选择</span>
+                  <span className="text-xs">{t('svgEditorPage.select')}</span>
                 </Button>
                 <Button
                   variant={tool === 'path' ? 'default' : 'outline'}
@@ -410,11 +412,11 @@ export default function SVGEditor() {
                     setTool('path');
                     if (pathPoints.length > 0) finishPath();
                   }}
-                  title="路径工具：点击绘制自由路径"
+                  title={t('svgEditorPage.pathTooltip')}
                   className="flex flex-col items-center gap-1 h-auto py-2"
                 >
                   <PenTool className="h-4 w-4" />
-                  <span className="text-xs">路径</span>
+                  <span className="text-xs">{t('svgEditorPage.path')}</span>
                 </Button>
                 <Button
                   variant={tool === 'circle' ? 'default' : 'outline'}
@@ -423,11 +425,11 @@ export default function SVGEditor() {
                     setTool('circle');
                     if (pathPoints.length > 0) finishPath();
                   }}
-                  title="圆形工具：点击画布添加圆形"
+                  title={t('svgEditorPage.circleTooltip')}
                   className="flex flex-col items-center gap-1 h-auto py-2"
                 >
                   <Circle className="h-4 w-4" />
-                  <span className="text-xs">圆形</span>
+                  <span className="text-xs">{t('svgEditorPage.circle')}</span>
                 </Button>
                 <Button
                   variant={tool === 'rect' ? 'default' : 'outline'}
@@ -436,11 +438,11 @@ export default function SVGEditor() {
                     setTool('rect');
                     if (pathPoints.length > 0) finishPath();
                   }}
-                  title="矩形工具：点击画布添加矩形"
+                  title={t('svgEditorPage.rectTooltip')}
                   className="flex flex-col items-center gap-1 h-auto py-2"
                 >
                   <Square className="h-4 w-4" />
-                  <span className="text-xs">矩形</span>
+                  <span className="text-xs">{t('svgEditorPage.rect')}</span>
                 </Button>
                 <Button
                   variant={tool === 'line' ? 'default' : 'outline'}
@@ -449,11 +451,11 @@ export default function SVGEditor() {
                     setTool('line');
                     if (pathPoints.length > 0) finishPath();
                   }}
-                  title="直线工具：点击两点绘制直线"
+                  title={t('svgEditorPage.lineTooltip')}
                   className="flex flex-col items-center gap-1 h-auto py-2"
                 >
                   <Minus className="h-4 w-4" />
-                  <span className="text-xs">直线</span>
+                  <span className="text-xs">{t('svgEditorPage.line')}</span>
                 </Button>
                 <Button
                   variant={tool === 'text' ? 'default' : 'outline'}
@@ -462,18 +464,18 @@ export default function SVGEditor() {
                     setTool('text');
                     if (pathPoints.length > 0) finishPath();
                   }}
-                  title="文字工具：点击画布添加文字"
+                  title={t('svgEditorPage.textTooltip')}
                   className="flex flex-col items-center gap-1 h-auto py-2"
                 >
                   <Type className="h-4 w-4" />
-                  <span className="text-xs">文字</span>
+                  <span className="text-xs">{t('svgEditorPage.text')}</span>
                 </Button>
               </div>
             </div>
 
             {/* 颜色设置 */}
             <div className="space-y-2">
-              <Label>填充颜色</Label>
+              <Label>{t('svgEditorPage.fillColor')}</Label>
               <Input
                 type="color"
                 value={fillColor}
@@ -482,7 +484,7 @@ export default function SVGEditor() {
             </div>
 
             <div className="space-y-2">
-              <Label>描边颜色</Label>
+              <Label>{t('svgEditorPage.strokeColor')}</Label>
               <Input
                 type="color"
                 value={strokeColor}
@@ -492,7 +494,7 @@ export default function SVGEditor() {
 
             {/* 描边宽度 */}
             <div className="space-y-2">
-              <Label>描边宽度: {strokeWidth}</Label>
+              <Label>{t('svgEditorPage.strokeWidth')}: {strokeWidth}</Label>
               <Slider
                 value={[strokeWidth]}
                 onValueChange={(value) => setStrokeWidth(value[0])}
@@ -506,11 +508,11 @@ export default function SVGEditor() {
             <div className="space-y-2 pt-4">
               <Button variant="outline" className="w-full" onClick={deleteSelected} disabled={!selectedElement}>
                 <Trash2 className="h-4 w-4 mr-2" />
-                删除选中
+                {t('svgEditorPage.deleteSelected')}
               </Button>
               <Button variant="outline" className="w-full" onClick={() => setSvgElements([])}>
                 <Trash2 className="h-4 w-4 mr-2" />
-                清空画布
+                {t('svgEditorPage.clearCanvas')}
               </Button>
               <Label className="block">
                 <Input
@@ -522,24 +524,24 @@ export default function SVGEditor() {
                 <Button variant="outline" className="w-full" asChild>
                   <span>
                     <Upload className="h-4 w-4 mr-2" />
-                    导入SVG
+                    {t('svgEditorPage.importSVG')}
                   </span>
                 </Button>
               </Label>
               <Button variant="outline" className="w-full" onClick={handleCopy}>
                 {copied ? <Check className="h-4 w-4 mr-2" /> : <Copy className="h-4 w-4 mr-2" />}
-                复制代码
+                {t('svgEditorPage.copyCode')}
               </Button>
               <Button variant="outline" className="w-full" onClick={handleDownload}>
                 <Download className="h-4 w-4 mr-2" />
-                下载SVG
+                {t('svgEditorPage.downloadSVG')}
               </Button>
             </div>
 
             {/* 提示 */}
             {tool === 'path' && isDrawing && (
               <div className="bg-blue-50 dark:bg-blue-950 p-3 rounded-lg text-sm text-blue-800 dark:text-blue-200">
-                正在绘制路径，点击完成按钮结束绘制
+                {t('svgEditorPage.drawingPathHint')}
               </div>
             )}
           </div>
@@ -547,7 +549,7 @@ export default function SVGEditor() {
 
         {/* 画布 */}
         <Card className="p-6 lg:col-span-2">
-          <h2 className="text-xl font-semibold mb-4 text-center">画布</h2>
+          <h2 className="text-xl font-semibold mb-4 text-center">{t('svgEditorPage.canvas')}</h2>
           <div className="border rounded-lg overflow-hidden bg-white flex items-center justify-center" style={{ minHeight: '600px' }}>
             <svg
               ref={svgRef}
@@ -715,11 +717,11 @@ export default function SVGEditor() {
                   case 'line':
                     return <line {...attrs} {...commonProps} />;
                   case 'text':
-                    const textContent = el.attributes['textContent'] || el.attributes['text'] || '文本';
+                    const textContent = el.attributes['textContent'] || el.attributes['text'] || '';
                     return (
                       <text {...attrs} {...commonProps}>
                         {editingText === el.id ? (
-                          <tspan>{textInput || '文本'}</tspan>
+                          <tspan>{textInput || ''}</tspan>
                         ) : (
                           textContent
                         )}
@@ -748,16 +750,16 @@ export default function SVGEditor() {
           </div>
           {isDrawing && (
             <div className="mt-4 flex gap-2">
-              <Button onClick={finishPath}>完成路径</Button>
+              <Button onClick={finishPath}>{t('common.finish')}</Button>
               <Button variant="outline" onClick={() => {
                 setIsDrawing(false);
                 setPathPoints([]);
-              }}>取消</Button>
+              }}>{t('common.cancel')}</Button>
             </div>
           )}
           {editingText && (
             <div className="mt-4 space-y-2">
-              <Label>编辑文字</Label>
+              <Label>{t('common.editText')}</Label>
               <div className="flex gap-2">
                 <Input
                   value={textInput}
@@ -781,7 +783,7 @@ export default function SVGEditor() {
                       setEditingText(null);
                     }
                   }}
-                  placeholder="输入文字..."
+                  placeholder={t('common.enterText')}
                   autoFocus
                   className="flex-1"
                 />
@@ -801,7 +803,7 @@ export default function SVGEditor() {
                   });
                   setSvgElements(updatedElements);
                   setEditingText(null);
-                }}>确定</Button>
+                }}>{t('common.confirm')}</Button>
                 <Button variant="outline" onClick={() => {
                   // 如果文字为空，删除元素
                   if (!textInput.trim()) {
@@ -809,9 +811,9 @@ export default function SVGEditor() {
                     setSelectedElement(null);
                   }
                   setEditingText(null);
-                }}>取消</Button>
+                }}>{t('common.cancel')}</Button>
               </div>
-              <p className="text-xs text-muted-foreground">按 Enter 确认，Esc 取消（空文字将被删除）</p>
+              <p className="text-xs text-muted-foreground">{t('common.pressEnterConfirm')}</p>
             </div>
           )}
         </Card>
@@ -820,10 +822,10 @@ export default function SVGEditor() {
       {/* SVG代码 */}
       <Card className="mt-6 p-6">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-semibold">SVG代码</h2>
+          <h2 className="text-xl font-semibold">{t('common.svgCode')}</h2>
           <Button variant="outline" size="sm" onClick={handleCopy}>
             {copied ? <Check className="h-4 w-4 mr-2" /> : <Copy className="h-4 w-4 mr-2" />}
-            复制
+            {t('common.copy')}
           </Button>
         </div>
         <Textarea

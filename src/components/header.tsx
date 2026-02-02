@@ -13,6 +13,8 @@ import { AuthModal } from '@/components/auth/AuthModal';
 import { UserMenu } from '@/components/auth/UserMenu';
 import { LogOut } from 'lucide-react';
 import { useToast } from '@/contexts/ToastContext';
+import { useI18n } from '@/contexts/I18nContext';
+import { LanguageToggle } from '@/components/ui/language-toggle';
 
 export function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -21,6 +23,7 @@ export function Header() {
   const { showAlert, alertVisible, alertMessage, alertDuration, closeAlert } = useDevelopmentAlert();
   const { user, loading, signOut } = useAuth();
   const { toast } = useToast();
+  const { t } = useI18n();
 
   const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
   
@@ -45,20 +48,20 @@ export function Header() {
     try {
       await signOut();
       toast({
-        title: '已退出登录',
-        description: '期待您的再次使用',
+        title: t('common.logoutSuccess'),
+        description: t('common.logoutDescription'),
       });
     } catch (error) {
       toast({
-        title: '退出失败',
-        description: '请重试',
+        title: t('common.logoutFailed'),
+        description: t('common.retry'),
         variant: 'destructive',
       });
     }
   };
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <header className="sticky top-0 z-[10000] w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 items-center justify-between">
         <div className="flex items-center">
           <Link href="/" className="flex items-center space-x-2 transition-transform duration-300 ease-out hover:scale-[1.02]">
@@ -68,20 +71,21 @@ export function Header() {
           </Link>
           <nav className="hidden md:flex items-center ml-10 space-x-8">
             <Link href="/" className="text-sm font-medium relative px-3 py-1.5 rounded-md transition-colors duration-300 ease-out hover:text-primary before:absolute before:inset-0 before:rounded-md before:bg-accent/30 before:opacity-0 before:transition-opacity before:duration-300 before:ease-out hover:before:opacity-100">
-              <span className="relative z-10">首页</span>
+              <span className="relative z-10">{t('nav.home')}</span>
             </Link>
             <Link href="/compress" className="text-sm font-medium relative px-3 py-1.5 rounded-md transition-colors duration-300 ease-out hover:text-primary before:absolute before:inset-0 before:rounded-md before:bg-accent/30 before:opacity-0 before:transition-opacity before:duration-300 before:ease-out hover:before:opacity-100">
-              <span className="relative z-10">图片压缩</span>
+              <span className="relative z-10">{t('nav.imageCompress')}</span>
             </Link>
             <Link href="/model-viewer" className="text-sm font-medium relative px-3 py-1.5 rounded-md transition-colors duration-300 ease-out hover:text-primary before:absolute before:inset-0 before:rounded-md before:bg-accent/30 before:opacity-0 before:transition-opacity before:duration-300 before:ease-out hover:before:opacity-100">
-              <span className="relative z-10">3D预览</span>
+              <span className="relative z-10">{t('nav.modelViewer')}</span>
             </Link>
             <Link href="/color-palette" className="text-sm font-medium relative px-3 py-1.5 rounded-md transition-colors duration-300 ease-out hover:text-primary before:absolute before:inset-0 before:rounded-md before:bg-accent/30 before:opacity-0 before:transition-opacity before:duration-300 before:ease-out hover:before:opacity-100">
-              <span className="relative z-10">调色板</span>
+              <span className="relative z-10">{t('nav.colorPalette')}</span>
             </Link>
           </nav>
         </div>
         <div className="flex items-center space-x-4">
+          <LanguageToggle />
           <ThemeToggle />
           {!loading && (
             <>
@@ -92,7 +96,7 @@ export function Header() {
                     size="icon"
                     onClick={handleSignOut}
                     className="hidden sm:inline-flex transition-all duration-300 ease-out"
-                    title="退出登录"
+                    title={t('common.logout')}
                   >
                     <LogOut className="h-4 w-4" />
                   </Button>
@@ -104,14 +108,14 @@ export function Header() {
             className="hidden sm:inline-flex relative overflow-hidden transition-all duration-300 ease-out hover:bg-primary/85 hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 active:bg-primary/90" 
             onClick={handleLogin}
           >
-            <span className="relative z-10">登录</span>
+            <span className="relative z-10">{t('common.login')}</span>
           </Button>
           <Button 
             variant="secondary" 
             className="hidden sm:inline-flex relative overflow-hidden transition-all duration-300 ease-out hover:bg-secondary/60 hover:shadow-md hover:-translate-y-0.5 hover:border-primary/30 active:translate-y-0 active:bg-secondary/50 border" 
             onClick={handleRegister}
           >
-            <span className="relative z-10">注册</span>
+            <span className="relative z-10">{t('common.register')}</span>
           </Button>
                 </>
               )}
@@ -128,16 +132,16 @@ export function Header() {
         <div className="md:hidden border-t">
           <div className="container py-4 space-y-4">
             <Link href="/" className="block py-2 px-3 text-sm font-medium relative rounded-md transition-all duration-300 ease-out hover:text-primary hover:translate-x-1 before:absolute before:inset-0 before:rounded-md before:bg-accent/30 before:opacity-0 before:transition-opacity before:duration-300 before:ease-out hover:before:opacity-100">
-              <span className="relative z-10">首页</span>
+              <span className="relative z-10">{t('nav.home')}</span>
             </Link>
             <Link href="/compress" className="block py-2 px-3 text-sm font-medium relative rounded-md transition-all duration-300 ease-out hover:text-primary hover:translate-x-1 before:absolute before:inset-0 before:rounded-md before:bg-accent/30 before:opacity-0 before:transition-opacity before:duration-300 before:ease-out hover:before:opacity-100">
-              <span className="relative z-10">图片压缩</span>
+              <span className="relative z-10">{t('nav.imageCompress')}</span>
             </Link>
             <Link href="/model-viewer" className="block py-2 px-3 text-sm font-medium relative rounded-md transition-all duration-300 ease-out hover:text-primary hover:translate-x-1 before:absolute before:inset-0 before:rounded-md before:bg-accent/30 before:opacity-0 before:transition-opacity before:duration-300 before:ease-out hover:before:opacity-100">
-              <span className="relative z-10">3D预览</span>
+              <span className="relative z-10">{t('nav.modelViewer')}</span>
             </Link>
             <Link href="/whiteboard" className="block py-2 px-3 text-sm font-medium relative rounded-md transition-all duration-300 ease-out hover:text-primary hover:translate-x-1 before:absolute before:inset-0 before:rounded-md before:bg-accent/30 before:opacity-0 before:transition-opacity before:duration-300 before:ease-out hover:before:opacity-100">
-              <span className="relative z-10">在线白板</span>
+              <span className="relative z-10">{t('nav.whiteboard')}</span>
             </Link>
             {!loading && (
             <div className="pt-2 flex flex-col space-y-2">
@@ -149,7 +153,7 @@ export function Header() {
                       onClick={handleSignOut}
                     >
                       <LogOut className="h-4 w-4" />
-                      <span>退出登录</span>
+                      <span>{t('common.logout')}</span>
                     </Button>
                     <UserMenu />
                   </>
@@ -159,14 +163,14 @@ export function Header() {
                 className="w-full relative overflow-hidden transition-all duration-300 ease-out hover:bg-primary/85 hover:shadow-md active:bg-primary/90" 
                 onClick={handleLogin}
               >
-                <span className="relative z-10">登录</span>
+                <span className="relative z-10">{t('common.login')}</span>
               </Button>
               <Button 
                 variant="secondary" 
                 className="w-full relative overflow-hidden transition-all duration-300 ease-out hover:bg-secondary/60 hover:shadow-md hover:border-primary/30 active:bg-secondary/50 border" 
                 onClick={handleRegister}
               >
-                <span className="relative z-10">注册</span>
+                <span className="relative z-10">{t('common.register')}</span>
               </Button>
                   </>
                 )}

@@ -6,12 +6,14 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Check, Download, Copy } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useI18n } from '@/contexts/I18nContext';
 
 // 导入emoji-mart相关组件和数据
 import data from '@emoji-mart/data';
 import Picker from '@emoji-mart/react';
 
 const EmojiCollection: React.FC = () => {
+  const { t } = useI18n();
   const [copiedEmoji, setCopiedEmoji] = useState<string | null>(null);
   const [recentCopies, setRecentCopies] = useState<string[]>([]);
   const [selectedEmoji, setSelectedEmoji] = useState<any>(null);
@@ -92,7 +94,7 @@ const EmojiCollection: React.FC = () => {
         }
       }
     } catch (error) {
-      console.error('下载失败:', error);
+      console.error(t('emojiCollectionPage.downloadFailed'), error);
     }
   };
 
@@ -132,7 +134,7 @@ const EmojiCollection: React.FC = () => {
     return (
       <div className="fixed bottom-4 right-4 bg-green-600 text-white px-4 py-2 rounded-lg shadow-lg z-50 flex items-center gap-2 animate-fade-in">
         <Check size={18} />
-        <span>已复制: {copiedEmoji}</span>
+        <span>{t('emojiCollectionPage.copied')}: {copiedEmoji}</span>
       </div>
     );
   };
@@ -142,10 +144,10 @@ const EmojiCollection: React.FC = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-500 to-pink-500 mb-2">
-            Emoji大全
+            {t('emojiCollectionPage.title')}
           </h1>
           <p className="text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
-            浏览、搜索和复制各种表情符号，支持最近使用功能
+            {t('emojiCollectionPage.subtitle')}
           </p>
         </div>
 
@@ -155,11 +157,11 @@ const EmojiCollection: React.FC = () => {
             <div className="relative group">
               <Button variant="secondary" size="sm" className="flex items-center gap-1">
                 <Clock size={16} />
-                最近使用
+                {t('emojiCollectionPage.recent')}
               </Button>
               <div className="absolute left-0 mt-2 w-64 bg-white dark:bg-gray-800 rounded-lg shadow-xl z-50 overflow-hidden hidden group-hover:block">
                 <div className="p-2 border-b dark:border-gray-700">
-                  <p className="text-xs font-medium text-gray-500 dark:text-gray-400">最近复制的emoji</p>
+                  <p className="text-xs font-medium text-gray-500 dark:text-gray-400">{t('emojiCollectionPage.recent')}</p>
                 </div>
                 <div className="grid grid-cols-8 gap-1 p-2 max-h-60 overflow-y-auto">
                   {recentCopies.map((emoji, index) => (
@@ -198,13 +200,13 @@ const EmojiCollection: React.FC = () => {
           
           {/* 右侧：工作台 */}
           <Card className="p-6 lg:col-span-3">
-            <h3 className="text-xl font-bold mb-6 text-gray-800 dark:text-gray-200">Emoji工作台</h3>
+            <h3 className="text-xl font-bold mb-6 text-gray-800 dark:text-gray-200">{t('emojiCollectionPage.workbench')}</h3>
             
             {selectedEmoji ? (
               <div className="space-y-6">
                 {/* 1. 大尺寸高清预览 */}
                 <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-12 flex flex-col items-center justify-center border border-gray-200 dark:border-gray-700">
-                  <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-6">高清预览</h4>
+                  <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-6">{t('emojiCollectionPage.preview')}</h4>
                   <div className="text-[18rem] mb-4">
                     {selectedEmoji.native}
                   </div>
@@ -219,32 +221,32 @@ const EmojiCollection: React.FC = () => {
                     }}
                   >
                     <Copy size={14} />
-                    复制字符
+                    {t('emojiCollectionPage.copyChar')}
                   </Button>
                 </div>
                 
                 {/* 2. 实用信息展示 */}
                 <div className="space-y-4">
-                  <h4 className="text-lg font-semibold text-gray-800 dark:text-gray-200">实用信息</h4>
+                  <h4 className="text-lg font-semibold text-gray-800 dark:text-gray-200">{t('emojiCollectionPage.info')}</h4>
                   <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-6 space-y-4 text-base">
                     <div className="flex justify-between">
-                      <span className="text-gray-500 dark:text-gray-400">官方名称:</span>
+                      <span className="text-gray-500 dark:text-gray-400">{t('emojiCollectionPage.officialName')}:</span>
                       <span className="font-medium">{selectedEmoji.name}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-gray-500 dark:text-gray-400">Unicode版本:</span>
+                      <span className="text-gray-500 dark:text-gray-400">{t('emojiCollectionPage.unicodeVersion')}:</span>
                       <span>Unicode 15.0</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-gray-500 dark:text-gray-400">所属分类:</span>
+                      <span className="text-gray-500 dark:text-gray-400">{t('emojiCollectionPage.category')}:</span>
                       <span>{getEmojiCategory(selectedEmoji)}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-gray-500 dark:text-gray-400">字符:</span>
+                      <span className="text-gray-500 dark:text-gray-400">{t('emojiCollectionPage.character')}:</span>
                       <span className="font-mono">{selectedEmoji.native}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-gray-500 dark:text-gray-400">短代码:</span>
+                      <span className="text-gray-500 dark:text-gray-400">{t('emojiCollectionPage.shortcode')}:</span>
                       <span className="font-mono">:{selectedEmoji.id}:</span>
                     </div>
                   </div>
@@ -252,10 +254,10 @@ const EmojiCollection: React.FC = () => {
                 
                 {/* 3. 图片格式下载 */}
                 <div className="space-y-4">
-                  <h4 className="text-lg font-semibold text-gray-800 dark:text-gray-200">图片下载</h4>
+                  <h4 className="text-lg font-semibold text-gray-800 dark:text-gray-200">{t('emojiCollectionPage.download')}</h4>
                   <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-6 space-y-5">
                     <div className="flex flex-col space-y-2">
-                      <label className="text-sm font-medium text-gray-900 dark:text-white">选择尺寸:</label>
+                      <label className="text-sm font-medium text-gray-900 dark:text-white">{t('emojiCollectionPage.selectSize')}:</label>
                       <div className="flex gap-2">
                         <button 
                           onClick={() => setDownloadSize('32')}
@@ -284,19 +286,19 @@ const EmojiCollection: React.FC = () => {
                         onClick={() => downloadEmoji('png')}
                       >
                         <Download size={16} />
-                        PNG格式
+                        {t('emojiCollectionPage.pngFormat')}
                       </Button>
                       <Button 
                         className="flex items-center justify-center gap-1 bg-green-500 hover:bg-green-600" 
                         onClick={() => downloadEmoji('svg')}
                       >
                         <Download size={16} />
-                        SVG格式
+                        {t('emojiCollectionPage.svgFormat')}
                       </Button>
                     </div>
                     
                     <p className="text-xs text-gray-500 dark:text-gray-400 text-center">
-                      下载后可用于设计、PPT、网页等场景
+                      {t('emojiCollectionPage.downloadHint')}
                     </p>
                   </div>
                 </div>
@@ -304,7 +306,7 @@ const EmojiCollection: React.FC = () => {
             ) : (
               <div className="h-full flex flex-col items-center justify-center text-gray-400 dark:text-gray-500">
                 <div className="text-4xl mb-4">👈</div>
-                <p>点击左侧任意emoji开始使用工作台功能</p>
+                <p>{t('emojiCollectionPage.clickEmoji')}</p>
               </div>
             )}
           </Card>
@@ -312,48 +314,48 @@ const EmojiCollection: React.FC = () => {
 
         {/* 功能提示 */}
         <div className="mt-8 bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm">
-          <h3 className="text-lg font-semibold mb-4">使用提示</h3>
+          <h3 className="text-lg font-semibold mb-4">{t('emojiCollectionPage.tips')}</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             <div className="flex items-start gap-3">
               <div className="text-xl">💡</div>
               <div>
-                <h4 className="font-medium">一键复制</h4>
-                <p className="text-sm text-gray-600 dark:text-gray-400">点击任意emoji即可复制到剪贴板</p>
+                <h4 className="font-medium">{t('emojiCollectionPage.oneClickCopy')}</h4>
+                <p className="text-sm text-gray-600 dark:text-gray-400">{t('emojiCollectionPage.oneClickCopyDesc')}</p>
               </div>
             </div>
             <div className="flex items-start gap-3">
               <div className="text-xl">🔎</div>
               <div>
-                <h4 className="font-medium">快速搜索</h4>
-                <p className="text-sm text-gray-600 dark:text-gray-400">使用搜索框按名称或关键词查找emoji</p>
+                <h4 className="font-medium">{t('emojiCollectionPage.quickSearch')}</h4>
+                <p className="text-sm text-gray-600 dark:text-gray-400">{t('emojiCollectionPage.quickSearchDesc')}</p>
               </div>
             </div>
             <div className="flex items-start gap-3">
               <div className="text-xl">📋</div>
               <div>
-                <h4 className="font-medium">最近使用</h4>
-                <p className="text-sm text-gray-600 dark:text-gray-400">自动保存最近复制的emoji，方便快速访问</p>
+                <h4 className="font-medium">{t('emojiCollectionPage.recentUse')}</h4>
+                <p className="text-sm text-gray-600 dark:text-gray-400">{t('emojiCollectionPage.recentUseDesc')}</p>
               </div>
             </div>
             <div className="flex items-start gap-3">
               <div className="text-xl">🎨</div>
               <div>
-                <h4 className="font-medium">完整emoji库</h4>
-                <p className="text-sm text-gray-600 dark:text-gray-400">提供全部标准emoji，支持皮肤色调和变体选择</p>
+                <h4 className="font-medium">{t('emojiCollectionPage.fullLibrary')}</h4>
+                <p className="text-sm text-gray-600 dark:text-gray-400">{t('emojiCollectionPage.fullLibraryDesc')}</p>
               </div>
             </div>
             <div className="flex items-start gap-3">
               <div className="text-xl">🔍</div>
               <div>
-                <h4 className="font-medium">高清预览</h4>
-                <p className="text-sm text-gray-600 dark:text-gray-400">在右侧工作台查看大尺寸emoji效果</p>
+                <h4 className="font-medium">{t('emojiCollectionPage.highResPreview')}</h4>
+                <p className="text-sm text-gray-600 dark:text-gray-400">{t('emojiCollectionPage.highResPreviewDesc')}</p>
               </div>
             </div>
             <div className="flex items-start gap-3">
               <div className="text-xl">💾</div>
               <div>
-                <h4 className="font-medium">图片下载</h4>
-                <p className="text-sm text-gray-600 dark:text-gray-400">将emoji下载为PNG或SVG格式图片用于设计</p>
+                <h4 className="font-medium">{t('emojiCollectionPage.imageDownload')}</h4>
+                <p className="text-sm text-gray-600 dark:text-gray-400">{t('emojiCollectionPage.imageDownloadDesc')}</p>
               </div>
             </div>
           </div>
@@ -361,8 +363,8 @@ const EmojiCollection: React.FC = () => {
 
         {/* 页脚说明 */}
         <div className="mt-8 text-center text-gray-500 dark:text-gray-400 text-sm">
-          <p>使用方法：点击左侧emoji查看详情，右侧工作台提供高清预览、元数据和图片下载功能</p>
-          <p className="mt-2">支持所有现代浏览器，最近使用数据保存在本地</p>
+          <p>{t('emojiCollectionPage.footerDesc1')}</p>
+          <p className="mt-2">{t('emojiCollectionPage.footerDesc2')}</p>
         </div>
       </div>
       

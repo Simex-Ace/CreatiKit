@@ -11,6 +11,7 @@ import { Slider } from '@/components/ui/slider';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Copy, Check, Play, Square, Download, Sparkles, Code2 } from 'lucide-react';
 import { useToast } from '@/contexts/ToastContext';
+import { useI18n } from '@/contexts/I18nContext';
 
 type AnimationType = 'fade' | 'slide' | 'rotate' | 'scale' | 'bounce' | 'shake' | 'custom';
 type EasingType = 'linear' | 'ease' | 'ease-in' | 'ease-out' | 'ease-in-out' | 'cubic-bezier';
@@ -29,6 +30,7 @@ export default function CSSAnimator() {
   
   const previewRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
+  const { t } = useI18n();
 
   // 生成CSS动画代码
   const generateCSS = () => {
@@ -140,8 +142,8 @@ export default function CSSAnimator() {
     navigator.clipboard.writeText(css);
     setCopied(true);
     toast({
-      title: '已复制',
-      description: 'CSS代码已复制到剪贴板',
+      title: t('cssAnimatorPage.copied'),
+      description: t('cssAnimatorPage.copiedDesc'),
       variant: 'success',
     });
     setTimeout(() => setCopied(false), 2000);
@@ -182,34 +184,34 @@ export default function CSSAnimator() {
       <div className="mb-8 text-center">
         <h1 className="text-3xl font-bold mb-2 flex items-center justify-center gap-2">
           <Sparkles className="h-8 w-8" />
-          CSS 动画生成器
+          {t('cssAnimatorPage.title')}
         </h1>
         <p className="text-muted-foreground max-w-2xl mx-auto">
-          可视化创建CSS动画，实时预览效果，导出代码直接使用
+          {t('cssAnimatorPage.subtitle')}
         </p>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
         {/* 控制面板 */}
         <Card className="p-6">
-          <h2 className="text-xl font-semibold mb-4 text-center">动画设置</h2>
+          <h2 className="text-xl font-semibold mb-4 text-center">{t('cssAnimatorPage.animationSettings')}</h2>
           
           <div className="space-y-4">
             {/* 动画类型 */}
             <div className="space-y-2">
-              <Label>动画类型</Label>
+              <Label>{t('cssAnimatorPage.animationType')}</Label>
               <Select value={animationType} onValueChange={(value) => setAnimationType(value as AnimationType)}>
                 <SelectTrigger className="w-full">
-                  <SelectValue placeholder="选择动画类型" />
+                  <SelectValue placeholder={t('cssAnimatorPage.selectAnimationType')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="fade">淡入淡出</SelectItem>
-                  <SelectItem value="slide">滑动</SelectItem>
-                  <SelectItem value="rotate">旋转</SelectItem>
-                  <SelectItem value="scale">缩放</SelectItem>
-                  <SelectItem value="bounce">弹跳</SelectItem>
-                  <SelectItem value="shake">摇晃</SelectItem>
-                  <SelectItem value="custom">自定义</SelectItem>
+                  <SelectItem value="fade">{t('cssAnimatorPage.fade')}</SelectItem>
+                  <SelectItem value="slide">{t('cssAnimatorPage.slide')}</SelectItem>
+                  <SelectItem value="rotate">{t('cssAnimatorPage.rotate')}</SelectItem>
+                  <SelectItem value="scale">{t('cssAnimatorPage.scale')}</SelectItem>
+                  <SelectItem value="bounce">{t('cssAnimatorPage.bounce')}</SelectItem>
+                  <SelectItem value="shake">{t('cssAnimatorPage.shake')}</SelectItem>
+                  <SelectItem value="custom">{t('cssAnimatorPage.custom')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -217,11 +219,11 @@ export default function CSSAnimator() {
             {/* 自定义CSS */}
             {animationType === 'custom' && (
               <div className="space-y-2">
-                <Label>自定义CSS</Label>
+                <Label>{t('cssAnimatorPage.customCSS')}</Label>
                 <Textarea
                   value={customCSS}
                   onChange={(e) => setCustomCSS(e.target.value)}
-                  placeholder="@keyframes myAnimation { ... }"
+                  placeholder={t('cssAnimatorPage.customCSSPlaceholder')}
                   className="font-mono text-sm"
                   rows={8}
                 />
@@ -230,7 +232,7 @@ export default function CSSAnimator() {
 
             {/* 持续时间 */}
             <div className="space-y-2">
-              <Label>持续时间: {duration}s</Label>
+              <Label>{t('cssAnimatorPage.duration')}: {duration}s</Label>
               <Slider
                 value={[duration]}
                 onValueChange={(value) => setDuration(value[0])}
@@ -242,7 +244,7 @@ export default function CSSAnimator() {
 
             {/* 延迟 */}
             <div className="space-y-2">
-              <Label>延迟: {delay}s</Label>
+              <Label>{t('cssAnimatorPage.delay')}: {delay}s</Label>
               <Slider
                 value={[delay]}
                 onValueChange={(value) => setDelay(value[0])}
@@ -254,45 +256,45 @@ export default function CSSAnimator() {
 
             {/* 重复次数 */}
             <div className="space-y-2">
-              <Label>重复次数</Label>
+              <Label>{t('cssAnimatorPage.iterationCount')}</Label>
               <Select
                 value={iterationCount === Infinity ? 'infinite' : iterationCount.toString()}
                 onValueChange={(value) => setIterationCount(value === 'infinite' ? Infinity : parseInt(value))}
               >
                 <SelectTrigger className="w-full">
-                  <SelectValue placeholder="选择重复次数" />
+                  <SelectValue placeholder={t('cssAnimatorPage.selectIterationCount')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="1">1次</SelectItem>
-                  <SelectItem value="2">2次</SelectItem>
-                  <SelectItem value="3">3次</SelectItem>
-                  <SelectItem value="infinite">无限</SelectItem>
+                  <SelectItem value="1">{t('cssAnimatorPage.once')}</SelectItem>
+                  <SelectItem value="2">{t('cssAnimatorPage.twice')}</SelectItem>
+                  <SelectItem value="3">{t('cssAnimatorPage.threeTimes')}</SelectItem>
+                  <SelectItem value="infinite">{t('cssAnimatorPage.infinite')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             {/* 方向 */}
             <div className="space-y-2">
-              <Label>方向</Label>
+              <Label>{t('cssAnimatorPage.direction')}</Label>
               <Select value={direction} onValueChange={(value) => setDirection(value as any)}>
                 <SelectTrigger className="w-full">
-                  <SelectValue placeholder="选择方向" />
+                  <SelectValue placeholder={t('cssAnimatorPage.selectDirection')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="normal">正常</SelectItem>
-                  <SelectItem value="reverse">反向</SelectItem>
-                  <SelectItem value="alternate">交替</SelectItem>
-                  <SelectItem value="alternate-reverse">交替反向</SelectItem>
+                  <SelectItem value="normal">{t('cssAnimatorPage.normal')}</SelectItem>
+                  <SelectItem value="reverse">{t('cssAnimatorPage.reverse')}</SelectItem>
+                  <SelectItem value="alternate">{t('cssAnimatorPage.alternate')}</SelectItem>
+                  <SelectItem value="alternate-reverse">{t('cssAnimatorPage.alternateReverse')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             {/* 缓动函数 */}
             <div className="space-y-2">
-              <Label>缓动函数</Label>
+              <Label>{t('cssAnimatorPage.easing')}</Label>
               <Select value={easing} onValueChange={(value) => setEasing(value as EasingType)}>
                 <SelectTrigger className="w-full">
-                  <SelectValue placeholder="选择缓动函数" />
+                  <SelectValue placeholder={t('cssAnimatorPage.selectEasing')} />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="linear">linear</SelectItem>
@@ -307,11 +309,11 @@ export default function CSSAnimator() {
 
             {easing === 'cubic-bezier' && (
               <div className="space-y-2">
-                <Label>Cubic Bezier 参数</Label>
+                <Label>{t('cssAnimatorPage.cubicBezierParams')}</Label>
                 <Input
                   value={customEasing}
                   onChange={(e) => setCustomEasing(e.target.value)}
-                  placeholder="0.25, 0.1, 0.25, 1"
+                  placeholder={t('cssAnimatorPage.cubicBezierPlaceholder')}
                 />
               </div>
             )}
@@ -320,7 +322,7 @@ export default function CSSAnimator() {
             <div className="flex gap-2 pt-4">
               <Button onClick={togglePlay} className="flex-1">
                 {isPlaying ? <Square className="h-4 w-4 mr-2" /> : <Play className="h-4 w-4 mr-2" />}
-                {isPlaying ? '停止' : '播放'}
+                {isPlaying ? t('cssAnimatorPage.stop') : t('cssAnimatorPage.play')}
               </Button>
               <Button variant="outline" onClick={handleCopy}>
                 {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
@@ -336,7 +338,7 @@ export default function CSSAnimator() {
         <div className="space-y-6">
           {/* 预览 */}
           <Card className="p-6">
-            <h2 className="text-xl font-semibold mb-4">实时预览</h2>
+            <h2 className="text-xl font-semibold mb-4">{t('cssAnimatorPage.livePreview')}</h2>
             <div className="bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-950 dark:to-purple-950 rounded-lg p-8 min-h-[300px] flex items-center justify-center relative overflow-hidden">
               <div
                 ref={previewRef}
@@ -358,10 +360,10 @@ export default function CSSAnimator() {
           {/* 生成的代码 */}
           <Card className="p-6">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-semibold">生成的CSS代码</h2>
+              <h2 className="text-xl font-semibold">{t('cssAnimatorPage.generatedCSS')}</h2>
               <Button variant="outline" size="sm" onClick={handleCopy}>
                 {copied ? <Check className="h-4 w-4 mr-2" /> : <Copy className="h-4 w-4 mr-2" />}
-                复制
+                {t('cssAnimatorPage.copy')}
               </Button>
             </div>
             <pre className="bg-muted p-4 rounded-lg overflow-x-auto text-sm">

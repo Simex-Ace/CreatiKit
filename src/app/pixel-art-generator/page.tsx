@@ -1,6 +1,7 @@
 'use client';
 import React, { useState, useRef, useEffect } from 'react';
 import Image from 'next/image';
+import { useI18n } from '@/contexts/I18nContext';
 
 // 定义调色板类型
 type ColorPalette = 'default' | 'limited' | 'grayscale' | 'pastel' | 'vibrant';
@@ -35,6 +36,8 @@ interface HistoryItem {
 }
 
 const PixelArtGenerator: React.FC = () => {
+  const { t } = useI18n();
+  
   // 状态管理
   const [originalImage, setOriginalImage] = useState<string | null>(null);
   const [pixelatedImage, setPixelatedImage] = useState<string | null>(null);
@@ -67,13 +70,13 @@ const PixelArtGenerator: React.FC = () => {
 
     // 检查文件类型
     if (!file.type.startsWith('image/')) {
-      showNotification('请上传有效的图片文件', 'error');
+      showNotification(t('pixelArtGeneratorPage.invalidImageFile'), 'error');
       return;
     }
 
     // 检查文件大小（限制为5MB）
     if (file.size > 5 * 1024 * 1024) {
-      showNotification('图片大小不能超过5MB', 'error');
+      showNotification(t('pixelArtGeneratorPage.imageTooLarge'), 'error');
       return;
     }
 
@@ -87,7 +90,7 @@ const PixelArtGenerator: React.FC = () => {
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
-      showNotification('图片上传成功', 'success');
+      showNotification(t('pixelArtGeneratorPage.imageUploadSuccess'), 'success');
     };
     reader.readAsDataURL(file);
   };
@@ -342,17 +345,17 @@ const PixelArtGenerator: React.FC = () => {
           saveToHistory();
         }
         
-        showNotification('像素艺术生成成功', 'success');
+        showNotification(t('pixelArtGeneratorPage.pixelArtGenerated'), 'success');
       } catch (error) {
         console.error('像素化处理出错:', error);
-        showNotification('处理过程中出现错误', 'error');
+        showNotification(t('pixelArtGeneratorPage.processingError'), 'error');
       } finally {
         setIsProcessing(false);
       }
     };
     
     img.onerror = () => {
-      showNotification('无法加载图像', 'error');
+      showNotification(t('pixelArtGeneratorPage.cannotLoadImage'), 'error');
       setIsProcessing(false);
     };
     
@@ -414,7 +417,7 @@ const PixelArtGenerator: React.FC = () => {
     setEdgeEnhance(prevState.enhanceEdges);
     
     setCurrentHistoryIndex(newIndex);
-    showNotification('已撤销操作', 'info');
+    showNotification(t('pixelArtGeneratorPage.operationUndone'), 'info');
   };
 
   // 重做操作
@@ -437,7 +440,7 @@ const PixelArtGenerator: React.FC = () => {
     setEdgeEnhance(nextState.enhanceEdges);
     
     setCurrentHistoryIndex(newIndex);
-    showNotification('已重做操作', 'info');
+    showNotification(t('pixelArtGeneratorPage.operationRedone'), 'info');
   };
 
   // 重置所有设置
@@ -461,7 +464,7 @@ const PixelArtGenerator: React.FC = () => {
       fileInputRef.current.value = '';
     }
     
-    showNotification('所有设置已重置', 'info');
+    showNotification(t('pixelArtGeneratorPage.allSettingsReset'), 'info');
   };
 
   // 下载图片
@@ -479,10 +482,10 @@ const PixelArtGenerator: React.FC = () => {
       link.click();
       document.body.removeChild(link);
       
-      showNotification('图片下载成功', 'success');
+      showNotification(t('pixelArtGeneratorPage.imageDownloadSuccess'), 'success');
     } catch (error) {
       console.error('下载图片出错:', error);
-      showNotification('下载过程中出现错误', 'error');
+      showNotification(t('pixelArtGeneratorPage.downloadError'), 'error');
     }
   };
 
@@ -513,18 +516,18 @@ const PixelArtGenerator: React.FC = () => {
   // 渲染组件
   return (
     <div className="container mx-auto px-4 py-8 max-w-6xl">
-      <h1 className="text-3xl font-bold mb-8 text-center">像素艺术生成器</h1>
+      <h1 className="text-3xl font-bold mb-8 text-center">{t('pixelArtGeneratorPage.title')}</h1>
       
       {/* 图片上传区域 */}
       <div className="mb-8 bg-white p-6 rounded-lg shadow-lg">
-        <h2 className="text-xl font-semibold mb-4">上传图片</h2>
+        <h2 className="text-xl font-semibold mb-4">{t('pixelArtGeneratorPage.uploadImage')}</h2>
         <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:bg-gray-50 cursor-pointer" onClick={() => fileInputRef.current?.click()}>
           <input ref={fileInputRef} type="file" onChange={handleImageUpload} accept="image/*" className="hidden" />
           <svg xmlns="http://www.w3.org/2000/svg" className="w-16 h-16 mx-auto text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
           </svg>
-          <p className="mt-4 text-gray-600">点击上传图片或拖拽图片到此处</p>
-          <p className="mt-2 text-sm text-gray-500">支持 PNG, JPG, GIF 格式，最大 5MB</p>
+          <p className="mt-4 text-gray-600">{t('pixelArtGeneratorPage.clickOrDrag')}</p>
+          <p className="mt-2 text-sm text-gray-500">{t('pixelArtGeneratorPage.supportedFormats')}</p>
         </div>
       </div>
       
@@ -534,9 +537,9 @@ const PixelArtGenerator: React.FC = () => {
           {/* 原图预览 */}
           {originalImage && (
             <div className="bg-white p-6 rounded-lg shadow-lg">
-              <h2 className="text-xl font-semibold mb-4">原图</h2>
+              <h2 className="text-xl font-semibold mb-4">{t('pixelArtGeneratorPage.originalImage')}</h2>
               <div className="aspect-square bg-gray-100 rounded-lg overflow-hidden flex items-center justify-center">
-                <Image src={originalImage} alt="原图" width={500} height={500} className="max-w-full max-h-full object-contain" />
+                <Image src={originalImage} alt={t('pixelArtGeneratorPage.originalImage')} width={500} height={500} className="max-w-full max-h-full object-contain" />
               </div>
             </div>
           )}
@@ -544,9 +547,9 @@ const PixelArtGenerator: React.FC = () => {
           {/* 像素化预览 */}
           {pixelatedImage && (
             <div className="bg-white p-6 rounded-lg shadow-lg">
-              <h2 className="text-xl font-semibold mb-4">像素化结果</h2>
+              <h2 className="text-xl font-semibold mb-4">{t('pixelArtGeneratorPage.pixelatedResult')}</h2>
               <div className="aspect-square bg-gray-100 rounded-lg overflow-hidden flex items-center justify-center">
-                <Image src={pixelatedImage} alt="像素化图片" width={500} height={500} className="max-w-full max-h-full object-contain" />
+                <Image src={pixelatedImage} alt={t('pixelArtGeneratorPage.pixelatedImage')} width={500} height={500} className="max-w-full max-h-full object-contain" />
               </div>
             </div>
           )}
@@ -555,12 +558,12 @@ const PixelArtGenerator: React.FC = () => {
       
       {/* 控制选项区域 */}
       <div className="mb-8 bg-white p-6 rounded-lg shadow-lg">
-        <h2 className="text-xl font-semibold mb-6">参数设置</h2>
+        <h2 className="text-xl font-semibold mb-6">{t('pixelArtGeneratorPage.parameterSettings')}</h2>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* 像素大小 */}
           <div>
-            <label htmlFor="pixelSize" className="block text-sm font-medium text-gray-700 mb-2">像素大小</label>
+            <label htmlFor="pixelSize" className="block text-sm font-medium text-gray-700 mb-2">{t('pixelArtGeneratorPage.pixelSize')}</label>
             <div className="flex items-center gap-4">
               <input
                 type="range"
@@ -577,18 +580,18 @@ const PixelArtGenerator: React.FC = () => {
           
           {/* 调色板 */}
           <div>
-            <label htmlFor="palette" className="block text-sm font-medium text-gray-700 mb-2">调色板</label>
+            <label htmlFor="palette" className="block text-sm font-medium text-gray-700 mb-2">{t('pixelArtGeneratorPage.palette')}</label>
             <select
               id="palette"
               value={palette}
               onChange={(e) => setPalette(e.target.value as ColorPalette)}
               className="w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
-              <option value="default">默认</option>
-              <option value="limited">有限颜色</option>
-              <option value="grayscale">灰度</option>
-              <option value="pastel">柔和色调</option>
-              <option value="vibrant">鲜艳色调</option>
+              <option value="default">{t('pixelArtGeneratorPage.default')}</option>
+              <option value="limited">{t('pixelArtGeneratorPage.limited')}</option>
+              <option value="grayscale">{t('pixelArtGeneratorPage.grayscale')}</option>
+              <option value="pastel">{t('pixelArtGeneratorPage.pastel')}</option>
+              <option value="vibrant">{t('pixelArtGeneratorPage.vibrant')}</option>
             </select>
           </div>
           
@@ -601,7 +604,7 @@ const PixelArtGenerator: React.FC = () => {
                 onChange={(e) => setAutoGenerate(e.target.checked)}
                 className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
               />
-              <span className="text-sm font-medium text-gray-700">自动生成</span>
+              <span className="text-sm font-medium text-gray-700">{t('pixelArtGeneratorPage.autoGenerate')}</span>
             </label>
           </div>
           
@@ -614,7 +617,7 @@ const PixelArtGenerator: React.FC = () => {
                 onChange={(e) => setShowGrid(e.target.checked)}
                 className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
               />
-              <span className="text-sm font-medium text-gray-700">显示网格</span>
+              <span className="text-sm font-medium text-gray-700">{t('pixelArtGeneratorPage.showGrid')}</span>
             </label>
           </div>
           
@@ -627,19 +630,19 @@ const PixelArtGenerator: React.FC = () => {
                 onChange={(e) => setEdgeEnhance(e.target.checked)}
                 className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
               />
-              <span className="text-sm font-medium text-gray-700">边缘增强</span>
+              <span className="text-sm font-medium text-gray-700">{t('pixelArtGeneratorPage.edgeEnhance')}</span>
             </label>
           </div>
         </div>
         
         {/* 高级调整选项 */}
         <div className="mt-8">
-          <h3 className="text-lg font-medium mb-4">高级调整</h3>
+          <h3 className="text-lg font-medium mb-4">{t('pixelArtGeneratorPage.advancedAdjustments')}</h3>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* 亮度 */}
             <div>
-              <label htmlFor="brightness" className="block text-sm font-medium text-gray-700 mb-2">亮度 ({brightness})</label>
+              <label htmlFor="brightness" className="block text-sm font-medium text-gray-700 mb-2">{t('pixelArtGeneratorPage.brightness')} ({brightness})</label>
               <input
                 type="range"
                 id="brightness"
@@ -658,7 +661,7 @@ const PixelArtGenerator: React.FC = () => {
             
             {/* 对比度 */}
             <div>
-              <label htmlFor="contrast" className="block text-sm font-medium text-gray-700 mb-2">对比度 ({contrast})</label>
+              <label htmlFor="contrast" className="block text-sm font-medium text-gray-700 mb-2">{t('pixelArtGeneratorPage.contrast')} ({contrast})</label>
               <input
                 type="range"
                 id="contrast"
@@ -689,10 +692,10 @@ const PixelArtGenerator: React.FC = () => {
           {isProcessing ? (
             <span className="flex items-center gap-2">
               <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-              处理中...
+              {t('pixelArtGeneratorPage.processing')}
             </span>
           ) : (
-            '生成像素艺术'
+            t('pixelArtGeneratorPage.generatePixelArt')
           )}
         </button>
         
@@ -702,7 +705,7 @@ const PixelArtGenerator: React.FC = () => {
           disabled={!pixelatedImage}
           className={`px-6 py-3 rounded-lg font-medium transition-all duration-200 ${!pixelatedImage ? 'bg-gray-100 text-gray-400 cursor-not-allowed shadow-sm' : 'bg-blue-500 text-white shadow-sm hover:shadow hover:bg-blue-600 active:bg-blue-700 active:shadow-inner focus:outline-none focus:ring-2 focus:ring-blue-300 focus:ring-opacity-50'}`}
         >
-          下载图片
+          {t('pixelArtGeneratorPage.downloadImage')}
         </button>
         
         <button
@@ -711,7 +714,7 @@ const PixelArtGenerator: React.FC = () => {
           disabled={currentHistoryIndex <= 0}
           className={`px-6 py-3 rounded-lg font-medium transition-all duration-200 ${currentHistoryIndex <= 0 ? 'bg-gray-100 text-gray-400 cursor-not-allowed shadow-sm' : 'bg-blue-500 text-white shadow-sm hover:shadow hover:bg-blue-600 active:bg-blue-700 active:shadow-inner focus:outline-none focus:ring-2 focus:ring-blue-300 focus:ring-opacity-50'}`}
         >
-          撤销
+          {t('pixelArtGeneratorPage.undo')}
         </button>
         
         <button
@@ -720,7 +723,7 @@ const PixelArtGenerator: React.FC = () => {
           disabled={currentHistoryIndex >= history.length - 1}
           className={`px-6 py-3 rounded-lg font-medium transition-all duration-200 ${currentHistoryIndex >= history.length - 1 ? 'bg-gray-100 text-gray-400 cursor-not-allowed shadow-sm' : 'bg-blue-500 text-white shadow-sm hover:shadow hover:bg-blue-600 active:bg-blue-700 active:shadow-inner focus:outline-none focus:ring-2 focus:ring-blue-300 focus:ring-opacity-50'}`}
         >
-          重做
+          {t('pixelArtGeneratorPage.redo')}
         </button>
         
         <button
@@ -729,7 +732,7 @@ const PixelArtGenerator: React.FC = () => {
           disabled={!originalImage}
           className={`px-6 py-3 rounded-lg font-medium transition-all duration-200 ${!originalImage ? 'bg-gray-100 text-gray-400 cursor-not-allowed shadow-sm' : 'bg-blue-500 text-white shadow-sm hover:shadow hover:bg-blue-600 active:bg-blue-700 active:shadow-inner focus:outline-none focus:ring-2 focus:ring-blue-300 focus:ring-opacity-50'}`}
         >
-          重置所有
+          {t('pixelArtGeneratorPage.resetAll')}
         </button>
       </div>
       

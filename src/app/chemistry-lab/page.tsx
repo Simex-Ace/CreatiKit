@@ -5,12 +5,14 @@ import { ChemicalItem, EquipmentProperties, ExperimentTask, Solution } from './t
 import { chemicalReactions } from './chemical-reactions';
 import { predefinedTasks, predefinedSolutions } from './experiments';
 import { equipmentProperties as importedEquipmentProperties, equipmentSizes } from './equipment';
+import { useI18n } from '@/contexts/I18nContext';
 
 // 化学反应数据库已从chemical-reactions.ts导入
 
 // 预定义实验任务和预设物质已从experiments.ts导入
 
 const ChemistryLab: React.FC = () => {
+  const { t, locale } = useI18n();
   // 状态管理
   const [items, setItems] = useState<ChemicalItem[]>([]);
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
@@ -1167,6 +1169,26 @@ const ChemistryLab: React.FC = () => {
     setIsDragging(false);
   }, []);
 
+  // 获取翻译后的设备名称
+  const getTranslatedEquipmentName = useCallback((equipmentType: string): string => {
+    return t(`chemistryLabPage.equipmentNames.${equipmentType}`) || equipmentProperties[equipmentType]?.name || equipmentType;
+  }, [t]);
+
+  // 获取翻译后的物质名称
+  const getTranslatedSolutionName = useCallback((solutionType: string): string => {
+    const key = solutionType.replace('(固)', '_solid') as keyof typeof predefinedSolutions;
+    return t(`chemistryLabPage.solutions.${key}`) || predefinedSolutions.find(s => s.type === solutionType)?.name || solutionType;
+  }, [t]);
+
+  // 显示toast提示
+  const showToast = useCallback((message: string) => {
+    setToast({message, visible: true});
+    // 3秒后自动隐藏
+    setTimeout(() => {
+      setToast(prev => ({...prev, visible: false}));
+    }, 3000);
+  }, []);
+
   // 添加新设备
   const addEquipment = useCallback((type: ChemicalItem['type']) => {
     const newItem: ChemicalItem = {
@@ -1185,17 +1207,9 @@ const ChemistryLab: React.FC = () => {
     
     // 显示设备说明
     const props = equipmentProperties[type];
-    showToast(`${props.name}: ${props.description}`);
-  }, []);
-
-  // 显示toast提示
-  const showToast = useCallback((message: string) => {
-    setToast({message, visible: true});
-    // 3秒后自动隐藏
-    setTimeout(() => {
-      setToast(prev => ({...prev, visible: false}));
-    }, 3000);
-  }, []);
+    const description = t(`chemistryLabPage.equipmentDescriptions.${type}`) || props.description;
+    showToast(`${getTranslatedEquipmentName(type)}: ${description}`);
+  }, [t, getTranslatedEquipmentName, showToast]);
 
   // 向选中设备添加溶液
   const addSolution = useCallback((solution: Solution) => {
@@ -1217,7 +1231,7 @@ const ChemistryLab: React.FC = () => {
          // 先找到选中的设备
          const selectedItem = prevItems.find(item => item && item.id === selectedItemId);
          if (!selectedItem) {
-           showToast('设备不存在！');
+           showToast(t('chemistryLabPage.equipmentNotFound'));
            setShowSolutionPanel(false);
            return prevItems;
          }
@@ -1227,21 +1241,22 @@ const ChemistryLab: React.FC = () => {
          
          // 检查设备是否可以容纳该状态的物质
          if (solution.isSolid && !props.canHoldSolids) {
-           showToast(`${props.name}不适合盛放固体物质！`);
+           showToast(t('chemistryLabPage.notSuitableForSolid', { name: getTranslatedEquipmentName(selectedItem.type) }));
            setShowSolutionPanel(false);
            return prevItems;
          }
          
          if (!solution.isSolid && !props.canHoldLiquids) {
-           showToast(`${props.name}不适合盛放液体物质！`);
+           showToast(t('chemistryLabPage.notSuitableForLiquid', { name: getTranslatedEquipmentName(selectedItem.type) }));
            setShowSolutionPanel(false);
            return prevItems;
          }
          
          // 检查设备中是否已有不同状态的物质
-         const currentIsSolid = prevItems.find(item => item.id === selectedItemId)?.liquidType.includes('固体') || false;
+         const currentIsSolid = prevItems.find(item => item.id === selectedItemId)?.liquidType.includes('固体') || 
+                                prevItems.find(item => item.id === selectedItemId)?.liquidType.includes('Solid') || false;
          if (selectedItem.liquidAmount > 0 && currentIsSolid !== !!solution.isSolid) {
-           showToast('不同状态的物质不能直接混合！请先清空设备');
+           showToast(t('chemistryLabPage.cannotMixStates'));
            setShowSolutionPanel(false);
            return prevItems;
          }
@@ -1277,9 +1292,9 @@ const ChemistryLab: React.FC = () => {
     } catch (error) {
       console.error('添加物质时发生错误:', error);
       setShowSolutionPanel(false);
-      showToast('添加物质失败，请重试');
+      showToast(t('chemistryLabPage.addSubstanceFailed'));
     }
-  }, [selectedItemId, showToast]);
+  }, [selectedItemId, showToast, t, getTranslatedEquipmentName]);
 
   // 清空单个容器内的物质
   const clearContainer = useCallback((equipmentId: string) => {
@@ -1288,15 +1303,15 @@ const ChemistryLab: React.FC = () => {
         ? { ...item, liquidType: '', liquidAmount: 0, liquidColor: '#FFFFFF', hasPrecipitate: false } 
         : item
     ));
-    showToast('容器已清空！');
-  }, [showToast]);
+    showToast(t('chemistryLabPage.containerCleared'));
+  }, [showToast, t]);
 
   // 移除整个容器
   const removeContainer = useCallback((equipmentId: string) => {
     setItems(prev => prev.filter(item => item.id !== equipmentId));
     setSelectedItemId(null);
-    showToast('容器已移除！');
-  }, [showToast]);
+    showToast(t('chemistryLabPage.containerRemoved'));
+  }, [showToast, t]);
 
   // 清空整个实验台
   const clearLab = useCallback(() => {
@@ -1318,12 +1333,28 @@ const ChemistryLab: React.FC = () => {
     };
   }, [render]);
 
+  // 获取翻译后的任务
+  const getTranslatedTasks = useCallback((): ExperimentTask[] => {
+    return predefinedTasks.map(task => {
+      const translatedTask = t(`chemistryLabPage.tasks.${task.id}`, { returnObjects: true }) as any;
+      if (translatedTask && typeof translatedTask === 'object' && translatedTask.title) {
+        return {
+          ...task,
+          title: translatedTask.title,
+          description: translatedTask.description,
+          steps: translatedTask.steps || task.steps
+        };
+      }
+      return task;
+    });
+  }, [t]);
+
   // 重置任务进度
   const resetTasks = useCallback(() => {
-    setTasks(predefinedTasks);
+    setTasks(getTranslatedTasks());
     setScore(0);
     setCurrentStep({taskId: null, stepIndex: 0});
-  }, []);
+  }, [getTranslatedTasks]);
 
   // 开始新任务
   const startTask = useCallback((taskId: string) => {
@@ -1331,40 +1362,45 @@ const ChemistryLab: React.FC = () => {
     setCurrentStep({taskId, stepIndex: 0});
   }, []);
 
+  // 初始化翻译后的任务
+  useEffect(() => {
+    setTasks(getTranslatedTasks());
+  }, [getTranslatedTasks, locale]);
+
   return (
-    <div className="flex flex-col h-screen bg-gray-900 text-white p-4">
-      <div className="flex justify-between items-center mb-4">
-        <h1 className="text-2xl font-bold text-cyan-400">虚拟化学实验室</h1>
-        <div className="flex gap-4">
-          <span className="text-yellow-400">分数: {score}</span>
+    <div className="flex flex-col h-screen bg-gray-900 text-white p-4 overflow-hidden">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-2 flex-shrink-0">
+        <h1 className="text-2xl font-bold text-cyan-400">{t('chemistryLabPage.title')}</h1>
+        <div className="flex flex-wrap gap-2">
+          <span className="text-yellow-400">{t('chemistryLabPage.score')}: {score}</span>
           <button 
             onClick={() => setShowTaskPanel(!showTaskPanel)}
-            className="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded"
+            className="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded text-sm"
           >
-            任务面板
+            {t('chemistryLabPage.taskPanel')}
           </button>
           <button 
             onClick={() => setShowElementPanel(!showElementPanel)}
-            className="bg-green-600 hover:bg-green-700 px-4 py-2 rounded"
+            className="bg-green-600 hover:bg-green-700 px-4 py-2 rounded text-sm"
           >
-            设备面板
+            {t('chemistryLabPage.equipmentPanel')}
           </button>
           <button 
             onClick={clearLab}
-            className="bg-red-600 hover:bg-red-700 px-4 py-2 rounded"
+            className="bg-red-600 hover:bg-red-700 px-4 py-2 rounded text-sm"
           >
-            清空实验台
+            {t('chemistryLabPage.clearLab')}
           </button>
           <button 
             onClick={resetTasks}
-            className="bg-purple-600 hover:bg-purple-700 px-4 py-2 rounded"
+            className="bg-purple-600 hover:bg-purple-700 px-4 py-2 rounded text-sm"
           >
-            重置任务
+            {t('chemistryLabPage.resetTask')}
           </button>
         </div>
       </div>
       
-      <div className="flex flex-1 gap-4">
+      <div className="flex flex-1 gap-4 min-h-0 overflow-hidden">
         {/* 实验画布 */}
         <div className="flex-1 relative bg-gray-800 rounded-lg overflow-hidden">
           <canvas
@@ -1381,47 +1417,47 @@ const ChemistryLab: React.FC = () => {
           {/* 选中设备信息 */}
           {selectedItemId && (
             <div className="absolute top-4 right-4 bg-gray-800 bg-opacity-90 p-4 rounded-lg border border-cyan-500">
-              <h3 className="text-lg font-semibold mb-2">设备信息</h3>
+              <h3 className="text-lg font-semibold mb-2">{t('chemistryLabPage.equipmentInfo')}</h3>
               {(() => {
                 const selectedItem = items.find(item => item.id === selectedItemId);
-                if (!selectedItem) return <p>设备不存在</p>;
+                if (!selectedItem) return <p>{t('chemistryLabPage.equipmentNotFound')}</p>;
                 
                 const props = equipmentProperties[selectedItem.type];
-                const isSolidContent = selectedItem.liquidType.includes('固体');
+                const isSolidContent = selectedItem.liquidType.includes('固体') || selectedItem.liquidType.includes('Solid') || selectedItem.liquidType.includes('(固)');
                 
                 return (
                   <div>
-                    <p>名称: {props.name}</p>
-                    <p>物质: {selectedItem.liquidType || '空'}</p>
-                    <p>状态: {isSolidContent ? '固体' : '液体'}</p>
-                    <p>数量: {selectedItem.liquidAmount}%</p>
+                    <p>{t('chemistryLabPage.name')}: {getTranslatedEquipmentName(selectedItem.type)}</p>
+                    <p>{t('chemistryLabPage.substance')}: {selectedItem.liquidType ? getTranslatedSolutionName(selectedItem.liquidType) : t('chemistryLabPage.empty')}</p>
+                    <p>{t('chemistryLabPage.status')}: {isSolidContent ? t('chemistryLabPage.solid') : t('chemistryLabPage.liquid')}</p>
+                    <p>{t('chemistryLabPage.amount')}: {selectedItem.liquidAmount}%</p>
                     {selectedItem.isHeated && (
-                      <p className="text-red-400">正在加热</p>
+                      <p className="text-red-400">{t('chemistryLabPage.heating')}</p>
                     )}
                     {selectedItem.hasPrecipitate && (
-                      <p className="text-blue-400">有沉淀</p>
+                      <p className="text-blue-400">{t('chemistryLabPage.hasPrecipitate')}</p>
                     )}
                     <div className="mt-2 text-xs text-gray-400">
-                      <p>可加热: {props.canHeat ? '是' : '否'}</p>
-                      <p>可反应: {props.canReact ? '是' : '否'}</p>
+                      <p>{t('chemistryLabPage.canHeat')}: {props.canHeat ? t('chemistryLabPage.yes') : t('chemistryLabPage.no')}</p>
+                      <p>{t('chemistryLabPage.canReact')}: {props.canReact ? t('chemistryLabPage.yes') : t('chemistryLabPage.no')}</p>
                     </div>
                     <button 
                       onClick={() => setShowSolutionPanel(true)}
                       className="mt-2 bg-cyan-600 hover:bg-cyan-700 px-3 py-1 rounded text-sm"
                     >
-                      添加物质
+                      {t('chemistryLabPage.addSubstance')}
                     </button>
                     <button 
                       onClick={() => clearContainer(selectedItem.id)}
                       className="mt-2 bg-red-600 hover:bg-red-700 px-3 py-1 rounded text-sm ml-2"
                     >
-                      清空容器
+                      {t('chemistryLabPage.clearContainer')}
                     </button>
                     <button 
                       onClick={() => removeContainer(selectedItem.id)}
                       className="mt-2 bg-purple-600 hover:bg-purple-700 px-3 py-1 rounded text-sm ml-2"
                     >
-                      移除容器
+                      {t('chemistryLabPage.removeContainer')}
                     </button>
                   </div>
                 );
@@ -1431,7 +1467,7 @@ const ChemistryLab: React.FC = () => {
           
           {/* 反应历史 */}
           <div className="absolute bottom-4 left-4 w-64 bg-gray-800 bg-opacity-90 p-4 rounded-lg border border-green-500">
-            <h3 className="text-lg font-semibold mb-2">反应历史</h3>
+            <h3 className="text-lg font-semibold mb-2">{t('chemistryLabPage.reactionHistory')}</h3>
             <div className="max-h-40 overflow-y-auto">
               {reactionHistory.length > 0 ? (
                 reactionHistory.map((reaction, index) => (
@@ -1441,7 +1477,7 @@ const ChemistryLab: React.FC = () => {
                       <button 
                         onClick={() => copyEquation(reaction.equation)}
                         className="p-1 text-cyan-400 hover:text-cyan-300 focus:outline-none"
-                        title="复制反应方程式"
+                        title={t('chemistryLabPage.copyEquation')}
                       >
                         📋
                       </button>
@@ -1452,7 +1488,7 @@ const ChemistryLab: React.FC = () => {
                   </div>
                 ))
               ) : (
-                <p className="text-gray-400">暂无反应记录</p>
+                <p className="text-gray-400">{t('chemistryLabPage.noReactionRecords')}</p>
               )}
             </div>
           </div>
@@ -1461,35 +1497,35 @@ const ChemistryLab: React.FC = () => {
         {/* 复制成功提示 */}
         {showCopiedNotification && (
           <div className="fixed top-4 right-4 bg-green-600 text-white px-4 py-2 rounded-lg shadow-lg z-50 transition-opacity duration-300">
-            已复制到剪贴板
+            {t('chemistryLabPage.copied')}
           </div>
         )}
 
         {/* 设备面板 */}
         {showElementPanel && (
-          <div className="w-64 bg-gray-800 rounded-lg p-4">
-            <h2 className="text-xl font-bold mb-4 text-green-400">实验设备</h2>
-            <div className="grid grid-cols-2 gap-2">
-              <button onClick={() => addEquipment('beaker')} className="bg-gray-700 hover:bg-gray-600 p-2 rounded">烧杯</button>
-              <button onClick={() => addEquipment('testTube')} className="bg-gray-700 hover:bg-gray-600 p-2 rounded">试管</button>
-              <button onClick={() => addEquipment('flask')} className="bg-gray-700 hover:bg-gray-600 p-2 rounded">圆底烧瓶</button>
-              <button onClick={() => addEquipment('buret')} className="bg-gray-700 hover:bg-gray-600 p-2 rounded">滴定管</button>
-              <button onClick={() => addEquipment('erlenmeyer')} className="bg-gray-700 hover:bg-gray-600 p-2 rounded">锥形瓶</button>
-              <button onClick={() => addEquipment('crucible')} className="bg-gray-700 hover:bg-gray-600 p-2 rounded">坩埚</button>
-              <button onClick={() => addEquipment('watchGlass')} className="bg-gray-700 hover:bg-gray-600 p-2 rounded">表面皿</button>
-              <button onClick={() => addEquipment('graduatedCylinder')} className="bg-gray-700 hover:bg-gray-600 p-2 rounded">量杯</button>
+          <div className="w-64 bg-gray-800 rounded-lg p-4 flex flex-col overflow-hidden flex-shrink-0">
+            <h2 className="text-xl font-bold mb-4 text-green-400 flex-shrink-0">{t('chemistryLabPage.equipment')}</h2>
+            <div className="grid grid-cols-2 gap-2 flex-shrink-0">
+              <button onClick={() => addEquipment('beaker')} className="bg-gray-700 hover:bg-gray-600 p-2 rounded text-sm">{t('chemistryLabPage.equipmentNames.beaker')}</button>
+              <button onClick={() => addEquipment('testTube')} className="bg-gray-700 hover:bg-gray-600 p-2 rounded text-sm">{t('chemistryLabPage.equipmentNames.testTube')}</button>
+              <button onClick={() => addEquipment('flask')} className="bg-gray-700 hover:bg-gray-600 p-2 rounded text-sm">{t('chemistryLabPage.equipmentNames.flask')}</button>
+              <button onClick={() => addEquipment('buret')} className="bg-gray-700 hover:bg-gray-600 p-2 rounded text-sm">{t('chemistryLabPage.equipmentNames.buret')}</button>
+              <button onClick={() => addEquipment('erlenmeyer')} className="bg-gray-700 hover:bg-gray-600 p-2 rounded text-sm">{t('chemistryLabPage.equipmentNames.erlenmeyer')}</button>
+              <button onClick={() => addEquipment('crucible')} className="bg-gray-700 hover:bg-gray-600 p-2 rounded text-sm">{t('chemistryLabPage.equipmentNames.crucible')}</button>
+              <button onClick={() => addEquipment('watchGlass')} className="bg-gray-700 hover:bg-gray-600 p-2 rounded text-sm">{t('chemistryLabPage.equipmentNames.watchGlass')}</button>
+              <button onClick={() => addEquipment('graduatedCylinder')} className="bg-gray-700 hover:bg-gray-600 p-2 rounded text-sm">{t('chemistryLabPage.equipmentNames.graduatedCylinder')}</button>
             </div>
             
-            <h3 className="text-lg font-semibold mt-6 mb-2 text-yellow-400">加热控制</h3>
-            <div className="space-y-2">
+            <h3 className="text-lg font-semibold mt-6 mb-2 text-yellow-400 flex-shrink-0">{t('chemistryLabPage.heatingControl')}</h3>
+            <div className="space-y-2 flex-shrink-0">
               <button 
                 onClick={() => setHeatingSourceActive(!heatingSourceActive)}
-                className={`w-full p-2 rounded ${heatingSourceActive ? 'bg-red-600' : 'bg-gray-700 hover:bg-gray-600'}`}
+                className={`w-full p-2 rounded text-sm ${heatingSourceActive ? 'bg-red-600' : 'bg-gray-700 hover:bg-gray-600'}`}
               >
-                {heatingSourceActive ? '关闭加热' : '开启加热'}
+                {heatingSourceActive ? t('chemistryLabPage.stopHeating') : t('chemistryLabPage.startHeating')}
               </button>
               <div>
-                <label className="text-sm block mb-1">温度: {temperature}°C</label>
+                <label className="text-sm block mb-1">{t('chemistryLabPage.temperature')}: {temperature}°C</label>
                 <input
                   type="range"
                   min="25"
@@ -1506,9 +1542,9 @@ const ChemistryLab: React.FC = () => {
         
         {/* 任务面板 */}
         {showTaskPanel && (
-          <div className="w-80 bg-gray-800 rounded-lg p-4">
-            <h2 className="text-xl font-bold mb-4 text-blue-400">实验任务</h2>
-            <div className="space-y-4">
+          <div className="w-80 bg-gray-800 rounded-lg p-4 flex flex-col overflow-hidden flex-shrink-0">
+            <h2 className="text-xl font-bold mb-4 text-blue-400 flex-shrink-0">{t('chemistryLabPage.experimentalTasks')}</h2>
+            <div className="space-y-4 overflow-y-auto flex-1 min-h-0">
               {tasks.map(task => (
                 <div 
                   key={task.id} 
@@ -1516,7 +1552,7 @@ const ChemistryLab: React.FC = () => {
                 >
                   <div className="flex justify-between items-center">
                     <h3 className="font-semibold">{task.title}</h3>
-                    <span className="text-yellow-400">{task.rewardPoints}分</span>
+                    <span className="text-yellow-400">{task.rewardPoints}{t('chemistryLabPage.points')}</span>
                   </div>
                   <p className="text-sm text-gray-300 mt-1">{task.description}</p>
                   {!task.completed && !currentTask && (
@@ -1524,12 +1560,12 @@ const ChemistryLab: React.FC = () => {
                       onClick={() => startTask(task.id)}
                       className="mt-2 bg-blue-600 hover:bg-blue-700 px-3 py-1 rounded text-sm"
                     >
-                      开始任务
+                      {t('chemistryLabPage.startTask')}
                     </button>
                   )}
                   {currentTask === task.id && (
                     <div className="mt-2">
-                      <h4 className="text-sm font-medium text-cyan-300">任务步骤:</h4>
+                      <h4 className="text-sm font-medium text-cyan-300">{t('chemistryLabPage.taskSteps')}:</h4>
                       <ul className="mt-1 space-y-1">
                         {task.steps.map((step, index) => (
                           <li key={index} className={`text-sm ${index === currentStep.stepIndex ? 'text-green-400' : 'text-gray-300'}`}>
@@ -1542,7 +1578,7 @@ const ChemistryLab: React.FC = () => {
                           onClick={() => setCurrentStep({taskId: task.id, stepIndex: currentStep.stepIndex + 1})}
                           className="mt-2 bg-green-600 hover:bg-green-700 px-3 py-1 rounded text-sm"
                         >
-                          下一步
+                          {t('chemistryLabPage.nextStep')}
                         </button>
                       )}
                       <button 
@@ -1552,7 +1588,7 @@ const ChemistryLab: React.FC = () => {
                         }}
                         className="mt-2 bg-gray-600 hover:bg-gray-700 px-3 py-1 rounded text-sm ml-2"
                       >
-                        取消任务
+                        {t('chemistryLabPage.cancelTask')}
                       </button>
                     </div>
                   )}
@@ -1567,12 +1603,14 @@ const ChemistryLab: React.FC = () => {
       {showSolutionPanel && (
         <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50">
           <div className="bg-gray-800 p-6 rounded-lg max-w-2xl w-full max-h-[80vh] overflow-y-auto">
-            <h2 className="text-xl font-bold mb-4 text-cyan-400">选择物质</h2>
+            <h2 className="text-xl font-bold mb-4 text-cyan-400">{t('chemistryLabPage.selectSubstance')}</h2>
             
             {/* 固体物质 */}
-            <h3 className="text-lg font-semibold mb-2 text-yellow-400">固体物质</h3>
+            <h3 className="text-lg font-semibold mb-2 text-yellow-400">{t('chemistryLabPage.solidSubstances')}</h3>
             <div className="grid grid-cols-4 gap-2 mb-6">
-              {predefinedSolutions.filter(s => s.isSolid).map((solution, index) => (
+              {predefinedSolutions.filter(s => s.isSolid).map((solution, index) => {
+                const solutionKey = solution.type.replace('(固)', '_solid') as keyof typeof predefinedSolutions;
+                return (
                 <button
                   key={index}
                   onClick={() => addSolution(solution)}
@@ -1584,17 +1622,17 @@ const ChemistryLab: React.FC = () => {
                   >
                     <span className="text-gray-300">⚫</span>
                   </div>
-                  <span className="text-xs font-medium">{solution.name || solution.type}</span>
-                  <span className="text-xs text-yellow-400">固体</span>
+                  <span className="text-xs font-medium">{getTranslatedSolutionName(solution.type)}</span>
+                  <span className="text-xs text-yellow-400">{t('chemistryLabPage.solid')}</span>
                   {solution.description && (
-                    <span className="text-xs text-gray-500 line-clamp-2 text-center">{solution.description}</span>
+                    <span className="text-xs text-gray-500 line-clamp-2 text-center">{t(`chemistryLabPage.solutionDescriptions.${solutionKey}`) || solution.description}</span>
                   )}
                 </button>
-              ))}
+              )})}
             </div>
             
             {/* 液体物质 */}
-            <h3 className="text-lg font-semibold mb-2 text-blue-400">液体物质</h3>
+            <h3 className="text-lg font-semibold mb-2 text-blue-400">{t('chemistryLabPage.liquidSubstances')}</h3>
             <div className="grid grid-cols-4 gap-2">
               {predefinedSolutions.filter(s => !s.isSolid).map((solution, index) => (
                 <button
@@ -1606,10 +1644,10 @@ const ChemistryLab: React.FC = () => {
                     className="w-12 h-12 rounded-full mb-1 border border-gray-500"
                     style={{ backgroundColor: solution.color }}
                   />
-                  <span className="text-xs font-medium">{solution.name || solution.type}</span>
-                  <span className="text-xs text-blue-400">液体</span>
+                  <span className="text-xs font-medium">{getTranslatedSolutionName(solution.type)}</span>
+                  <span className="text-xs text-blue-400">{t('chemistryLabPage.liquid')}</span>
                   {solution.description && (
-                    <span className="text-xs text-gray-500 line-clamp-2 text-center">{solution.description}</span>
+                    <span className="text-xs text-gray-500 line-clamp-2 text-center">{t(`chemistryLabPage.solutionDescriptions.${solution.type}`) || solution.description}</span>
                   )}
                 </button>
               ))}
@@ -1618,17 +1656,11 @@ const ChemistryLab: React.FC = () => {
               onClick={() => setShowSolutionPanel(false)}
               className="mt-6 w-full bg-red-600 hover:bg-red-700 py-2 rounded"
             >
-              关闭
+              {t('chemistryLabPage.close')}
             </button>
           </div>
         </div>
       )}
-      
-      {/* 提示信息 */}
-      <div className="mt-4 text-sm text-gray-400">
-        <p>操作提示: 不同设备有不同的功能限制。烧杯、试管、圆底烧瓶、锥形瓶可加热和反应；坩埚适合固体加热；滴定管、量杯主要用于量取；表面皿可放置固体观察。</p>
-        <p className="mt-1">固体和液体物质需要使用适合的设备。尝试使用不兼容的设备时会显示错误提示。</p>
-      </div>
       
       {/* Toast提示 */}
       {toast.visible && (

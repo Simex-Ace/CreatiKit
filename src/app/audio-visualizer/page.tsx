@@ -10,6 +10,7 @@ import { Slider } from '@/components/ui/slider';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Upload, Play, Pause, Volume2, VolumeX, Download, Maximize, Minimize, Music, Sparkles } from 'lucide-react';
 import { useToast } from '@/contexts/ToastContext';
+import { useI18n } from '@/contexts/I18nContext';
 
 type VisualizerMode = 'spectrum' | 'waveform' | 'circular' | 'particles' | 'waterfall';
 
@@ -33,6 +34,7 @@ export default function AudioVisualizer() {
   const waterfallDataRef = useRef<number[][]>([]);
   
   const { toast } = useToast();
+  const { t } = useI18n();
 
   // 初始化音频上下文
   useEffect(() => {
@@ -281,8 +283,8 @@ export default function AudioVisualizer() {
 
     if (!file.type.startsWith('audio/')) {
       toast({
-        title: '文件格式错误',
-        description: '请上传音频文件（MP3、WAV、OGG）',
+        title: t('audioVisualizerPage.fileFormatError'),
+        description: t('audioVisualizerPage.fileFormatErrorDesc'),
         variant: 'destructive',
       });
       return;
@@ -356,10 +358,10 @@ export default function AudioVisualizer() {
       <div className="mb-8 text-center">
         <h1 className="text-3xl font-bold mb-2 flex items-center justify-center gap-2">
           <Music className="h-8 w-8" />
-          音频可视化器
+          {t('audioVisualizerPage.title')}
         </h1>
         <p className="text-muted-foreground max-w-2xl mx-auto">
-          上传音频文件，实时生成多种可视化效果，支持频谱、波形、圆形、粒子和瀑布图等模式
+          {t('audioVisualizerPage.subtitle')}
         </p>
       </div>
 
@@ -367,11 +369,11 @@ export default function AudioVisualizer() {
         {/* 控制面板 */}
         <div className="lg:col-span-1 space-y-4">
           <Card className="p-6">
-            <h2 className="text-xl font-semibold mb-4 text-center">控制面板</h2>
+            <h2 className="text-xl font-semibold mb-4 text-center">{t('audioVisualizerPage.controlPanel')}</h2>
             
             {/* 文件上传 */}
             <div className="space-y-2 mb-4">
-              <Label>上传音频文件</Label>
+              <Label>{t('audioVisualizerPage.uploadAudioFile')}</Label>
               <Input
                 type="file"
                 accept="audio/*"
@@ -386,7 +388,7 @@ export default function AudioVisualizer() {
                 <div className="flex gap-2 mb-4">
                   <Button onClick={togglePlay} className="flex-1">
                     {isPlaying ? <Pause className="h-4 w-4 mr-2" /> : <Play className="h-4 w-4 mr-2" />}
-                    {isPlaying ? '暂停' : '播放'}
+                    {isPlaying ? t('audioVisualizerPage.pause') : t('audioVisualizerPage.play')}
                   </Button>
                   <Button variant="outline" onClick={toggleFullscreen}>
                     {isFullscreen ? <Minimize className="h-4 w-4" /> : <Maximize className="h-4 w-4" />}
@@ -399,7 +401,7 @@ export default function AudioVisualizer() {
                 {/* 音量控制 */}
                 <div className="space-y-2 mb-4">
                   <div className="flex items-center justify-between">
-                    <Label>音量</Label>
+                    <Label>{t('audioVisualizerPage.volume')}</Label>
                     <Button
                       variant="ghost"
                       size="sm"
@@ -426,40 +428,40 @@ export default function AudioVisualizer() {
 
             {/* 可视化模式 */}
             <div className="space-y-2 mb-4">
-              <Label>可视化模式</Label>
+              <Label>{t('audioVisualizerPage.visualizationMode')}</Label>
               <Select value={mode} onValueChange={(value) => setMode(value as VisualizerMode)}>
                 <SelectTrigger className="w-full">
-                  <SelectValue placeholder="选择模式" />
+                  <SelectValue placeholder={t('audioVisualizerPage.selectMode')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="spectrum">频谱分析器 (Spectrum)</SelectItem>
-                  <SelectItem value="waveform">波形显示 (Waveform)</SelectItem>
-                  <SelectItem value="circular">圆形频谱 (Circular)</SelectItem>
-                  <SelectItem value="particles">粒子效果 (Particles)</SelectItem>
-                  <SelectItem value="waterfall">频谱瀑布图 (Waterfall)</SelectItem>
+                  <SelectItem value="spectrum">{t('audioVisualizerPage.spectrum')}</SelectItem>
+                  <SelectItem value="waveform">{t('audioVisualizerPage.waveform')}</SelectItem>
+                  <SelectItem value="circular">{t('audioVisualizerPage.circular')}</SelectItem>
+                  <SelectItem value="particles">{t('audioVisualizerPage.particles')}</SelectItem>
+                  <SelectItem value="waterfall">{t('audioVisualizerPage.waterfall')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             {/* 颜色方案 */}
             <div className="space-y-2 mb-4">
-              <Label>颜色方案</Label>
+              <Label>{t('audioVisualizerPage.colorScheme')}</Label>
               <Select value={colorScheme} onValueChange={setColorScheme}>
                 <SelectTrigger className="w-full">
-                  <SelectValue placeholder="选择颜色" />
+                  <SelectValue placeholder={t('audioVisualizerPage.selectColor')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="rainbow">彩虹</SelectItem>
-                  <SelectItem value="fire">火焰</SelectItem>
-                  <SelectItem value="ocean">海洋</SelectItem>
-                  <SelectItem value="neon">霓虹</SelectItem>
+                  <SelectItem value="rainbow">{t('audioVisualizerPage.rainbow')}</SelectItem>
+                  <SelectItem value="fire">{t('audioVisualizerPage.fire')}</SelectItem>
+                  <SelectItem value="ocean">{t('audioVisualizerPage.ocean')}</SelectItem>
+                  <SelectItem value="neon">{t('audioVisualizerPage.neon')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             {/* 敏感度 */}
             <div className="space-y-2">
-              <Label>敏感度: {sensitivity.toFixed(1)}</Label>
+              <Label>{t('audioVisualizerPage.sensitivity')}: {sensitivity.toFixed(1)}</Label>
               <Slider
                 value={[sensitivity]}
                 onValueChange={(value) => setSensitivity(value[0])}
@@ -484,13 +486,13 @@ export default function AudioVisualizer() {
                 <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
                   <div className="text-center">
                     <Upload className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                    <p>请上传音频文件开始可视化</p>
+                    <p>{t('audioVisualizerPage.uploadAudioToStart')}</p>
                   </div>
                 </div>
               )}
               {audioUrl && !isPlaying && (
                 <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-black/50 text-white px-3 py-1 rounded text-sm whitespace-nowrap">
-                  已加载音频，点击播放开始可视化
+                  {t('audioVisualizerPage.audioLoadedClickPlay')}
                 </div>
               )}
             </div>

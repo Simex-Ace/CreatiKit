@@ -11,6 +11,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { Search, Download, Copy, Check, Trash2, Info, Code, BarChart2, Zap, Languages, Hash, FileText, RefreshCw } from 'lucide-react';
 import { Tooltip as UITooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { useI18n } from '@/contexts/I18nContext';
 
 import { Input } from '@/components/ui/input';
 
@@ -518,6 +519,7 @@ const cleanHTML = (text: string): { cleaned: string; missingAltImages: string[] 
 };
 
 export default function TextAnalyzer() {
+  const { t } = useI18n();
   // 状态管理
   const [inputText, setInputText] = useState('');
   const [targetKeywords, setTargetKeywords] = useState('');
@@ -621,7 +623,7 @@ export default function TextAnalyzer() {
     
     // 显示缺少alt属性的图片提示
     if (missingAltImages.length > 0) {
-      showNotification('warning', `检测到 ${missingAltImages.length} 张缺少alt属性的图片。建议为这些图片添加alt属性以提高SEO效果。`);
+      showNotification('warning', t('textAnalyzerPage.missingAltWarning', { count: missingAltImages.length }));
     }
     
     // 2. 根据语言模式应用不同的优化规则
@@ -642,7 +644,7 @@ export default function TextAnalyzer() {
   // 辅助交互函数
   const handleCopy = (text: string) => {
     navigator.clipboard.writeText(text).then(() => {
-      showNotification('success', '文本已复制到剪贴板');
+      showNotification('success', t('textAnalyzerPage.copied'));
     });
   };
   
@@ -703,44 +705,44 @@ export default function TextAnalyzer() {
   return (
     <>
       <div className="container mx-auto p-4">
-        <h1 className="text-2xl font-bold mb-6">SEO文本分析与优化工具</h1>
+        <h1 className="text-2xl font-bold mb-6">{t('textAnalyzerPage.title')}</h1>
         
         <div className="grid grid-cols-1 gap-6">
         {/* 输入区域 */}
         <Card className="p-4">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4">
-            <h2 className="text-xl font-semibold">输入文本</h2>
+            <h2 className="text-xl font-semibold">{t('textAnalyzerPage.inputText')}</h2>
             <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
               <div className="flex items-center gap-3 w-full sm:w-auto bg-gray-100 rounded-full p-1">
                 <button 
                   className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${isChineseMode ? 'bg-primary text-white' : 'text-gray-600 hover:bg-gray-200'}`}
                   onClick={() => setIsChineseMode(true)}
                 >
-                  中文
+                  {t('textAnalyzerPage.chinese')}
                 </button>
                 <button 
                   className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${!isChineseMode ? 'bg-primary text-white' : 'text-gray-600 hover:bg-gray-200'}`}
                   onClick={() => setIsChineseMode(false)}
                 >
-                  英文
+                  {t('textAnalyzerPage.english')}
                 </button>
               </div>
               <Button onClick={handleClear} variant="secondary" size="sm">
                 <RefreshCw className="h-4 w-4 mr-1" />
-                清空
+                {t('textAnalyzerPage.clear')}
               </Button>
             </div>
           </div>
           
           <div className="mb-4">
-            <Label htmlFor="targetKeywords">目标关键词（用逗号分隔）</Label>
+            <Label htmlFor="targetKeywords">{t('textAnalyzerPage.targetKeywords')}</Label>
             <div className="relative">
               <Hash className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
               <Input
                 id="targetKeywords"
                 value={targetKeywords}
                 onChange={(e) => setTargetKeywords(e.target.value)}
-                placeholder={isChineseMode ? "输入您的目标关键词，用逗号分隔" : "Enter your target keywords, separated by commas"}
+                placeholder={isChineseMode ? t('textAnalyzerPage.targetKeywordsPlaceholder') : "Enter your target keywords, separated by commas"}
                 className="pl-10"
               />
             </div>
@@ -749,7 +751,7 @@ export default function TextAnalyzer() {
           <Textarea
             value={inputText}
             onChange={(e) => setInputText(e.target.value)}
-            placeholder={isChineseMode ? "请输入要分析的文本内容..." : "Please enter the text to analyze..."}
+            placeholder={isChineseMode ? t('textAnalyzerPage.textPlaceholder') : "Please enter the text to analyze..."}
             rows={10}
             className="w-full resize-none"
           />
@@ -761,7 +763,7 @@ export default function TextAnalyzer() {
               className="flex-1 transition-all duration-200 hover:brightness-105 focus:ring-2 focus:ring-primary/50 focus:ring-offset-2"
             >
               <Code className="h-4 w-4 mr-1" />
-              SEO分析
+              {t('textAnalyzerPage.analyze')}
             </Button>
             <Button 
               onClick={handleOptimize} 
@@ -770,7 +772,7 @@ export default function TextAnalyzer() {
               className="flex-1 transition-all duration-200 hover:brightness-105 focus:ring-2 focus:ring-primary/50 focus:ring-offset-2"
             >
               <Zap className="h-4 w-4 mr-1" />
-              文本优化
+              {t('textAnalyzerPage.optimize')}
             </Button>
           </div>
         </Card>
@@ -782,19 +784,19 @@ export default function TextAnalyzer() {
               value="analysis"
               className="transition-all duration-200 hover:bg-primary/10 focus:ring-2 focus:ring-primary/50 focus:ring-offset-0"
             >
-              SEO分析
+              {t('textAnalyzerPage.tabAnalysis')}
             </TabsTrigger>
             <TabsTrigger 
               value="keywords"
               className="transition-all duration-200 hover:bg-primary/10 focus:ring-2 focus:ring-primary/50 focus:ring-offset-0"
             >
-              关键词分析
+              {t('textAnalyzerPage.tabKeywords')}
             </TabsTrigger>
             <TabsTrigger 
               value="optimized"
               className="transition-all duration-200 hover:bg-primary/10 focus:ring-2 focus:ring-primary/50 focus:ring-offset-0"
             >
-              文本优化
+              {t('textAnalyzerPage.tabOptimized')}
             </TabsTrigger>
           </TabsList>
           
@@ -806,8 +808,8 @@ export default function TextAnalyzer() {
                 <Card className="p-6 bg-gradient-to-r from-primary/10 to-primary/5 border-primary/20">
                   <div className="flex flex-col md:flex-row justify-between items-center gap-4">
                     <div>
-                      <h2 className="text-2xl font-bold mb-2">SEO总体评分</h2>
-                      <p className="text-muted-foreground">基于多项指标的综合评估</p>
+                      <h2 className="text-2xl font-bold mb-2">{t('textAnalyzerPage.seoScore')}</h2>
+                      <p className="text-muted-foreground">{t('textAnalyzerPage.seoScoreDesc')}</p>
                     </div>
                     {renderSEOScoreIndicator(analysisResult.seoScore)}
                   </div>
@@ -817,25 +819,25 @@ export default function TextAnalyzer() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
                   <Card className="p-4">
                     <div className="flex justify-between items-center mb-1">
-                      <span className="text-sm text-muted-foreground">单词数</span>
+                      <span className="text-sm text-muted-foreground">{t('textAnalyzerPage.wordCount')}</span>
                       <span className="text-2xl font-bold">{analysisResult.wordCount}</span>
                     </div>
                   </Card>
                   <Card className="p-4">
                     <div className="flex justify-between items-center mb-1">
-                      <span className="text-sm text-muted-foreground">字符数</span>
+                      <span className="text-sm text-muted-foreground">{t('textAnalyzerPage.charCount')}</span>
                       <span className="text-2xl font-bold">{analysisResult.charCount}</span>
                     </div>
                   </Card>
                   <Card className="p-4">
                     <div className="flex justify-between items-center mb-1">
-                      <span className="text-sm text-muted-foreground">段落数</span>
+                      <span className="text-sm text-muted-foreground">{t('textAnalyzerPage.paragraphCount')}</span>
                       <span className="text-2xl font-bold">{analysisResult.paragraphCount}</span>
                     </div>
                   </Card>
                   <Card className="p-4">
                     <div className="flex justify-between items-center mb-1">
-                      <span className="text-sm text-muted-foreground">可读性</span>
+                      <span className="text-sm text-muted-foreground">{t('textAnalyzerPage.readability')}</span>
                       <span className="text-2xl font-bold">{analysisResult.readabilityScore.score}</span>
                     </div>
                   </Card>
@@ -845,22 +847,22 @@ export default function TextAnalyzer() {
                 <Card className="p-4">
                   <h3 className="text-lg font-semibold mb-4">
                     <FileText className="h-5 w-5 inline-block mr-2" />
-                    标题结构分析
+                    {t('textAnalyzerPage.titleStructure')}
                   </h3>
                   <div className="space-y-3">
                     <div className="flex justify-between items-center">
-                      <span>包含标题</span>
+                      <span>{t('textAnalyzerPage.hasTitle')}</span>
                       <span className={`font-medium ${analysisResult.titleStructure.hasTitle ? 'text-green-500' : 'text-red-500'}`}>
-                        {analysisResult.titleStructure.hasTitle ? "是" : "否"}
+                        {analysisResult.titleStructure.hasTitle ? t('textAnalyzerPage.yes') : t('textAnalyzerPage.no')}
                       </span>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span>标题数量</span>
+                      <span>{t('textAnalyzerPage.titleCount')}</span>
                       <span>{analysisResult.titleStructure.titleCount}</span>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span>平均标题长度</span>
-                      <span>{analysisResult.titleStructure.averageTitleLength.toFixed(1)} 字符</span>
+                      <span>{t('textAnalyzerPage.avgTitleLength')}</span>
+                      <span>{analysisResult.titleStructure.averageTitleLength.toFixed(1)} {t('textAnalyzerPage.characters')}</span>
                     </div>
                   </div>
                 </Card>
@@ -869,12 +871,12 @@ export default function TextAnalyzer() {
                 <Card className="p-4">
                   <h3 className="text-lg font-semibold mb-4">
                     <Languages className="h-5 w-5 inline-block mr-2" />
-                    可读性分析
+                    {t('textAnalyzerPage.readabilityAnalysis')}
                   </h3>
                   <div className="space-y-4">
                     <div>
                       <div className="flex justify-between mb-1">
-                        <span>可读性得分</span>
+                        <span>{t('textAnalyzerPage.readabilityScore')}</span>
                         <span className="font-medium">{analysisResult.readabilityScore.score}</span>
                       </div>
                       <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
@@ -885,7 +887,7 @@ export default function TextAnalyzer() {
                       </div>
                     </div>
                     <div>
-                      <span className="text-muted-foreground">可读性等级：</span>
+                      <span className="text-muted-foreground">{t('textAnalyzerPage.readabilityLevel')}</span>
                       <span className="font-medium">{analysisResult.readabilityScore.level}</span>
                     </div>
                   </div>
@@ -902,7 +904,7 @@ export default function TextAnalyzer() {
                 <Card className="p-4">
                   <h3 className="text-lg font-semibold mb-4">
                     <BarChart2 className="h-5 w-5 inline-block mr-2" />
-                    关键词密度分析
+                    {t('textAnalyzerPage.keywordDensity')}
                   </h3>
                   <div className="space-y-4">
                     {analysisResult.keywordDensity.length > 0 ? (
@@ -916,14 +918,14 @@ export default function TextAnalyzer() {
                         </div>
                       ))
                     ) : (
-                      <p className="text-muted-foreground">未检测到关键词密度</p>
+                      <p className="text-muted-foreground">{t('textAnalyzerPage.noKeywordDensity')}</p>
                     )}
                   </div>
                 </Card>
                 
                 {/* 相关关键词建议 */}
                 <Card className="p-4">
-                  <h3 className="text-lg font-semibold mb-4">相关关键词建议</h3>
+                  <h3 className="text-lg font-semibold mb-4">{t('textAnalyzerPage.relatedKeywords')}</h3>
                   <div className="flex flex-wrap gap-2">
                     {analysisResult.relatedKeywords.length > 0 ? (
                       analysisResult.relatedKeywords.map((item, index) => (
@@ -936,14 +938,14 @@ export default function TextAnalyzer() {
                         </span>
                       ))
                     ) : (
-                      <p className="text-muted-foreground">未生成相关关键词建议</p>
+                      <p className="text-muted-foreground">{t('textAnalyzerPage.noRelatedKeywords')}</p>
                     )}
                   </div>
                 </Card>
                 
                 {/* 文本热力图 */}
                 <Card className="p-4">
-                  <h3 className="text-lg font-semibold mb-4">文本热力图</h3>
+                  <h3 className="text-lg font-semibold mb-4">{t('textAnalyzerPage.heatmap')}</h3>
                   <div className="overflow-auto max-h-[500px] font-mono text-sm border rounded p-4">
                     {analysisResult.heatmapData.map((lineData) => (
                       <div key={lineData.lineIndex} className="mb-2">
@@ -974,7 +976,7 @@ export default function TextAnalyzer() {
             {optimizedText && (
               <Card className="p-4">
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
-                  <h2 className="text-xl font-semibold">优化后文本</h2>
+                  <h2 className="text-xl font-semibold">{t('textAnalyzerPage.optimizedText')}</h2>
                   <div className="flex gap-2">
                     <Button 
                       onClick={() => handleCopy(optimizedText)} 
@@ -983,7 +985,7 @@ export default function TextAnalyzer() {
                       className="transition-all duration-200 hover:brightness-105 focus:ring-2 focus:ring-primary/50 focus:ring-offset-2"
                     >
                       <Copy className="h-4 w-4 mr-1" />
-                      复制
+                      {t('textAnalyzerPage.copy')}
                     </Button>
                     <Button 
                       onClick={() => handleDownload(optimizedText, 'optimized_text.txt')} 
@@ -992,7 +994,7 @@ export default function TextAnalyzer() {
                       className="transition-all duration-200 hover:brightness-105 focus:ring-2 focus:ring-primary/50 focus:ring-offset-2"
                     >
                       <Download className="h-4 w-4 mr-1" />
-                      下载
+                      {t('textAnalyzerPage.download')}
                     </Button>
                   </div>
                 </div>
@@ -1006,10 +1008,10 @@ export default function TextAnalyzer() {
                 
                 <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
                     <div className="p-2 bg-primary/5 rounded">
-                      <p>字符减少: {inputText.length - optimizedText.length} ({((inputText.length - optimizedText.length) / inputText.length * 100).toFixed(1)}%)</p>
+                      <p>{t('textAnalyzerPage.charReduced')}: {inputText.length - optimizedText.length} ({((inputText.length - optimizedText.length) / inputText.length * 100).toFixed(1)}%)</p>
                     </div>
                     <div className="p-2 bg-primary/5 rounded">
-                      <p>处理类型: {isChineseMode ? '中文文本优化' : '英文文本优化'}</p>
+                      <p>{t('textAnalyzerPage.processType')}: {isChineseMode ? t('textAnalyzerPage.chineseOptimization') : t('textAnalyzerPage.englishOptimization')}</p>
                     </div>
                   </div>
               </Card>

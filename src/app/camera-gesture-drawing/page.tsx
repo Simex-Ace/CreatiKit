@@ -1,8 +1,10 @@
 "use client";
 
 import React, { useEffect, useRef } from 'react';
+import { useI18n } from '@/contexts/I18nContext';
 
 const CameraGestureDrawing = () => {
+  const { t } = useI18n();
   // DOM 元素引用
   const inputVideoRef = useRef<HTMLVideoElement>(null);
   const previewVideoRef = useRef<HTMLVideoElement>(null);
@@ -1798,9 +1800,9 @@ const CameraGestureDrawing = () => {
         }}
       />
       
-      <div style={{position: 'absolute', left: '1rem', top: '1rem', color: '#94a3b8', fontSize: '13px', zIndex: '80'}}>隔空写字 · 手势控制（MediaPipe Hands）</div>
-      <div style={{position: 'absolute', left: '50%', transform: 'translateX(-50%)', top: '1.8rem', color: '#94a3b8', fontSize: '13px', zIndex: '80', textAlign: 'center', maxWidth: '70%'}}>张开掌心呼出面板 · 食指点选 · 拇指+食指捏合写字 · 张开捏合手指消散</div>
-      <footer style={{position: 'absolute', right: '1rem', bottom: '1rem', color: '#94a3b8', fontSize: '12px', zIndex: '80'}}>单文件示例 — 允许摄像头权限后生效</footer>
+      <div style={{position: 'absolute', left: '1rem', top: '1rem', color: '#94a3b8', fontSize: '13px', zIndex: '80'}}>{t('cameraGestureDrawingPage.title')}</div>
+      <div style={{position: 'absolute', left: '50%', transform: 'translateX(-50%)', top: '1.8rem', color: '#94a3b8', fontSize: '13px', zIndex: '80', textAlign: 'center', maxWidth: '70%'}}>{t('cameraGestureDrawingPage.instructions')}</div>
+      <footer style={{position: 'absolute', right: '1rem', bottom: '1rem', color: '#94a3b8', fontSize: '12px', zIndex: '80'}}>{t('cameraGestureDrawingPage.footer')}</footer>
       
       {/* 真实 DOM 预览窗（可拖动、缩放、点击切换背景模式）*/}
       <div
@@ -1823,7 +1825,7 @@ const CameraGestureDrawing = () => {
           justifyContent: 'center',
           transition: 'box-shadow 120ms ease'
         }}
-        title="点击切换背景 | 拖动移动 | 右下角拖拽缩放"
+        title={t('cameraGestureDrawingPage.previewHint')}
       >
         {/* 预览视频与主 video 使用同一视频流（赋值后） */}
         <video
@@ -1854,7 +1856,7 @@ const CameraGestureDrawing = () => {
             alignItems: 'center',
             justifyContent: 'center'
           }}
-          title="拖动调整大小"
+          title={t('cameraGestureDrawingPage.resizeHint')}
         >
           <div style={{width: '8px', height: '8px', borderRight: '2px solid rgba(255,255,255,0.28)', borderBottom: '2px solid rgba(255,255,255,0.28)', transform: 'rotate(45deg)'}} />
         </div>

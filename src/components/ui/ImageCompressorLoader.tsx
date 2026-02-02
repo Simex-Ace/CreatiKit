@@ -1,12 +1,15 @@
 'use client';
 
 import { useEffect } from 'react';
+import { useI18n } from '@/contexts/I18nContext';
 
 interface ImageCompressorLoaderProps {
   onAnimationComplete: () => void;
 }
 
 export function ImageCompressorLoader({ onAnimationComplete }: ImageCompressorLoaderProps) {
+  const { t } = useI18n();
+
   useEffect(() => {
     // 缩短动画时间：1秒
     const timer = setTimeout(() => {
@@ -85,9 +88,11 @@ export function ImageCompressorLoader({ onAnimationComplete }: ImageCompressorLo
         </div>
         
         <div className="text-center">
-          <h2 className="text-xl font-bold text-blue-600">🖼️ 正在准备图片压缩工具 🖼️</h2>
+          <h2 className="text-xl font-bold text-blue-600">
+            🖼️ {t('compressPage.loaderTitle')} 🖼️
+          </h2>
           <p className="text-gray-600 mt-2">
-            <span className="animate-pulse">⚡</span> 优化图像质量，节省存储空间 <span className="animate-pulse">⚡</span>
+            <span className="animate-pulse">⚡</span> {t('compressPage.loaderSubtitle')} <span className="animate-pulse">⚡</span>
           </p>
         </div>
       </div>

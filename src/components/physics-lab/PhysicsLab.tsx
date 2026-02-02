@@ -1,8 +1,10 @@
 'use client';
 import React, { useRef, useEffect, useState } from 'react';
 import Matter from 'matter-js';
+import { useI18n } from '@/contexts/I18nContext';
 
 const PhysicsLab: React.FC = () => {
+  const { t } = useI18n();
   const sceneRef = useRef<HTMLDivElement>(null);
   const engineRef = useRef<Matter.Engine | null>(null);
   const renderRef = useRef<Matter.Render | null>(null);
@@ -649,63 +651,63 @@ const PhysicsLab: React.FC = () => {
       <div className="bg-white shadow-md p-4 rounded-t-lg">
         <div className="flex flex-wrap gap-4 items-center">
           <div className="text-sm text-gray-600">
-            按住 Alt 键点击创建物体 | 直接拖拽物体
+            {t('physicsLabPage.hint')}
           </div>
           
           {/* 形状选择 */}
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-sm font-medium">形状:</span>
+            <span className="text-sm font-medium">{t('physicsLabPage.shape')}:</span>
             <button 
               className={selectedShape === 'circle' ? 'px-3 py-1 rounded-md text-sm bg-blue-500 text-white' : 'px-3 py-1 rounded-md text-sm bg-gray-200 text-gray-700'}
               onClick={() => setSelectedShape('circle')}
             >
-              圆形
+              {t('physicsLabPage.circle')}
             </button>
             <button 
               className={selectedShape === 'rectangle' ? 'px-3 py-1 rounded-md text-sm bg-blue-500 text-white' : 'px-3 py-1 rounded-md text-sm bg-gray-200 text-gray-700'}
               onClick={() => setSelectedShape('rectangle')}
             >
-              矩形
+              {t('physicsLabPage.rectangle')}
             </button>
             <button 
               className={selectedShape === 'triangle' ? 'px-3 py-1 rounded-md text-sm bg-blue-500 text-white' : 'px-3 py-1 rounded-md text-sm bg-gray-200 text-gray-700'}
               onClick={() => setSelectedShape('triangle')}
             >
-              三角形
+              {t('physicsLabPage.triangle')}
             </button>
             <button 
               className={selectedShape === 'hexagon' ? 'px-3 py-1 rounded-md text-sm bg-blue-500 text-white' : 'px-3 py-1 rounded-md text-sm bg-gray-200 text-gray-700'}
               onClick={() => setSelectedShape('hexagon')}
             >
-              六边形
+              {t('physicsLabPage.hexagon')}
             </button>
             <button 
               className={selectedShape === 'trapezoid' ? 'px-3 py-1 rounded-md text-sm bg-blue-500 text-white' : 'px-3 py-1 rounded-md text-sm bg-gray-200 text-gray-700'}
               onClick={() => setSelectedShape('trapezoid')}
             >
-              梯形
+              {t('physicsLabPage.trapezoid')}
             </button>
             <button 
               className={selectedShape === 'ellipse' ? 'px-3 py-1 rounded-md text-sm bg-blue-500 text-white' : 'px-3 py-1 rounded-md text-sm bg-gray-200 text-gray-700'}
               onClick={() => setSelectedShape('ellipse')}
             >
-              椭圆形
+              {t('physicsLabPage.ellipse')}
             </button>
           </div>
           
           {/* 场景选择 */}
           <div className="flex items-center gap-2">
-            <span className="text-sm font-medium">场景:</span>
+            <span className="text-sm font-medium">{t('physicsLabPage.scene')}:</span>
             <select 
               className="px-3 py-1 rounded-md text-sm border border-gray-300"
               value={selectedScene}
               onChange={(e) => setSelectedScene(e.target.value as any)}
             >
-              <option value="custom">自定义</option>
-              <option value="lever">杠杆</option>
-              <option value="spring">弹簧振子</option>
-              <option value="pendulum">单摆</option>
-              <option value="inclined-plane">斜面</option>
+              <option value="custom">{t('physicsLabPage.custom')}</option>
+              <option value="lever">{t('physicsLabPage.lever')}</option>
+              <option value="spring">{t('physicsLabPage.spring')}</option>
+              <option value="pendulum">{t('physicsLabPage.pendulum')}</option>
+              <option value="inclined-plane">{t('physicsLabPage.inclinedPlane')}</option>
             </select>
           </div>
           
@@ -714,19 +716,19 @@ const PhysicsLab: React.FC = () => {
             className="px-3 py-1 rounded-md text-sm bg-gray-200 text-gray-700"
             onClick={clearBodies}
           >
-            清除物体
+            {t('physicsLabPage.clearObjects')}
           </button>
           <button 
             className="px-3 py-1 rounded-md text-sm bg-gray-200 text-gray-700"
             onClick={resetLab}
           >
-            重置
+            {t('physicsLabPage.reset')}
           </button>
           
           {/* 参数控制 */}
           <div className="flex flex-wrap gap-4">
             <div className="flex items-center gap-2">
-              <span className="text-sm font-medium">摩擦:</span>
+              <span className="text-sm font-medium">{t('physicsLabPage.friction')}:</span>
               <input 
                 type="range" 
                 min="0" 
@@ -740,7 +742,7 @@ const PhysicsLab: React.FC = () => {
             </div>
             
             <div className="flex items-center gap-2">
-              <span className="text-sm font-medium">弹性:</span>
+              <span className="text-sm font-medium">{t('physicsLabPage.elasticity')}:</span>
               <input 
                 type="range" 
                 min="0" 
@@ -756,7 +758,7 @@ const PhysicsLab: React.FC = () => {
             {/* 弹簧场景特定参数 */}
             {selectedScene === 'spring' && (
               <div className="flex items-center gap-2">
-                <span className="text-sm font-medium">劲度系数:</span>
+                <span className="text-sm font-medium">{t('physicsLabPage.stiffness')}:</span>
                 <input 
                   type="range" 
                   min="0.01" 
@@ -773,7 +775,7 @@ const PhysicsLab: React.FC = () => {
             {/* 斜面场景特定参数 */}
             {selectedScene === 'inclined-plane' && (
               <div className="flex items-center gap-2">
-                <span className="text-sm font-medium">斜面角度:</span>
+                <span className="text-sm font-medium">{t('physicsLabPage.inclinedAngle')}:</span>
                 <input 
                   type="range" 
                   min="0" 
@@ -792,7 +794,7 @@ const PhysicsLab: React.FC = () => {
       {/* 物理实验区域 */}
       <div className="flex-1 bg-white rounded-lg shadow-lg overflow-hidden relative border-2 border-gray-200">
         <div className="absolute top-2 left-2 bg-blue-500 text-white px-3 py-1 rounded-md text-sm font-medium">
-          物理实验区域
+          {t('physicsLabPage.physicsArea')}
         </div>
         
         <div 
@@ -801,7 +803,7 @@ const PhysicsLab: React.FC = () => {
           onClick={handleCanvasClick}
         >
           <div className="absolute bottom-2 right-2 text-xs text-gray-500 bg-white bg-opacity-70 p-1 rounded">
-            按住 Alt 键点击创建物体 | 直接拖拽物体
+            {t('physicsLabPage.hint')}
           </div>
         </div>
       </div>

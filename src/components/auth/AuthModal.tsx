@@ -9,6 +9,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { X, Mail, Lock, Github, Eye, EyeOff, AlertCircle } from 'lucide-react';
 import { useToast } from '@/contexts/ToastContext';
 import { checkPasswordStrength, isValidEmail } from '@/lib/passwordUtils';
+import { useI18n } from '@/contexts/I18nContext';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -29,6 +30,7 @@ export function AuthModal({ isOpen, onClose, defaultMode = 'login' }: AuthModalP
   const [oauthProvider, setOauthProvider] = useState<'google' | 'github' | null>(null);
   const { signIn, signUp, signInWithProvider, resetPassword } = useAuth();
   const { toast } = useToast();
+  const { t } = useI18n();
   
   // 当 defaultMode 改变时，更新 mode（修复注册按钮问题）
   React.useEffect(() => {
@@ -90,11 +92,11 @@ export function AuthModal({ isOpen, onClose, defaultMode = 'login' }: AuthModalP
   // 验证邮箱格式
   const validateEmail = (emailValue: string): boolean => {
     if (!emailValue) {
-      setEmailError('请输入邮箱地址');
+      setEmailError(t('auth.emailRequired'));
       return false;
     }
     if (!isValidEmail(emailValue)) {
-      setEmailError('请输入有效的邮箱地址');
+      setEmailError(t('auth.emailInvalid'));
       return false;
     }
     setEmailError('');
@@ -104,33 +106,33 @@ export function AuthModal({ isOpen, onClose, defaultMode = 'login' }: AuthModalP
   // 验证密码
   const validatePassword = (passwordValue: string, isRegister = false): boolean => {
     if (!passwordValue) {
-      setPasswordError('请输入密码');
+      setPasswordError(t('auth.passwordRequired'));
       return false;
     }
     if (passwordValue.length < 8) {
-      setPasswordError('密码至少需要8个字符');
+      setPasswordError(t('auth.passwordMinLength'));
       return false;
     }
     if (isRegister) {
       // 重新计算密码强度以确保准确性
       const strength = checkPasswordStrength(passwordValue);
       if (strength.strength === 'weak') {
-        setPasswordError('密码强度太弱，请使用更复杂的密码');
+        setPasswordError(t('auth.passwordTooWeak'));
         return false;
       }
       // 要求至少包含大写字母
       if (!/[A-Z]/.test(passwordValue)) {
-        setPasswordError('密码必须包含至少一个大写字母');
+        setPasswordError(t('auth.passwordRequiresUppercase'));
         return false;
       }
       // 要求至少包含小写字母
       if (!/[a-z]/.test(passwordValue)) {
-        setPasswordError('密码必须包含至少一个小写字母');
+        setPasswordError(t('auth.passwordRequiresLowercase'));
         return false;
       }
       // 要求至少包含数字
       if (!/[0-9]/.test(passwordValue)) {
-        setPasswordError('密码必须包含至少一个数字');
+        setPasswordError(t('auth.passwordRequiresNumber'));
         return false;
       }
     }
@@ -147,16 +149,16 @@ export function AuthModal({ isOpen, onClose, defaultMode = 'login' }: AuthModalP
     
     if (mode === 'register') {
       if (password !== confirmPassword) {
-        setPasswordError('两次输入的密码不一致');
+        setPasswordError(t('auth.passwordsDoNotMatch'));
         return;
       }
       // 重新验证密码强度
       const strength = checkPasswordStrength(password);
       if (strength.strength === 'weak' || !/[A-Z]/.test(password) || !/[a-z]/.test(password) || !/[0-9]/.test(password)) {
-        setPasswordError('密码必须包含大小写字母和数字');
+        setPasswordError(t('auth.passwordRequirement'));
         toast({
-          title: '密码不符合要求',
-          description: '密码必须包含大小写字母、数字，至少8个字符',
+          title: t('auth.registerFailed'),
+          description: t('auth.passwordRequirementDetail'),
           variant: 'destructive',
         });
         return;
@@ -171,21 +173,21 @@ export function AuthModal({ isOpen, onClose, defaultMode = 'login' }: AuthModalP
       if (mode === 'login') {
         const { error } = await signIn(email, password);
         if (error) {
-          let errorMessage = '请检查您的邮箱和密码';
+          let errorMessage = t('auth.checkEmailAndPassword');
           if (error.message.includes('Invalid login credentials')) {
-            errorMessage = '邮箱或密码错误';
+            errorMessage = t('auth.emailOrPasswordIncorrect');
           } else if (error.message.includes('Email not confirmed')) {
-            errorMessage = '请先验证您的邮箱地址';
+            errorMessage = t('auth.pleaseVerifyEmail');
           }
           toast({
-            title: '登录失败',
+            title: t('auth.loginFailed'),
             description: errorMessage,
             variant: 'destructive',
           });
         } else {
           toast({
-            title: '登录成功',
-            description: '欢迎回来！',
+            title: t('auth.loginSuccess'),
+            description: t('auth.welcomeBack'),
             variant: 'success',
             duration: 2000,
           });
@@ -196,7 +198,7 @@ export function AuthModal({ isOpen, onClose, defaultMode = 'login' }: AuthModalP
       } else if (mode === 'register') {
         const { error, data } = await signUp(email, password);
         if (error) {
-          let errorMessage = '注册时出现问题，请重试';
+          let errorMessage = t('auth.registrationFailedRetry');
           const errorMsg = (error.message || '').toLowerCase();
           const errorCode = error.code || '';
           const errorStatus = error.status || 0;
@@ -214,9 +216,9 @@ export function AuthModal({ isOpen, onClose, defaultMode = 'login' }: AuthModalP
               errorMsg.includes('rate limit') || 
               errorMsg.includes('too many requests') ||
               errorMsg.includes('email rate limit exceeded')) {
-            errorMessage = '请求过于频繁，请稍后再试（通常需要等待几分钟）';
+            errorMessage = t('auth.rateLimitExceeded');
             toast({
-              title: '注册失败',
+              title: t('auth.registerFailed'),
               description: errorMessage,
               variant: 'destructive',
               duration: 5000,
@@ -236,10 +238,10 @@ export function AuthModal({ isOpen, onClose, defaultMode = 'login' }: AuthModalP
           
           if (isEmailAlreadyRegistered) {
             // 邮箱已被注册
-            errorMessage = '该邮箱已被注册，请直接登录';
+            errorMessage = t('auth.emailAlreadyRegistered');
             setMode('login');
             toast({
-              title: '注册失败',
+              title: t('auth.registerFailed'),
               description: errorMessage,
               variant: 'destructive',
             });
@@ -249,18 +251,18 @@ export function AuthModal({ isOpen, onClose, defaultMode = 'login' }: AuthModalP
             setLoading(false);
             return;
           } else if (errorMsg.includes('password') || errorMsg.includes('weak password')) {
-            errorMessage = '密码不符合要求，请使用更复杂的密码';
+            errorMessage = t('auth.passwordDoesNotMeetRequirements');
           } else if (errorMsg.includes('invalid email') || errorMsg.includes('email format')) {
-            errorMessage = '邮箱格式不正确';
+            errorMessage = t('auth.emailFormatIncorrect');
           } else if (errorMsg.includes('network') || errorMsg.includes('fetch')) {
-            errorMessage = '网络连接失败，请检查网络后重试';
+            errorMessage = t('auth.networkConnectionFailed');
           } else {
             // 其他错误，显示原始错误消息
-            errorMessage = error.message || '注册失败，请重试';
+            errorMessage = error.message || t('auth.registrationFailedRetry');
           }
           
           toast({
-            title: '注册失败',
+            title: t('auth.registerFailed'),
             description: errorMessage,
             variant: 'destructive',
           });
@@ -270,10 +272,10 @@ export function AuthModal({ isOpen, onClose, defaultMode = 'login' }: AuthModalP
             // 如果用户已存在但未验证，Supabase 可能会返回已存在的用户
             // 我们需要确保这是新创建的用户
             toast({
-              title: '注册成功',
+              title: t('auth.registerSuccess'),
               description: data.user.email_confirmed_at 
-                ? '账户已创建，可以开始使用了！'
-                : '请检查您的邮箱以验证账户。如果该邮箱已注册，请直接登录。',
+                ? t('auth.accountCreated')
+                : t('auth.checkEmailToVerify'),
               variant: 'success',
               duration: 4000,
             });
@@ -284,8 +286,8 @@ export function AuthModal({ isOpen, onClose, defaultMode = 'login' }: AuthModalP
           } else {
             // 没有返回用户数据，可能是重复注册被阻止了
             toast({
-              title: '注册失败',
-              description: '该邮箱可能已被注册，请直接登录或使用忘记密码功能',
+              title: t('auth.registerFailed'),
+              description: t('auth.emailMayBeRegistered'),
               variant: 'destructive',
             });
             setMode('login');
@@ -294,7 +296,7 @@ export function AuthModal({ isOpen, onClose, defaultMode = 'login' }: AuthModalP
       } else if (mode === 'forgot') {
         const { error } = await resetPassword(email);
         if (error) {
-          let errorMessage = '无法发送重置密码邮件';
+          let errorMessage = t('auth.resetPasswordFailed');
           const errorMsg = (error.message || '').toLowerCase();
           const errorCode = error.code || '';
           
@@ -302,32 +304,32 @@ export function AuthModal({ isOpen, onClose, defaultMode = 'login' }: AuthModalP
               errorMsg.includes('未注册') ||
               errorCode === 'email_not_found' ||
               error.status === 404) {
-            errorMessage = '该邮箱未注册，请先注册账户';
+            errorMessage = t('auth.emailNotRegistered');
           } else if (errorMsg.includes('rate limit') || 
                      errorMsg.includes('too many') ||
                      errorMsg.includes('too frequent') ||
                      errorCode === 'rate_limit_exceeded' ||
                      error.status === 429) {
-            errorMessage = error.message || '请求过于频繁，请稍后再试（通常需要等待几分钟）';
+            errorMessage = error.message || t('auth.resetPasswordRateLimit');
           } else if (errorMsg.includes('invalid email')) {
-            errorMessage = '邮箱格式不正确';
+            errorMessage = t('auth.emailFormatIncorrect');
           } else if (errorMsg.includes('configuration') || errorMsg.includes('smtp')) {
-            errorMessage = '邮件服务配置错误，请联系管理员';
+            errorMessage = t('auth.resetPasswordFailed');
           } else {
             // 使用原始错误消息
             errorMessage = error.message || errorMessage;
           }
           
           toast({
-            title: '发送失败',
+            title: t('auth.resetPasswordFailed'),
             description: errorMessage,
             variant: 'destructive',
             duration: 5000,
           });
         } else {
           toast({
-            title: '邮件已发送',
-            description: '请检查您的邮箱（包括垃圾邮件文件夹）以重置密码。如果未收到邮件，请检查邮箱地址是否正确，或稍后重试。',
+            title: t('auth.resetPasswordEmailSent'),
+            description: t('auth.checkEmailForReset'),
             variant: 'success',
             duration: 5000,
           });
@@ -337,8 +339,8 @@ export function AuthModal({ isOpen, onClose, defaultMode = 'login' }: AuthModalP
       }
     } catch (error: any) {
       toast({
-        title: '操作失败',
-        description: error.message || '发生了意外错误',
+        title: t('auth.operationFailed'),
+        description: error.message || t('auth.unexpectedError'),
         variant: 'destructive',
       });
     } finally {
@@ -375,8 +377,8 @@ export function AuthModal({ isOpen, onClose, defaultMode = 'login' }: AuthModalP
       setLoading(false);
       setOauthProvider(null);
       toast({
-        title: '登录失败',
-        description: error.message || '第三方登录失败，请检查是否已正确配置',
+        title: t('auth.loginFailed'),
+        description: error.message || t('auth.thirdPartyLoginFailed'),
         variant: 'destructive',
       });
     }
@@ -385,22 +387,26 @@ export function AuthModal({ isOpen, onClose, defaultMode = 'login' }: AuthModalP
   if (!isOpen) return null;
 
   return (
-    <div 
-      className="fixed inset-0 z-[100] flex items-start justify-center p-4 pt-32 md:pt-40"
-      onClick={(e) => {
-        if (e.target === e.currentTarget) {
-          onClose();
-        }
-      }}
-    >
+    <>
+      {/* 背景遮罩层 - 不覆盖导航栏 */}
       <div 
-        className="relative w-full max-w-md bg-background rounded-lg shadow-xl p-6 space-y-5 mx-auto mt-0 max-h-[85vh] overflow-y-auto border"
-        onClick={(e) => e.stopPropagation()}
+        className="fixed left-0 right-0 bottom-0 z-[9998] bg-black/50 backdrop-blur-sm"
+        style={{ top: '64px' }} // 导航栏高度 h-16 (64px)，遮罩从导航栏下方开始
+        onClick={onClose}
+        aria-hidden="true"
+      />
+      {/* 模态框容器 */}
+      <div 
+        className="fixed inset-0 z-[9999] flex items-center justify-center p-4 py-8 sm:py-4 pointer-events-none"
       >
+        <div 
+          className="relative w-full max-w-md bg-background rounded-lg shadow-xl p-6 space-y-5 mx-auto my-auto max-h-[calc(100vh-2rem)] sm:max-h-[90vh] overflow-y-auto no-scrollbar border pointer-events-auto"
+          onClick={(e) => e.stopPropagation()}
+        >
         <button
           onClick={onClose}
           className="absolute top-4 right-4 text-muted-foreground hover:text-foreground transition-colors z-10"
-          aria-label="关闭"
+          aria-label={t('common.close')}
         >
           <X className="h-5 w-5" />
         </button>
@@ -436,17 +442,17 @@ export function AuthModal({ isOpen, onClose, defaultMode = 'login' }: AuthModalP
                 )}
               </div>
               <h2 className="text-2xl font-bold">
-                正在跳转到 {oauthProvider === 'google' ? 'Google' : 'GitHub'} 登录
+                {t('auth.redirectingTo')} {oauthProvider === 'google' ? 'Google' : 'GitHub'} {t('auth.loginWith')}
               </h2>
               <p className="text-sm text-muted-foreground">
-                即将跳转到 {oauthProvider === 'google' ? 'Google' : 'GitHub'} 进行授权登录
+                {t('auth.willRedirectTo')} {oauthProvider === 'google' ? 'Google' : 'GitHub'} {t('auth.forAuthorization')}
               </p>
             </div>
             <div className="flex justify-center">
               <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
             </div>
             <p className="text-xs text-muted-foreground">
-              如果没有自动跳转，请检查浏览器弹窗拦截设置
+              {t('auth.ifNotAutoRedirect')}
             </p>
             <Button
               variant="ghost"
@@ -456,33 +462,33 @@ export function AuthModal({ isOpen, onClose, defaultMode = 'login' }: AuthModalP
               }}
               className="text-sm"
             >
-              取消
+              {t('common.cancel')}
             </Button>
           </div>
         ) : (
           <>
             <div className="text-center space-y-1">
               <h2 className="text-2xl font-bold">
-                {mode === 'login' ? '登录' : mode === 'register' ? '注册' : '重置密码'}
+                {mode === 'login' ? t('auth.login') : mode === 'register' ? t('auth.register') : t('auth.forgotPassword')}
               </h2>
               <p className="text-sm text-muted-foreground">
                 {mode === 'login'
-                  ? '登录以保存您的作品和历史记录'
+                  ? t('auth.loginDescription')
                   : mode === 'register'
-                  ? '创建账户以开始使用'
-                  : '输入您的邮箱地址，我们将发送重置密码链接'}
+                  ? t('auth.registerDescription')
+                  : t('auth.forgotPasswordDescription')}
               </p>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="email" className="text-sm font-medium block">邮箱</Label>
+            <Label htmlFor="email" className="text-sm font-medium block">{t('common.email')}</Label>
             <div className="relative">
               <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none z-10" />
               <Input
                 id="email"
                 type="email"
-                placeholder="your@email.com"
+                placeholder={t('auth.emailPlaceholder')}
                 value={email}
                 onChange={(e) => {
                   setEmail(e.target.value);
@@ -508,9 +514,9 @@ export function AuthModal({ isOpen, onClose, defaultMode = 'login' }: AuthModalP
               <div className="flex items-start gap-2">
                 <AlertCircle className="h-4 w-4 text-orange-600 dark:text-orange-400 mt-0.5 flex-shrink-0" />
                 <div className="text-xs text-orange-800 dark:text-orange-300 space-y-1">
-                  <p className="font-medium">📧 重要提示</p>
+                  <p className="font-medium">{t('auth.importantNotice')}</p>
                   <p className="text-orange-700 dark:text-orange-400">
-                    收到重置邮件后，如果点击链接在邮件内置浏览器中无法打开，请复制链接地址到 Chrome、Edge 等外部浏览器中打开，避免兼容性问题。
+                    {t('auth.resetPasswordTip')}
                   </p>
                 </div>
               </div>
@@ -521,9 +527,9 @@ export function AuthModal({ isOpen, onClose, defaultMode = 'login' }: AuthModalP
             <>
               <div className="space-y-2">
                   <Label htmlFor="password" className="text-sm font-medium block">
-                  密码
+                  {t('common.password')}
                   {mode === 'register' && (
-                    <span className="text-xs text-muted-foreground ml-2">(至少8个字符，包含大小写字母和数字)</span>
+                    <span className="text-xs text-muted-foreground ml-2">{t('common.passwordRequirement')}</span>
                   )}
                 </Label>
                 <div className="relative">
@@ -531,7 +537,7 @@ export function AuthModal({ isOpen, onClose, defaultMode = 'login' }: AuthModalP
                   <Input
                     id="password"
                     type={showPassword ? 'text' : 'password'}
-                    placeholder="••••••••"
+                    placeholder={t('auth.passwordPlaceholder')}
                     value={password}
                     onChange={(e) => {
                       setPassword(e.target.value);
@@ -576,25 +582,25 @@ export function AuthModal({ isOpen, onClose, defaultMode = 'login' }: AuthModalP
                               />
                             </div>
                             <span className="text-xs text-muted-foreground">
-                              {strength.strength === 'weak' ? '弱' : strength.strength === 'medium' ? '中' : '强'}
+                              {strength.strength === 'weak' ? t('common.weak') : strength.strength === 'medium' ? t('common.medium') : t('common.strong')}
                             </span>
                           </div>
                           {strength.feedback.length > 0 && strength.strength !== 'strong' && (
                             <p className="text-xs text-muted-foreground">
-                              建议：{strength.feedback.slice(0, 2).join('、')}
+                              {t('common.suggestion')}：{strength.feedback.slice(0, 2).join('、')}
                             </p>
                           )}
                           {/* 明确显示密码要求 */}
                           {!passwordError && (
                             <div className="text-xs text-muted-foreground space-y-0.5">
                               <p className={/[A-Z]/.test(password) ? 'text-green-600 dark:text-green-400' : 'text-muted-foreground'}>
-                                {/[A-Z]/.test(password) ? '✓' : '○'} 包含大写字母
+                                {/[A-Z]/.test(password) ? '✓' : '○'} {t('common.containsUppercase')}
                               </p>
                               <p className={/[a-z]/.test(password) ? 'text-green-600 dark:text-green-400' : 'text-muted-foreground'}>
-                                {/[a-z]/.test(password) ? '✓' : '○'} 包含小写字母
+                                {/[a-z]/.test(password) ? '✓' : '○'} {t('common.containsLowercase')}
                               </p>
                               <p className={/[0-9]/.test(password) ? 'text-green-600 dark:text-green-400' : 'text-muted-foreground'}>
-                                {/[0-9]/.test(password) ? '✓' : '○'} 包含数字
+                                {/[0-9]/.test(password) ? '✓' : '○'} {t('common.containsNumber')}
                               </p>
                             </div>
                           )}
@@ -607,13 +613,13 @@ export function AuthModal({ isOpen, onClose, defaultMode = 'login' }: AuthModalP
 
               {mode === 'register' && (
                 <div className="space-y-2">
-                  <Label htmlFor="confirmPassword" className="text-sm font-medium block">确认密码</Label>
+                  <Label htmlFor="confirmPassword" className="text-sm font-medium block">{t('common.confirmPassword')}</Label>
                   <div className="relative">
                     <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none z-10" />
                     <Input
                       id="confirmPassword"
                       type={showConfirmPassword ? 'text' : 'password'}
-                      placeholder="再次输入密码"
+                      placeholder={t('auth.passwordPlaceholder')}
                       value={confirmPassword}
                       onChange={(e) => {
                         setConfirmPassword(e.target.value);
@@ -623,7 +629,7 @@ export function AuthModal({ isOpen, onClose, defaultMode = 'login' }: AuthModalP
                       }}
                       onBlur={() => {
                         if (confirmPassword && confirmPassword !== password) {
-                          setPasswordError('两次输入的密码不一致');
+                          setPasswordError(t('auth.passwordsDoNotMatch'));
                         }
                       }}
                       className={`pl-10 pr-10 h-10 w-full ${passwordError && confirmPassword ? 'border-destructive' : ''}`}
@@ -649,7 +655,7 @@ export function AuthModal({ isOpen, onClose, defaultMode = 'login' }: AuthModalP
                     onClick={() => setMode('forgot')}
                     className="text-xs text-primary hover:underline"
                   >
-                    忘记密码？
+                    {t('common.forgotPassword')}？
                   </button>
                 </div>
               )}
@@ -658,12 +664,12 @@ export function AuthModal({ isOpen, onClose, defaultMode = 'login' }: AuthModalP
 
           <Button type="submit" className="w-full h-10 mt-4" disabled={loading}>
             {loading
-              ? '处理中...'
+              ? t('common.processing') || 'Processing...'
               : mode === 'login'
-              ? '登录'
+              ? t('auth.login')
               : mode === 'register'
-              ? '注册'
-              : '发送重置链接'}
+              ? t('auth.register')
+              : t('auth.resetPassword')}
           </Button>
             </form>
 
@@ -675,7 +681,7 @@ export function AuthModal({ isOpen, onClose, defaultMode = 'login' }: AuthModalP
               </div>
               <div className="relative flex justify-center text-xs">
                 <span className="bg-background px-2 text-muted-foreground text-xs">
-                  或使用第三方登录
+                  {t('auth.orContinueWith')}
                 </span>
               </div>
             </div>
@@ -686,9 +692,9 @@ export function AuthModal({ isOpen, onClose, defaultMode = 'login' }: AuthModalP
                 <div className="flex items-start gap-2">
                   <AlertCircle className="h-4 w-4 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
                   <div className="text-xs text-blue-800 dark:text-blue-300 space-y-1">
-                    <p className="font-medium">💡 推荐使用第三方登录</p>
+                    <p className="font-medium">💡 {t('auth.recommended')}</p>
                     <p className="text-blue-700 dark:text-blue-400">
-                      邮箱登录可能遇到验证链接在邮件内置浏览器中无法打开的问题，建议复制链接到外部浏览器打开，或直接使用 Google/GitHub 登录，更稳定便捷。
+                      {t('auth.registerTip')}
                     </p>
                   </div>
                 </div>
@@ -705,7 +711,7 @@ export function AuthModal({ isOpen, onClose, defaultMode = 'login' }: AuthModalP
                     </svg>
                   </div>
                   <div className="text-xs text-green-800 dark:text-green-300">
-                    <span className="font-medium">提示：</span> 使用 Google/GitHub 登录更稳定，避免邮箱验证链接在邮件内置浏览器中无法打开的问题
+                    <span className="font-medium">{t('common.tip') || 'Tip'}:</span> {t('auth.loginTip')}
                   </div>
                 </div>
               </div>
@@ -760,7 +766,7 @@ export function AuthModal({ isOpen, onClose, defaultMode = 'login' }: AuthModalP
           <div className="text-center text-sm pt-2">
             {mode === 'login' ? (
             <span className="text-muted-foreground">
-              还没有账户？{' '}
+              {t('auth.noAccount')}{' '}
               <button
                 onClick={() => {
                   setMode('register');
@@ -770,12 +776,12 @@ export function AuthModal({ isOpen, onClose, defaultMode = 'login' }: AuthModalP
                 className="text-primary hover:underline font-medium"
                 type="button"
               >
-                立即注册
+                {t('auth.clickToRegister')}
               </button>
             </span>
           ) : mode === 'register' ? (
             <span className="text-muted-foreground">
-              已有账户？{' '}
+              {t('auth.haveAccount')}{' '}
               <button
                 onClick={() => {
                   setMode('login');
@@ -785,12 +791,12 @@ export function AuthModal({ isOpen, onClose, defaultMode = 'login' }: AuthModalP
                 className="text-primary hover:underline font-medium"
                 type="button"
               >
-                立即登录
+                {t('auth.clickToLogin')}
               </button>
             </span>
           ) : (
             <span className="text-muted-foreground">
-              记起密码了？{' '}
+              {t('common.rememberPassword') || 'Remember password?'}{' '}
               <button
                 onClick={() => {
                   setMode('login');
@@ -799,14 +805,15 @@ export function AuthModal({ isOpen, onClose, defaultMode = 'login' }: AuthModalP
                 className="text-primary hover:underline font-medium"
                 type="button"
               >
-                返回登录
+                {t('common.backToLogin')}
               </button>
             </span>
             )}
           </div>
         )}
+        </div>
       </div>
-    </div>
+    </>
   );
 }
 

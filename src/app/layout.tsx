@@ -9,6 +9,8 @@ import { StructuredData } from '@/components/StructuredData';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { ToastProvider } from '@/contexts/ToastContext';
 import { Toaster } from '@/components/ui/toast';
+import { I18nProvider } from '@/contexts/I18nContext';
+import { LanguageWrapper } from '@/components/LanguageWrapper';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -43,12 +45,6 @@ export const metadata: Metadata = {
     '数据可视化',
     '表情符号',
     '在线工具箱',
-    'SVG编辑器',
-    'CSS动画',
-    '音频可视化',
-    '粒子特效',
-    '设计工具',
-    '前端工具',
   ],
   authors: [{ name: 'CreatiKit Team' }],
   creator: 'CreatiKit',
@@ -116,23 +112,26 @@ export default function RootLayout({
   return (
     <html lang="zh-CN" suppressHydrationWarning>
       <body className={inter.className}>
-        <StructuredData />
-        <ThemeProvider>
-          <ToastProvider>
-            <AuthProvider>
-          <div className="flex flex-col min-h-screen">
-            <Header />
-            <main className="flex-1 container mx-auto px-4 py-8">
-              <PageTransition>
-                {children}
-              </PageTransition>
-            </main>
-            <Footer />
-          </div>
-              <Toaster />
-            </AuthProvider>
-          </ToastProvider>
-        </ThemeProvider>
+        <I18nProvider>
+          <LanguageWrapper />
+          <StructuredData />
+          <ThemeProvider>
+            <ToastProvider>
+              <AuthProvider>
+                <div className="flex flex-col min-h-screen">
+                  <Header />
+                  <main className="flex-1 container mx-auto px-4 py-8">
+                    <PageTransition>
+                      {children}
+                    </PageTransition>
+                  </main>
+                  <Footer />
+                </div>
+                <Toaster />
+              </AuthProvider>
+            </ToastProvider>
+          </ThemeProvider>
+        </I18nProvider>
       </body>
     </html>
   );

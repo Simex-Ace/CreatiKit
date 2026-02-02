@@ -9,9 +9,11 @@ import { Textarea } from '@/components/ui/textarea';
 import { FileUp, Copy, Download, CheckCircle2, RefreshCw } from 'lucide-react';
 import { useToast } from '@/contexts/ToastContext';
 import { useDevelopmentAlert } from '@/lib/useDevelopmentAlert';
+import { useI18n } from '@/contexts/I18nContext';
 import CryptoJS from 'crypto-js';
 
 export default function HashCalculator() {
+  const { t } = useI18n();
   // 状态管理
   const [activeTab, setActiveTab] = useState('text');
   const [textInput, setTextInput] = useState('');
@@ -39,7 +41,7 @@ export default function HashCalculator() {
   // 计算文本哈希值
   const calculateTextHash = () => {
     if (!textInput.trim()) {
-      toast({ title: '请输入要计算哈希值的文本', variant: 'destructive' });
+      toast({ title: t('hashCalculatorPage.enterText'), variant: 'destructive' });
       return;
     }
 
@@ -54,7 +56,7 @@ export default function HashCalculator() {
     setTimeout(() => {
       setHashResults(results);
       setIsProcessing(false);
-      toast({ title: '哈希值计算完成' });
+      toast({ title: t('hashCalculatorPage.calculationComplete') });
     }, 300); // 添加一个小延迟以显示加载状态
   };
 
@@ -68,7 +70,7 @@ export default function HashCalculator() {
   // 计算文件哈希值
   const calculateFileHash = () => {
     if (!selectedFile) {
-      toast({ title: '请先上传文件', variant: 'destructive' });
+      toast({ title: t('hashCalculatorPage.uploadFile'), variant: 'destructive' });
       return;
     }
 
@@ -89,13 +91,13 @@ export default function HashCalculator() {
 
         setHashResults(results);
         setIsProcessing(false);
-        toast({ title: '文件哈希值计算完成' });
+        toast({ title: t('hashCalculatorPage.fileCalculationComplete') });
       }
     };
 
     reader.onerror = () => {
       setIsProcessing(false);
-      toast({ title: '文件读取失败', variant: 'destructive' });
+      toast({ title: t('hashCalculatorPage.fileReadFailed'), variant: 'destructive' });
     };
 
     reader.readAsArrayBuffer(selectedFile);
@@ -106,10 +108,10 @@ export default function HashCalculator() {
     if (!text) return;
     navigator.clipboard.writeText(text)
       .then(() => {
-        toast({ title: `${algorithm.toUpperCase()} 哈希值已复制到剪贴板` });
+        toast({ title: t('hashCalculatorPage.copied', { algorithm: algorithm.toUpperCase() }) });
       })
       .catch(() => {
-        toast({ title: '复制失败', variant: 'destructive' });
+        toast({ title: t('hashCalculatorPage.copyFailed'), variant: 'destructive' });
       });
   };
 
@@ -130,7 +132,7 @@ export default function HashCalculator() {
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
     
-    toast({ title: '哈希值已下载' });
+    toast({ title: t('hashCalculatorPage.downloadSuccess') });
   };
 
   // 切换算法选择
@@ -155,24 +157,24 @@ export default function HashCalculator() {
 
   return (
     <div className="container mx-auto py-8 px-4">
-      <h1 className="text-3xl font-bold mb-2">哈希/散列值计算器</h1>
-      <p className="text-muted-foreground mb-8">计算文本或文件的MD5、SHA-1、SHA-256、SHA-512等多种哈希值</p>
+      <h1 className="text-3xl font-bold mb-2">{t('hashCalculatorPage.title')}</h1>
+      <p className="text-muted-foreground mb-8">{t('hashCalculatorPage.subtitle')}</p>
 
       <Card className="p-6 mb-6">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid grid-cols-2 mb-4">
-            <TabsTrigger value="text">文本输入</TabsTrigger>
-            <TabsTrigger value="file">文件上传</TabsTrigger>
+            <TabsTrigger value="text">{t('hashCalculatorPage.tabText')}</TabsTrigger>
+            <TabsTrigger value="file">{t('hashCalculatorPage.tabFile')}</TabsTrigger>
           </TabsList>
 
           <TabsContent value="text" className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="text-input">输入文本</Label>
+              <Label htmlFor="text-input">{t('hashCalculatorPage.textInput')}</Label>
               <Textarea
                 id="text-input"
                 value={textInput}
                 onChange={(e) => setTextInput(e.target.value)}
-                placeholder="在此输入要计算哈希值的文本..."
+                placeholder={t('hashCalculatorPage.textPlaceholder')}
                 className="min-h-[150px]"
               />
             </div>
@@ -187,10 +189,10 @@ export default function HashCalculator() {
                 className="hidden"
               />
               <FileUp className="h-12 w-12 mx-auto mb-2 text-muted-foreground" />
-              <p className="mb-1 font-medium">拖放文件到此处或点击上传</p>
-              <p className="text-sm text-muted-foreground">支持任何类型的文件</p>
+              <p className="mb-1 font-medium">{t('hashCalculatorPage.fileUpload')}</p>
+              <p className="text-sm text-muted-foreground">{t('hashCalculatorPage.fileSupport')}</p>
               {selectedFile && (
-                <p className="mt-2 text-sm text-primary">已选择: {selectedFile.name}</p>
+                <p className="mt-2 text-sm text-primary">{t('hashCalculatorPage.selectedFile')}: {selectedFile.name}</p>
               )}
             </div>
           </TabsContent>
@@ -198,7 +200,7 @@ export default function HashCalculator() {
 
         {/* 算法选择 */}
         <div className="mt-4">
-          <Label className="block mb-2">选择哈希算法</Label>
+          <Label className="block mb-2">{t('hashCalculatorPage.selectAlgorithms')}</Label>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
             {Object.entries(selectedAlgorithms).map(([key, value]) => (
               <div key={key} className="flex items-center space-x-2">
@@ -225,10 +227,10 @@ export default function HashCalculator() {
             {isProcessing ? (
               <>
                 <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-                计算中...
+                {t('hashCalculatorPage.calculating')}
               </>
             ) : (
-              '计算哈希值'
+              t('hashCalculatorPage.calculate')
             )}
           </Button>
           <Button 
@@ -236,7 +238,7 @@ export default function HashCalculator() {
             onClick={clearResults}
             disabled={isProcessing}
           >
-            清空
+            {t('hashCalculatorPage.clear')}
           </Button>
         </div>
       </Card>
@@ -245,14 +247,14 @@ export default function HashCalculator() {
       {(hashResults.md5 || hashResults.sha1 || hashResults.sha256 || hashResults.sha512) && (
         <Card className="p-6">
           <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-semibold">哈希值结果</h2>
+            <h2 className="text-xl font-semibold">{t('hashCalculatorPage.results')}</h2>
             <Button 
               size="sm" 
               variant="secondary" 
               onClick={downloadHashResults}
             >
               <Download className="mr-1 h-4 w-4" />
-              下载
+              {t('hashCalculatorPage.download')}
             </Button>
           </div>
 

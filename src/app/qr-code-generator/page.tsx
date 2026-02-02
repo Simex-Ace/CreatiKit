@@ -9,6 +9,7 @@ import { Slider } from '@/components/ui/slider';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import { Download, Share2, Link2, Calendar, MapPin, Mail, MessageSquare, Wifi, User, Settings, Check, RefreshCw, X } from 'lucide-react';
+import { useI18n } from '@/contexts/I18nContext';
 
 // 内容类型定义
 type ContentType = 'text' | 'wifi' | 'vcard' | 'email' | 'sms' | 'calendar' | 'location';
@@ -97,10 +98,10 @@ interface QRCodeConfig {
 
 // 错误边界组件，用于捕获二维码生成错误
 class QRCodeErrorBoundary extends React.Component<
-  { children: React.ReactNode },
+  { children: React.ReactNode; t: (key: string) => string },
   { hasError: boolean }
 > {
-  constructor(props: { children: React.ReactNode }) {
+  constructor(props: { children: React.ReactNode; t: (key: string) => string }) {
     super(props);
     this.state = { hasError: false };
   }
@@ -120,13 +121,13 @@ class QRCodeErrorBoundary extends React.Component<
           <div className="mb-4 text-red-500">
             <X size={48} />
           </div>
-          <h4 className="text-lg font-semibold text-red-600 mb-2">内容过长</h4>
-          <p className="text-gray-600 mb-4">无法生成二维码，请减少输入内容的长度</p>
+          <h4 className="text-lg font-semibold text-red-600 mb-2">{this.props.t('qrCodeGeneratorPage.contentTooLong')}</h4>
+          <p className="text-gray-600 mb-4">{this.props.t('qrCodeGeneratorPage.cannotGenerate')}</p>
           <Button 
             variant="secondary" 
             onClick={() => this.setState({ hasError: false })}
           >
-            重试
+            {this.props.t('qrCodeGeneratorPage.retry')}
           </Button>
         </div>
       );
@@ -137,6 +138,7 @@ class QRCodeErrorBoundary extends React.Component<
 }
 
 const QRCodeGenerator: React.FC = () => {
+  const { t } = useI18n();
   // QR码最大内容长度限制（根据不同纠错级别，这里取保守的值1800字符以确保安全）
   const MAX_QR_CONTENT_LENGTH = 1800;
   // 单个字段的最大长度限制
@@ -1418,7 +1420,7 @@ const QRCodeGenerator: React.FC = () => {
               <h3 className="text-lg font-semibold mb-6 text-center">二维码预览</h3>
               
               <div className="flex justify-center mb-6">
-                <QRCodeErrorBoundary>
+                <QRCodeErrorBoundary t={t}>
                   <div style={{ 
                     backgroundColor: config.border.enabled ? config.border.color : 'white',
                     padding: config.border.enabled ? config.border.width : '16px',

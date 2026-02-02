@@ -1,12 +1,14 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useI18n } from '@/contexts/I18nContext';
 
 interface HeartLoaderProps {
   onAnimationComplete: () => void;
 }
 
 export function HeartLoader({ onAnimationComplete }: HeartLoaderProps) {
+  const { t } = useI18n();
   const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
@@ -123,9 +125,9 @@ export function HeartLoader({ onAnimationComplete }: HeartLoaderProps) {
         </div>
         
         <div className="text-center">
-          <h2 className="text-xl font-bold text-pink-600">欢迎来到CreatiKit</h2>
+          <h2 className="text-xl font-bold text-pink-600">{t('loaderPage.welcomeToCreatiKit')}</h2>
           <p className="text-gray-600 mt-2">
-            充满爱的创意工具，让创作更美好！
+            {t('loaderPage.creativeToolsWithLove')}
           </p>
         </div>
       </div>

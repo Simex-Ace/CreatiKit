@@ -14,8 +14,10 @@ import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { useI18n } from '@/contexts/I18nContext';
 
 export default function WeatherToolPage() {
+  const { t } = useI18n();
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [selectedCity, setSelectedCity] = useState<any>(null);
@@ -204,14 +206,14 @@ export default function WeatherToolPage() {
   return (
     <div className="min-h-screen">
       <div className="container mx-auto px-4 py-8 max-w-5xl">
-        <h1 className="text-3xl font-bold mb-8 text-center">天气预报工具</h1>
+        <h1 className="text-3xl font-bold mb-8 text-center">{t('weatherToolPage.title')}</h1>
         
         {/* 搜索框 */}
         <div className="relative mb-6 max-w-2xl mx-auto">
           <form onSubmit={handleSearch} className="relative">
             <Input
               type="text"
-              placeholder="搜索城市..."
+              placeholder={t('weatherToolPage.searchCity')}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pr-10 py-6 text-lg"
@@ -250,7 +252,7 @@ export default function WeatherToolPage() {
         <Card className="mb-8">
           <div className="p-6">
             <h2 className="text-2xl font-semibold mb-4">
-              {selectedCity?.name || '当前位置'} 的天气
+              {t('weatherToolPage.weatherOf', { city: selectedCity?.name || t('weatherToolPage.currentLocation') })}
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* 地图 */}
@@ -264,7 +266,7 @@ export default function WeatherToolPage() {
                   <div className="absolute inset-0 flex items-center justify-center bg-white/80">
                     <div className="text-center p-4">
                       <Loader2 className="h-8 w-8 text-gray-400 animate-spin mx-auto mb-2" />
-                      <div className="text-sm text-gray-500">加载地图中...</div>
+                      <div className="text-sm text-gray-500">{t('weatherToolPage.loadingMap')}</div>
                     </div>
                   </div>
                 )}
@@ -297,26 +299,26 @@ export default function WeatherToolPage() {
                     <div className="grid grid-cols-2 gap-4">
                       <div className="flex items-center gap-2">
                         <Wind className="h-5 w-5 text-gray-500" />
-                        <span>{currentWeather.windDir} {currentWeather.windScale}级</span>
+                        <span>{currentWeather.windDir} {t('weatherToolPage.windScale', { scale: currentWeather.windScale })}</span>
                       </div>
                       <div className="flex items-center gap-2">
                         <Droplets className="h-5 w-5 text-gray-500" />
-                        <span>湿度 {currentWeather.humidity}%</span>
+                        <span>{t('weatherToolPage.humidityPercent', { humidity: currentWeather.humidity })}</span>
                       </div>
                       <div className="flex items-center gap-2">
                         <ThermometerSun className="h-5 w-5 text-gray-500" />
-                        <span>体感温度 {currentWeather.feelsLike}°</span>
+                        <span>{t('weatherToolPage.feelsLike', { temp: currentWeather.feelsLike })}</span>
                       </div>
                       {airQuality && (
                         <div className="flex items-center gap-2">
                           <Cloud className="h-5 w-5 text-gray-500" />
-                          <span>空气质量 {airQuality.aqi} ({airQuality.category})</span>
+                          <span>{t('weatherToolPage.airQuality', { aqi: airQuality.aqi, category: airQuality.category })}</span>
                         </div>
                       )}
                     </div>
                   </>
                 ) : (
-                  <div className="text-center py-8 text-gray-500">暂无天气数据</div>
+                  <div className="text-center py-8 text-gray-500">{t('weatherToolPage.noWeatherData')}</div>
                 )}
               </div>
             </div>
@@ -326,7 +328,7 @@ export default function WeatherToolPage() {
         {/* 天气预报 */}
         <Card>
           <div className="p-6">
-            <h2 className="text-2xl font-semibold mb-6">未来3天天气预报</h2>
+            <h2 className="text-2xl font-semibold mb-6">{t('weatherToolPage.forecast3Days')}</h2>
             {loading ? (
               <div className="space-y-4">
                 {[1, 2, 3].map((day) => (
@@ -343,7 +345,7 @@ export default function WeatherToolPage() {
                     >
                       <div className="flex items-center gap-4">
                         <div className="font-medium w-24">
-                          {index === 0 ? '今天' : index === 1 ? '明天' : new Date(day.fxDate).toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' })}
+                          {index === 0 ? t('weatherToolPage.today') : index === 1 ? t('weatherToolPage.tomorrow') : new Date(day.fxDate).toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' })}
                         </div>
                         <div className="flex items-center gap-2">
                           {getWeatherIcon(day.iconDay)}
@@ -364,24 +366,24 @@ export default function WeatherToolPage() {
                       <div className="p-4 bg-gray-50 border-t">
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                           <div className="flex flex-col">
-                            <span className="text-gray-500">风向</span>
-                            <span>{day.windDirDay} {day.windScaleDay}级</span>
+                            <span className="text-gray-500">{t('weatherToolPage.windDir')}</span>
+                            <span>{day.windDirDay} {t('weatherToolPage.windScale', { scale: day.windScaleDay })}</span>
                           </div>
                           <div className="flex flex-col">
-                            <span className="text-gray-500">降水概率</span>
+                            <span className="text-gray-500">{t('weatherToolPage.precipitation')}</span>
                             <span>{day.pop}%</span>
                           </div>
                           <div className="flex flex-col">
-                            <span className="text-gray-500">相对湿度</span>
+                            <span className="text-gray-500">{t('weatherToolPage.humidity')}</span>
                             <span>{day.humidity}%</span>
                           </div>
                           <div className="flex flex-col">
-                            <span className="text-gray-500">气压</span>
+                            <span className="text-gray-500">{t('weatherToolPage.pressure')}</span>
                             <span>{day.pressure}hPa</span>
                           </div>
                         </div>
                         <div className="mt-4">
-                          <span className="text-gray-500">夜间天气：</span>
+                          <span className="text-gray-500">{t('weatherToolPage.nightWeather')}</span>
                           <span className="flex items-center gap-1">
                             {getWeatherIcon(day.iconNight)}
                             {day.textNight}
@@ -391,7 +393,7 @@ export default function WeatherToolPage() {
                     )}
                   </div>
                 )) : (
-                  <div className="text-center py-8 text-gray-500">暂无预报数据</div>
+                  <div className="text-center py-8 text-gray-500">{t('weatherToolPage.noForecastData')}</div>
                 )}
               </div>
             )}

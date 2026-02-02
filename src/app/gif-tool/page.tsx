@@ -9,6 +9,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Label } from '@/components/ui/label';
 import { FileDown, Play, Pause, RotateCw, ImageIcon, CheckCircle } from 'lucide-react';
 import { saveAs } from 'file-saver';
+import { useI18n } from '@/contexts/I18nContext';
 // @ts-ignore - gifshot doesn't have proper TypeScript support
 import gifshot from 'gifshot';
 
@@ -51,6 +52,8 @@ function generateSimpleGif(images: HTMLImageElement[], fps: number = 10): Promis
 }
 
 export default function GifTool() {
+  const { t } = useI18n();
+  
   // 状态管理
   const [activeTab, setActiveTab] = useState('split');
   const [selectedGif, setSelectedGif] = useState<File | null>(null);
@@ -75,7 +78,7 @@ export default function GifTool() {
     if (!file) return;
     
     if (!file.type.includes('image/gif')) {
-      setError('请上传GIF格式的图片');
+      setError(t('gifToolPage.uploadGifFormat'));
       return;
     }
     
@@ -92,7 +95,7 @@ export default function GifTool() {
     // 添加错误处理的FileReader
     const reader = new FileReader();
     reader.onerror = () => {
-      setError('读取文件失败');
+      setError(t('gifToolPage.readFileFailed'));
       setIsProcessing(false);
     };
     
@@ -105,7 +108,7 @@ export default function GifTool() {
         
         const img = new Image();
         img.onerror = () => {
-          setError('加载GIF文件失败');
+          setError(t('gifToolPage.loadGifFailed'));
           setIsProcessing(false);
         };
         
@@ -126,7 +129,7 @@ export default function GifTool() {
             extractGifFrames(gifUrl, canvas, ctx);
           } catch (err) {
             console.error('Canvas处理错误:', err);
-            setError('处理GIF时出错');
+            setError(t('gifToolPage.processGifError'));
             setIsProcessing(false);
           }
         };
@@ -296,13 +299,13 @@ export default function GifTool() {
       });
       
       if (imageFiles.length === 0) {
-        setError('请上传有效的图片文件');
+        setError(t('gifToolPage.uploadValidImages'));
         return;
       }
       
       // 检查总图片数量限制
       if (selectedImages.length + imageFiles.length > 20) {
-        setError('图片总数量超过限制，最多支持20张图片');
+        setError(t('gifToolPage.imageLimitExceeded'));
         return;
       }
       
@@ -358,17 +361,17 @@ export default function GifTool() {
           setImagePreviews(newPreviews);
           
           if (hasErrors) {
-            setError('部分图片预览生成失败，但文件已上传');
+            setError(t('gifToolPage.previewGenerationFailed'));
           }
         })
         .catch(err => {
           console.error('预览处理错误:', err);
-          setError('预览生成过程中出现错误');
+          setError(t('gifToolPage.previewError'));
         });
         
     } catch (uploadError) {
       console.error('图片上传处理错误:', uploadError);
-      setError('处理上传文件时出错');
+      setError(t('gifToolPage.uploadError'));
     }
   };
   
@@ -509,7 +512,7 @@ export default function GifTool() {
       
       // 检查图片数量限制
       if (selectedImages.length > 10) {
-        setError('为确保GIF可播放，图片数量请限制在10张以下');
+        setError(t('gifToolPage.imageLimit'));
         setIsProcessing(false);
         return;
       }
@@ -605,7 +608,7 @@ export default function GifTool() {
       console.error('生成过程中出错:', generateError);
       // 直接显示错误信息，提供更详细的错误原因
       const errorMessage = generateError instanceof Error ? generateError.message : String(generateError);
-      setError(`GIF生成失败: ${errorMessage}。请尝试减少图片数量、使用较小的图片，或检查图片格式是否兼容。`);
+      setError(`${t('gifToolPage.gifGenerationFailed')}: ${errorMessage}。${t('gifToolPage.gifGenerationFailedDesc')}`);
     } finally {
       setTimeout(() => {
         setIsProcessing(false);
@@ -650,7 +653,7 @@ export default function GifTool() {
     if (frames.length === 0) {
       return (
         <div className="text-center p-8 text-gray-500">
-          {isProcessing ? '正在处理GIF...' : '上传GIF后将显示帧序列'}
+          {isProcessing ? t('gifToolPage.processingGif') : t('gifToolPage.uploadGifToShowFrames')}
         </div>
       );
     }
@@ -658,7 +661,7 @@ export default function GifTool() {
     return (
       <div className="space-y-4">
         <div className="flex justify-between items-center">
-          <h3 className="text-lg font-medium">共 {frames.length} 帧</h3>
+          <h3 className="text-lg font-medium">{t('gifToolPage.totalFrames', { count: frames.length })}</h3>
           <div className="flex gap-2">
             <Button 
               onClick={togglePlayback} 
@@ -666,7 +669,7 @@ export default function GifTool() {
               className="flex items-center gap-1"
             >
               {isPlaying ? <Pause size={16} /> : <Play size={16} />}
-              {isPlaying ? '暂停' : '播放'}
+              {isPlaying ? t('gifToolPage.pause') : t('gifToolPage.play')}
             </Button>
             <Button 
               onClick={downloadAllFrames} 
@@ -674,7 +677,7 @@ export default function GifTool() {
               className="flex items-center gap-1"
             >
               <FileDown size={16} />
-              下载全部
+              {t('gifToolPage.downloadAll')}
             </Button>
           </div>
         </div>
@@ -761,8 +764,8 @@ export default function GifTool() {
     <div className="min-h-screen bg-gray-50 py-8 px-4">
       <div className="max-w-5xl mx-auto">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">GIF 分解/合成器</h1>
-          <p className="text-gray-600">上传GIF分解成帧，或上传多张图片合成GIF</p>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">{t('gifToolPage.title')}</h1>
+          <p className="text-gray-600">{t('gifToolPage.splitGif')} / {t('gifToolPage.createGif')}</p>
         </div>
         
         {error && (
@@ -775,8 +778,8 @@ export default function GifTool() {
         <Card className="mb-6 overflow-hidden">
           <Tabs defaultValue="split" value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="w-full justify-start p-1">
-              <TabsTrigger value="split" className="flex-1">GIF分解</TabsTrigger>
-              <TabsTrigger value="merge" className="flex-1">GIF合成</TabsTrigger>
+              <TabsTrigger value="split" className="flex-1">{t('gifToolPage.splitGif')}</TabsTrigger>
+              <TabsTrigger value="merge" className="flex-1">{t('gifToolPage.createGif')}</TabsTrigger>
             </TabsList>
             
             <TabsContent value="split" className="p-6">
@@ -866,7 +869,7 @@ export default function GifTool() {
                       disabled={isProcessing || imagePreviews.length === 0}
                       className="w-full"
                     >
-                      {isProcessing ? '正在生成GIF...' : '生成GIF'}
+                      {isProcessing ? t('gifToolPage.processing') : t('gifToolPage.generateGif')}
                     </Button>
                   </div>
                 )}

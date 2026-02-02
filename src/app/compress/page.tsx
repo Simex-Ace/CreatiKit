@@ -10,6 +10,7 @@ import { Download, Upload, Image as ImageIcon, X } from 'lucide-react';
 import { useToast } from '@/contexts/ToastContext';
 import { DevelopmentInProgress } from '@/components/ui/DevelopmentInProgress';
 import { useDevelopmentAlert } from '@/lib/useDevelopmentAlert';
+import { useI18n } from '@/contexts/I18nContext';
 
 export default function ImageCompressor() {
   const [images, setImages] = useState<File[]>([]);
@@ -21,6 +22,7 @@ export default function ImageCompressor() {
   const [compressedImagePreviews, setCompressedImagePreviews] = useState<string[]>([]);
   const [activeTab, setActiveTab] = useState('upload'); // 使用状态控制标签页
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { t } = useI18n();
   
   // 清理URL对象，避免内存泄漏
     useEffect(() => {
@@ -76,7 +78,7 @@ export default function ImageCompressor() {
     if (e.target.files) {
       const newImages = Array.from(e.target.files).filter(file => file.type.startsWith('image/'));
       if (newImages.length === 0) {
-        toast({ title: '请上传有效的图片文件', variant: 'destructive' });
+        toast({ title: t('compressPage.toastInvalidImage'), variant: 'destructive' });
         return;
       }
       
@@ -114,7 +116,7 @@ export default function ImageCompressor() {
   // 压缩图片
   const compressImages = async () => {
     if (images.length === 0) {
-      toast({ title: '请先上传图片', variant: 'destructive' });
+      toast({ title: t('compressPage.toastUploadFirst'), variant: 'destructive' });
       return;
     }
 
@@ -126,7 +128,7 @@ export default function ImageCompressor() {
         const result = await processImage(image, quality[0], format);
         results.push(result);
       } catch (error) {
-        toast({ title: `压缩图片失败: ${error}`, variant: 'destructive' });
+        toast({ title: `${t('compressPage.toastCompressErrorPrefix')}${error}`, variant: 'destructive' });
       }
     }
 
@@ -140,7 +142,7 @@ export default function ImageCompressor() {
     const compressedPreviews = results.map(item => URL.createObjectURL(item.file));
     setCompressedImagePreviews(compressedPreviews);
     
-    toast({ title: `成功压缩 ${results.length} 张图片` });
+    toast({ title: t('compressPage.toastCompressSuccess', { count: results.length }) });
     
     // 压缩完成后自动切换到结果标签页
     setActiveTab('results');
@@ -323,14 +325,14 @@ export default function ImageCompressor() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-3xl font-bold mb-2">图片智能压缩</h1>
-        <p className="text-muted-foreground">上传图片，智能压缩算法将保持画质的同时减小文件体积</p>
+        <h1 className="text-3xl font-bold mb-2">{t('compressPage.title')}</h1>
+        <p className="text-muted-foreground">{t('compressPage.subtitle')}</p>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} defaultValue="upload">
         <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="upload">上传图片</TabsTrigger>
-          <TabsTrigger value="results">压缩结果</TabsTrigger>
+          <TabsTrigger value="upload">{t('compressPage.tabUpload')}</TabsTrigger>
+          <TabsTrigger value="results">{t('compressPage.tabResults')}</TabsTrigger>
         </TabsList>
         
         <TabsContent value="upload" className="mt-6 space-y-6">
@@ -338,9 +340,9 @@ export default function ImageCompressor() {
           <Card className="border-dashed p-8 text-center">
             <div className="flex flex-col items-center justify-center">
               <Upload className="h-12 w-12 text-muted-foreground mb-4" />
-              <h3 className="text-lg font-medium mb-2">拖放图片到此处或点击上传</h3>
+              <h3 className="text-lg font-medium mb-2">{t('compressPage.uploadTitle')}</h3>
               <p className="text-sm text-muted-foreground mb-6">
-                支持 JPG, PNG, WebP, GIF 格式，最大支持 20MB
+                {t('compressPage.uploadDescription')}
               </p>
               <input
                 ref={fileInputRef}
@@ -351,7 +353,7 @@ export default function ImageCompressor() {
                 className="hidden"
               />
               <Button onClick={() => fileInputRef.current?.click()}>
-                选择图片文件
+                {t('compressPage.chooseFiles')}
               </Button>
             </div>
           </Card>
@@ -360,14 +362,16 @@ export default function ImageCompressor() {
           {images.length > 0 && (
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <h3 className="text-lg font-medium">已上传 ({images.length})</h3>
+                <h3 className="text-lg font-medium">
+                  {t('compressPage.uploaded')} ({images.length})
+                </h3>
                 <Button variant="secondary" size="sm" onClick={() => {
                 // 清理预览URL
                 imagePreviews.forEach(url => URL.revokeObjectURL(url));
                 setImages([]);
                 setImagePreviews([]);
               }}>
-                清空
+                {t('compressPage.clearAll')}
               </Button>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -415,10 +419,12 @@ export default function ImageCompressor() {
           {/* 压缩设置 */}
           {images.length > 0 && (
             <div className="space-y-4">
-              <h3 className="text-lg font-medium">压缩设置</h3>
+              <h3 className="text-lg font-medium">{t('compressPage.settingsTitle')}</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <Label htmlFor="quality">压缩质量 ({quality[0]}%)</Label>
+                  <Label htmlFor="quality">
+                    {t('compressPage.qualityLabel')} ({quality[0]}%)
+                  </Label>
                   <Slider
                     id="quality"
                     value={quality}
@@ -428,21 +434,21 @@ export default function ImageCompressor() {
                     onValueChange={setQuality}
                   />
                   <div className="flex justify-between text-xs text-muted-foreground">
-                    <span>更小文件</span>
-                    <span>更高质量</span>
+                    <span>{t('compressPage.qualityLow')}</span>
+                    <span>{t('compressPage.qualityHigh')}</span>
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="format">输出格式</Label>
+                  <Label htmlFor="format">{t('compressPage.formatLabel')}</Label>
                   <select
                     id="format"
                     value={format}
                     onChange={(e) => setFormat(e.target.value)}
                     className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
                   >
-                    <option value="auto">自动 (推荐)</option>
+                    <option value="auto">{t('compressPage.formatAuto')}</option>
                     <option value="jpeg">JPEG</option>
-                    <option value="webp">WebP (更小文件)</option>
+                    <option value="webp">{t('compressPage.formatWebpSmaller')}</option>
                     <option value="png">PNG</option>
                   </select>
                 </div>
@@ -454,7 +460,7 @@ export default function ImageCompressor() {
           {images.length > 0 && (
             <div className="flex justify-end">
               <Button onClick={compressImages} disabled={isProcessing}>
-                {isProcessing ? '压缩中...' : `压缩 ${images.length} 张图片`}
+                {isProcessing ? t('compressPage.buttonCompressProcessing') : t('compressPage.buttonCompress', { count: images.length })}
               </Button>
             </div>
           )}
@@ -464,9 +470,11 @@ export default function ImageCompressor() {
           {compressedImages.length > 0 ? (
             <>
               <div className="flex items-center justify-between">
-                <h3 className="text-lg font-medium">压缩结果 ({compressedImages.length})</h3>
+                <h3 className="text-lg font-medium">
+                  {t('compressPage.resultsTitle', { count: compressedImages.length })}
+                </h3>
                 <Button variant="secondary" onClick={downloadAllImages}>
-                  下载全部
+                  {t('compressPage.downloadAll')}
                 </Button>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -501,20 +509,20 @@ export default function ImageCompressor() {
                               onClick={() => downloadImage(image)}
                             >
                               <Download className="h-4 w-4 mr-1" />
-                              下载
+                              {t('compressPage.downloadSingle')}
                             </Button>
                           </div>
                           <div className="space-y-1">
                             <div className="flex justify-between text-xs">
-                              <span className="text-muted-foreground">原始大小:</span>
+                              <span className="text-muted-foreground">{t('compressPage.originalSize')}</span>
                               <span>{formatFileSize(image.originalSize)}</span>
                             </div>
                             <div className="flex justify-between text-xs">
-                              <span className="text-muted-foreground">压缩后:</span>
+                              <span className="text-muted-foreground">{t('compressPage.compressedSize')}</span>
                               <span className="font-medium">{formatFileSize(image.compressedSize)}</span>
                             </div>
                             <div className="flex justify-between text-xs">
-                              <span className="text-muted-foreground">压缩率:</span>
+                              <span className="text-muted-foreground">{t('compressPage.compressionRate')}</span>
                               <span className={compressionRate >= 0 ? 'text-green-600' : 'text-red-600'}>
                                 {compressionRate >= 0 ? `-${compressionRate}%` : `+${Math.abs(compressionRate)}%`}
                               </span>
@@ -531,22 +539,22 @@ export default function ImageCompressor() {
                 // 只切换到上传标签页，保留压缩结果
                 setActiveTab('upload');
               }}>
-                  返回上传
+                  {t('compressPage.backToUpload')}
                 </Button>
                 <Button onClick={downloadAllImages}>
-                  下载全部
+                  {t('compressPage.downloadAll')}
                 </Button>
               </div>
             </>
           ) : (
             <Card className="p-8 text-center">
               <ImageIcon className="h-12 w-12 text-muted-foreground mb-4 mx-auto" />
-              <h3 className="text-lg font-medium mb-2">暂无压缩结果</h3>
+              <h3 className="text-lg font-medium mb-2">{t('compressPage.noResultsTitle')}</h3>
               <p className="text-sm text-muted-foreground mb-4">
-                请先上传图片并进行压缩
+                {t('compressPage.noResultsDesc')}
               </p>
               <Button onClick={() => setActiveTab('upload')}>
-                上传图片
+                {t('compressPage.uploadImages')}
               </Button>
             </Card>
           )}
@@ -560,7 +568,7 @@ export default function ImageCompressor() {
                 setCompressedImages([]);
                 setCompressedImagePreviews([]);
               }}>
-                清空结果
+                {t('compressPage.clearResults')}
               </Button>
             </div>
           )}
@@ -569,7 +577,7 @@ export default function ImageCompressor() {
 
       {/* 使用说明 */}
       <div className="space-y-4">
-        <h2 className="text-xl font-semibold">使用说明</h2>
+        <h2 className="text-xl font-semibold">{t('compressPage.guideTitle')}</h2>
         <Card className="p-6">
           <ol className="space-y-4">
             <li className="flex gap-3">
@@ -577,8 +585,8 @@ export default function ImageCompressor() {
                 1
               </div>
               <div>
-                <p className="font-medium">上传图片</p>
-                <p className="text-sm text-muted-foreground">支持拖放或点击上传，可批量处理多张图片</p>
+                <p className="font-medium">{t('compressPage.guideStep1Title')}</p>
+                <p className="text-sm text-muted-foreground">{t('compressPage.guideStep1Desc')}</p>
               </div>
             </li>
             <li className="flex gap-3">
@@ -586,8 +594,8 @@ export default function ImageCompressor() {
                 2
               </div>
               <div>
-                <p className="font-medium">调整设置</p>
-                <p className="text-sm text-muted-foreground">设置压缩质量和输出格式，质量越高文件越大</p>
+                <p className="font-medium">{t('compressPage.guideStep2Title')}</p>
+                <p className="text-sm text-muted-foreground">{t('compressPage.guideStep2Desc')}</p>
               </div>
             </li>
             <li className="flex gap-3">
@@ -595,8 +603,8 @@ export default function ImageCompressor() {
                 3
               </div>
               <div>
-                <p className="font-medium">开始压缩</p>
-                <p className="text-sm text-muted-foreground">点击压缩按钮，等待处理完成</p>
+                <p className="font-medium">{t('compressPage.guideStep3Title')}</p>
+                <p className="text-sm text-muted-foreground">{t('compressPage.guideStep3Desc')}</p>
               </div>
             </li>
             <li className="flex gap-3">
@@ -604,8 +612,8 @@ export default function ImageCompressor() {
                 4
               </div>
               <div>
-                <p className="font-medium">下载结果</p>
-                <p className="text-sm text-muted-foreground">查看压缩结果，可单独或批量下载图片</p>
+                <p className="font-medium">{t('compressPage.guideStep4Title')}</p>
+                <p className="text-sm text-muted-foreground">{t('compressPage.guideStep4Desc')}</p>
               </div>
             </li>
           </ol>

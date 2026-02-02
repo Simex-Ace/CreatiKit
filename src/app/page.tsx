@@ -8,10 +8,12 @@ import { useRouter } from 'next/navigation';
 import { DevelopmentInProgress } from '@/components/ui/DevelopmentInProgress';
 import { useDevelopmentAlert } from '@/lib/useDevelopmentAlert';
 import { ToolCardFavoriteButton } from '@/components/ToolCardFavoriteButton';
+import { useI18n } from '@/contexts/I18nContext';
 
 export default function Home() {
   const router = useRouter();
   const { showAlert, alertVisible, alertMessage, alertDuration, closeAlert } = useDevelopmentAlert();
+  const { t } = useI18n();
 
   // 处理按钮点击事件
   const handleStartUsing = () => {
@@ -20,7 +22,7 @@ export default function Home() {
   };
 
   const handleLearnMore = () => {
-    showAlert('了解更多功能将在后续版本中提供详细介绍');
+    showAlert(t('home.learnMoreAlert'));
   };
 
   const handleImageCompressor = () => {
@@ -138,14 +140,14 @@ export default function Home() {
           </span>
         </h1>
         <p className="text-xl md:text-2xl text-muted-foreground max-w-3xl mx-auto">
-          强大而简洁的在线创意工具箱，赋能您的设计与开发工作流
+          {t('home.subtitle')}
         </p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
           <Button size="lg" className="px-8 py-6 text-lg" onClick={handleStartUsing}>
-            开始使用
+            {t('home.startUsing')}
           </Button>
           <Button size="lg" variant="secondary" className="px-8 py-6 text-lg" onClick={handleLearnMore}>
-            了解更多
+            {t('home.learnMore')}
           </Button>
         </div>
       </section>
@@ -155,9 +157,9 @@ export default function Home() {
       {/* 功能卡片 */}
       <section className="space-y-8">
         <div className="text-center space-y-2">
-          <h2 className="text-3xl font-bold">强大工具集</h2>
+          <h2 className="text-3xl font-bold">{t('home.powerfulTools')}</h2>
           <p className="text-muted-foreground max-w-2xl mx-auto">
-            一站式解决您的创意需求，从图片处理到3D预览，提升工作效率
+            {t('home.toolsDescription')}
           </p>
         </div>
 
@@ -165,7 +167,7 @@ export default function Home() {
           {/* 交互式2D化学实验室卡片 */}
           <Card className="relative min-h-[300px] flex flex-col transition-all duration-300 hover:shadow-lg border-2 border-cyan-400 transform hover:-translate-y-1">
             <div className="absolute -top-3 -right-3 bg-cyan-500 text-white text-xs font-bold px-3 py-1 rounded-full z-20">
-              新品
+              {t('home.new')}
             </div>
             <div className="absolute top-4 right-4 z-30">
               <ToolCardFavoriteButton toolPath="/chemistry-lab" />
@@ -174,13 +176,13 @@ export default function Home() {
               <div className="rounded-full bg-cyan-100 p-3 w-fit">
                 <FlaskConical className="h-6 w-6 text-cyan-600" />
               </div>
-              <h3 className="text-xl font-bold text-cyan-700">交互式2D化学实验室</h3>
+              <h3 className="text-xl font-bold text-cyan-700">{t('home.tools.chemistryLab.name')}</h3>
               <p className="text-muted-foreground flex-grow">
-                安全直观地学习和观察初中化学的核心反应现象，拖拽仪器、混合试剂进行虚拟实验
+                {t('home.tools.chemistryLab.description')}
               </p>
               <div className="mt-auto pt-4">
                 <Button className="w-full bg-cyan-600 hover:bg-cyan-700 text-white font-bold" onClick={handleChemistryLab}>
-                  开始实验
+                  {t('home.tools.chemistryLab.button')}
                 </Button>
               </div>
             </div>
@@ -195,13 +197,13 @@ export default function Home() {
               <div className="rounded-full bg-blue-100 p-3 w-fit">
                 <Image className="h-6 w-6 text-blue-600" />
               </div>
-              <h3 className="text-xl font-semibold">图片压缩工具</h3>
+              <h3 className="text-xl font-semibold">{t('home.tools.compress.name')}</h3>
               <p className="text-muted-foreground flex-grow">
-                轻松压缩JPG、PNG图片，保持画质的同时减小文件体积
+                {t('home.tools.compress.description')}
               </p>
               <div className="mt-auto pt-4">
                 <Button variant="default" className="w-full" onClick={handleImageCompressor}>
-                  立即使用
+                  {t('home.tools.compress.button')}
                 </Button>
               </div>
             </div>
@@ -216,13 +218,13 @@ export default function Home() {
               <div className="rounded-full bg-purple-100 p-3 w-fit">
                 <Globe className="h-6 w-6 text-purple-600" />
               </div>
-              <h3 className="text-xl font-semibold">3D模型预览器</h3>
+              <h3 className="text-xl font-semibold">{t('home.tools.modelViewer.name')}</h3>
               <p className="text-muted-foreground flex-grow">
-                在线预览各种格式的3D模型，支持旋转、缩放等交互操作
+                {t('home.tools.modelViewer.description')}
               </p>
               <div className="mt-auto pt-4">
                 <Button className="w-full" onClick={handleModelViewer}>
-                  预览模型
+                  {t('home.tools.modelViewer.button')}
                 </Button>
               </div>
             </div>
@@ -231,7 +233,7 @@ export default function Home() {
           {/* 生物沙盒卡片 */}
           <Card className="relative min-h-[300px] flex flex-col transition-all duration-300 hover:shadow-lg border-2 border-emerald-400 transform hover:-translate-y-1">
             <div className="absolute -top-3 -right-3 bg-emerald-500 text-white text-xs font-bold px-3 py-1 rounded-full z-20">
-              新品
+              {t('home.new')}
             </div>
             <div className="absolute top-4 right-4 z-30">
               <ToolCardFavoriteButton toolPath="/ecosystem-sandbox" />
@@ -240,13 +242,13 @@ export default function Home() {
               <div className="rounded-full bg-emerald-100 p-3 w-fit">
                 <CloudSun className="h-6 w-6 text-emerald-600" />
               </div>
-              <h3 className="text-xl font-bold text-emerald-700">生物沙盒模拟</h3>
+              <h3 className="text-xl font-bold text-emerald-700">{t('home.tools.ecosystemSandbox.name')}</h3>
               <p className="text-muted-foreground flex-grow">
-                高性能纯前端生态系统模拟，观察生物在沙盒中随机移动，支持添加、暂停和调整速度
+                {t('home.tools.ecosystemSandbox.description')}
               </p>
               <div className="mt-auto pt-4">
                 <Button className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold" onClick={handleEcosystemSandbox}>
-                  开始模拟
+                  {t('home.tools.ecosystemSandbox.button')}
                 </Button>
               </div>
             </div>
@@ -255,7 +257,7 @@ export default function Home() {
           {/* 背景移除工具卡片 */}
           <Card className="relative min-h-[300px] flex flex-col transition-all duration-300 hover:shadow-lg hover:shadow-pink-200 border-2 border-pink-300 transform hover:-translate-y-1">
             <div className="absolute -top-3 -right-3 bg-pink-500 text-white text-xs font-bold px-3 py-1 rounded-full z-20">
-              热门
+              {t('home.hot')}
             </div>
             <div className="absolute top-4 right-4 z-30">
               <ToolCardFavoriteButton toolPath="/background-remover" />
@@ -269,13 +271,13 @@ export default function Home() {
                   <path d="m20 17-1.09-1.09a2 2 0 0 0-2.82 0L10 21" />
                 </svg>
               </div>
-              <h3 className="text-xl font-bold text-pink-600">✨ 魔法背景移除 ✨</h3>
+              <h3 className="text-xl font-bold text-pink-600">{t('home.tools.backgroundRemover.name')}</h3>
               <p className="text-muted-foreground flex-grow text-sm">
-                🎨 一键移除图片背景，让你的照片脱颖而出！简单好用，支持自定义颜色选择和阈值调整，轻松创建透明背景图片～
+                {t('home.tools.backgroundRemover.description')}
               </p>
               <div className="mt-auto pt-4">
                 <Button className="w-full bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 text-white font-bold shadow-md hover:shadow-lg transform transition-all duration-300" onClick={handleBackgroundRemover}>
-                  开始变魔法
+                  {t('home.tools.backgroundRemover.button')}
                 </Button>
               </div>
             </div>
@@ -287,7 +289,7 @@ export default function Home() {
           {/* 隔空写字卡片 */}
           <Card className="relative min-h-[300px] flex flex-col transition-all duration-300 hover:shadow-lg border-2 border-blue-400 transform hover:-translate-y-1">
             <div className="absolute -top-3 -right-3 bg-blue-500 text-white text-xs font-bold px-3 py-1 rounded-full z-20">
-              新品
+              {t('home.new')}
             </div>
             <div className="absolute top-4 right-4 z-30">
               <ToolCardFavoriteButton toolPath="/camera-gesture-drawing" />
@@ -296,13 +298,13 @@ export default function Home() {
               <div className="rounded-full bg-blue-100 p-3 w-fit">
                 <PencilRuler className="h-6 w-6 text-blue-600" />
               </div>
-              <h3 className="text-xl font-bold text-blue-700">隔空写字</h3>
+              <h3 className="text-xl font-bold text-blue-700">{t('home.tools.cameraGestureDrawing.name')}</h3>
               <p className="text-muted-foreground flex-grow">
-                使用手势控制进行空中书写，支持多种工具、缩放和消散效果，带来全新的交互体验
+                {t('home.tools.cameraGestureDrawing.description')}
               </p>
               <div className="mt-auto pt-4">
                 <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold" onClick={handleCameraGestureDrawing}>
-                  开始体验
+                  {t('home.tools.cameraGestureDrawing.button')}
                 </Button>
               </div>
             </div>
@@ -311,7 +313,7 @@ export default function Home() {
           {/* 音频可视化器卡片 */}
           <Card className="relative min-h-[300px] flex flex-col transition-all duration-300 hover:shadow-lg border-2 border-indigo-400 transform hover:-translate-y-1">
             <div className="absolute -top-3 -right-3 bg-indigo-500 text-white text-xs font-bold px-3 py-1 rounded-full z-20">
-              新品
+              {t('home.new')}
             </div>
             <div className="absolute top-4 right-4 z-30">
               <ToolCardFavoriteButton toolPath="/audio-visualizer" />
@@ -320,13 +322,13 @@ export default function Home() {
               <div className="rounded-full bg-indigo-100 p-3 w-fit">
                 <Music className="h-6 w-6 text-indigo-600" />
               </div>
-              <h3 className="text-xl font-bold text-indigo-700">音频可视化器</h3>
+              <h3 className="text-xl font-bold text-indigo-700">{t('home.tools.audioVisualizer.name')}</h3>
               <p className="text-muted-foreground flex-grow">
-                上传音频文件，实时生成多种可视化效果，支持频谱、波形、圆形、粒子和瀑布图等模式
+                {t('home.tools.audioVisualizer.description')}
               </p>
               <div className="mt-auto pt-4">
                 <Button className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold" onClick={handleAudioVisualizer}>
-                  开始可视化
+                  {t('home.tools.audioVisualizer.button')}
                 </Button>
               </div>
             </div>
@@ -335,7 +337,7 @@ export default function Home() {
           {/* CSS动画生成器卡片 */}
           <Card className="relative min-h-[300px] flex flex-col transition-all duration-300 hover:shadow-lg border-2 border-pink-400 transform hover:-translate-y-1">
             <div className="absolute -top-3 -right-3 bg-pink-500 text-white text-xs font-bold px-3 py-1 rounded-full z-20">
-              新品
+              {t('home.new')}
             </div>
             <div className="absolute top-4 right-4 z-30">
               <ToolCardFavoriteButton toolPath="/css-animator" />
@@ -344,13 +346,13 @@ export default function Home() {
               <div className="rounded-full bg-pink-100 p-3 w-fit">
                 <Sparkles className="h-6 w-6 text-pink-600" />
               </div>
-              <h3 className="text-xl font-bold text-pink-700">CSS动画生成器</h3>
+              <h3 className="text-xl font-bold text-pink-700">{t('home.tools.cssAnimator.name')}</h3>
               <p className="text-muted-foreground flex-grow">
-                可视化创建CSS动画，实时预览效果，支持多种动画类型和缓动函数，导出代码直接使用
+                {t('home.tools.cssAnimator.description')}
               </p>
               <div className="mt-auto pt-4">
                 <Button className="w-full bg-pink-600 hover:bg-pink-700 text-white font-bold" onClick={handleCSSAnimator}>
-                  创建动画
+                  {t('home.tools.cssAnimator.button')}
                 </Button>
               </div>
             </div>
@@ -359,7 +361,7 @@ export default function Home() {
           {/* SVG路径编辑器卡片 */}
           <Card className="relative min-h-[300px] flex flex-col transition-all duration-300 hover:shadow-lg border-2 border-purple-400 transform hover:-translate-y-1">
             <div className="absolute -top-3 -right-3 bg-purple-500 text-white text-xs font-bold px-3 py-1 rounded-full z-20">
-              新品
+              {t('home.new')}
             </div>
             <div className="absolute top-4 right-4 z-30">
               <ToolCardFavoriteButton toolPath="/svg-editor" />
@@ -368,13 +370,13 @@ export default function Home() {
               <div className="rounded-full bg-purple-100 p-3 w-fit">
                 <Shapes className="h-6 w-6 text-purple-600" />
               </div>
-              <h3 className="text-xl font-bold text-purple-700">SVG路径编辑器</h3>
+              <h3 className="text-xl font-bold text-purple-700">{t('home.tools.svgEditor.name')}</h3>
               <p className="text-muted-foreground flex-grow">
-                可视化编辑SVG路径，创建矢量图形，支持多种形状工具，导出SVG代码
+                {t('home.tools.svgEditor.description')}
               </p>
               <div className="mt-auto pt-4">
                 <Button className="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold" onClick={handleSVGEditor}>
-                  开始编辑
+                  {t('home.tools.svgEditor.button')}
                 </Button>
               </div>
             </div>
@@ -383,7 +385,7 @@ export default function Home() {
           {/* 粒子系统编辑器卡片 */}
           <Card className="relative min-h-[300px] flex flex-col transition-all duration-300 hover:shadow-lg border-2 border-orange-400 transform hover:-translate-y-1">
             <div className="absolute -top-3 -right-3 bg-orange-500 text-white text-xs font-bold px-3 py-1 rounded-full z-20">
-              新品
+              {t('home.new')}
             </div>
             <div className="absolute top-4 right-4 z-30">
               <ToolCardFavoriteButton toolPath="/particle-editor" />
@@ -392,13 +394,13 @@ export default function Home() {
               <div className="rounded-full bg-orange-100 p-3 w-fit">
                 <Sparkles className="h-6 w-6 text-orange-600" />
               </div>
-              <h3 className="text-xl font-bold text-orange-700">粒子系统编辑器</h3>
+              <h3 className="text-xl font-bold text-orange-700">{t('home.tools.particleEditor.name')}</h3>
               <p className="text-muted-foreground flex-grow">
-                创建和编辑粒子效果，实时预览，支持多种形状和混合模式，可导出为图片
+                {t('home.tools.particleEditor.description')}
               </p>
               <div className="mt-auto pt-4">
                 <Button className="w-full bg-orange-600 hover:bg-orange-700 text-white font-bold" onClick={handleParticleEditor}>
-                  创建粒子
+                  {t('home.tools.particleEditor.button')}
                 </Button>
               </div>
             </div>
@@ -413,13 +415,13 @@ export default function Home() {
               <div className="rounded-full bg-green-100 p-3 w-fit">
                 <FileCode className="h-6 w-6 text-green-600" />
               </div>
-              <h3 className="text-xl font-semibold">代码工具</h3>
+              <h3 className="text-xl font-semibold">{t('home.tools.codeTools.name')}</h3>
               <p className="text-muted-foreground flex-grow">
-                代码格式化工具，支持多种编程语言
+                {t('home.tools.codeTools.description')}
               </p>
               <div className="mt-auto pt-4">
                 <Button className="w-full" onClick={handleCodeTools}>
-                  立即使用
+                  {t('home.tools.codeTools.button')}
                 </Button>
               </div>
             </div>
@@ -434,13 +436,13 @@ export default function Home() {
               <div className="rounded-full bg-yellow-100 p-3 w-fit">
                 <Code className="h-6 w-6 text-yellow-600" />
               </div>
-              <h3 className="text-xl font-semibold">Markdown编辑器</h3>
+              <h3 className="text-xl font-semibold">{t('home.tools.markdown.name')}</h3>
               <p className="text-muted-foreground flex-grow">
-                在线编辑和预览Markdown文档，支持实时渲染和导出功能
+                {t('home.tools.markdown.description')}
               </p>
               <div className="mt-auto pt-4">
                 <Button className="w-full" onClick={handleMarkdownEditor}>
-                  开始编辑
+                  {t('home.tools.markdown.button')}
                 </Button>
               </div>
             </div>
@@ -455,13 +457,13 @@ export default function Home() {
               <div className="rounded-full bg-red-100 p-3 w-fit">
                 <Palette className="h-6 w-6 text-red-600" />
               </div>
-              <h3 className="text-xl font-semibold">调色板工具</h3>
+              <h3 className="text-xl font-semibold">{t('home.tools.colorPalette.name')}</h3>
               <p className="text-muted-foreground flex-grow">
-                专业的在线调色工具，支持颜色选择、配色方案生成和图片取色功能
+                {t('home.tools.colorPalette.description')}
               </p>
               <div className="mt-auto pt-4">
                 <Button className="w-full" onClick={handleColorPalette}>
-                  开始调色
+                  {t('home.tools.colorPalette.button')}
                 </Button>
               </div>
             </div>
@@ -476,13 +478,13 @@ export default function Home() {
               <div className="rounded-full bg-indigo-100 p-3 w-fit">
                 <BookOpen className="h-6 w-6 text-indigo-600" />
               </div>
-              <h3 className="text-xl font-semibold">SEO分析与文本优化</h3>
+              <h3 className="text-xl font-semibold">{t('home.tools.textAnalyzer.name')}</h3>
               <p className="text-muted-foreground flex-grow">
-                专业SEO分析工具，提供关键词密度检测、相关关键词建议、文本热力图和智能优化功能
+                {t('home.tools.textAnalyzer.description')}
               </p>
               <div className="mt-auto pt-4">
                 <Button className="w-full" onClick={handleTextAnalyzer}>
-                  开始分析
+                  {t('home.tools.textAnalyzer.button')}
                 </Button>
               </div>
             </div>
@@ -497,13 +499,13 @@ export default function Home() {
               <div className="rounded-full bg-teal-100 p-3 w-fit">
                 <QrCode className="h-6 w-6 text-teal-600" />
               </div>
-              <h3 className="text-xl font-semibold">二维码生成器</h3>
+              <h3 className="text-xl font-semibold">{t('home.tools.qrCode.name')}</h3>
               <p className="text-muted-foreground flex-grow">
-                快速生成各类二维码，支持多种内容类型、样式定制和文件格式导出
+                {t('home.tools.qrCode.description')}
               </p>
               <div className="mt-auto pt-4">
                 <Button className="w-full" onClick={handleQrCodeGenerator}>
-                  生成二维码
+                  {t('home.tools.qrCode.button')}
                 </Button>
               </div>
             </div>
@@ -518,13 +520,13 @@ export default function Home() {
               <div className="rounded-full bg-pink-100 p-3 w-fit">
                 <Smile className="h-6 w-6 text-pink-600" />
               </div>
-              <h3 className="text-xl font-semibold">Emoji大全</h3>
+              <h3 className="text-xl font-semibold">{t('home.tools.emojiCollection.name')}</h3>
               <p className="text-muted-foreground flex-grow">
-                浏览、搜索和一键复制各种表情符号，支持收藏夹和最近使用功能，让沟通更加生动有趣
+                {t('home.tools.emojiCollection.description')}
               </p>
               <div className="mt-auto pt-4">
                 <Button className="w-full" onClick={handleEmojiCollection}>
-                  开始使用
+                  {t('home.tools.emojiCollection.button')}
                 </Button>
               </div>
             </div>
@@ -539,13 +541,13 @@ export default function Home() {
               <div className="rounded-full bg-orange-100 p-3 w-fit">
                 <Monitor className="h-6 w-6 text-orange-600" />
               </div>
-              <h3 className="text-xl font-semibold">像素艺术生成器</h3>
+              <h3 className="text-xl font-semibold">{t('home.tools.pixelArt.name')}</h3>
               <p className="text-muted-foreground flex-grow">
-                上传图片并转换成像素风格艺术，支持自定义像素大小、颜色数量和调色板选择
+                {t('home.tools.pixelArt.description')}
               </p>
               <div className="mt-auto pt-4">
                 <Button className="w-full" onClick={handlePixelArtGenerator}>
-                  生成像素艺术
+                  {t('home.tools.pixelArt.button')}
                 </Button>
               </div>
             </div>
@@ -560,13 +562,13 @@ export default function Home() {
               <div className="rounded-full bg-cyan-100 p-3 w-fit">
                 <Lock className="h-6 w-6 text-cyan-600" />
               </div>
-              <h3 className="text-xl font-semibold">哈希/散列值计算器</h3>
+              <h3 className="text-xl font-semibold">{t('home.tools.hashCalculator.name')}</h3>
               <p className="text-muted-foreground flex-grow">
-                计算文本或文件的MD5、SHA-1、SHA-256、SHA-512等多种哈希值，支持自定义算法选择
+                {t('home.tools.hashCalculator.description')}
               </p>
               <div className="mt-auto pt-4">
                 <Button className="w-full" onClick={handleHashCalculator}>
-                  计算哈希值
+                  {t('home.tools.hashCalculator.button')}
                 </Button>
               </div>
             </div>
@@ -581,13 +583,13 @@ export default function Home() {
               <div className="rounded-full bg-orange-100 p-3 w-fit">
                 <Monitor className="h-6 w-6 text-orange-600" />
               </div>
-              <h3 className="text-xl font-semibold">Unix 时间戳转换器</h3>
+              <h3 className="text-xl font-semibold">{t('home.tools.timestampConverter.name')}</h3>
               <p className="text-muted-foreground flex-grow">
-                在标准日期时间和Unix时间戳之间进行转换，显示相对时间
+                {t('home.tools.timestampConverter.description')}
               </p>
               <div className="mt-auto pt-4">
                 <Button className="w-full" onClick={handleTimestampConverter}>
-                  转换时间戳
+                  {t('home.tools.timestampConverter.button')}
                 </Button>
               </div>
             </div>
@@ -602,13 +604,13 @@ export default function Home() {
               <div className="rounded-full bg-blue-100 p-3 w-fit">
                 <PencilRuler className="h-6 w-6 text-blue-600" />
               </div>
-              <h3 className="text-xl font-semibold">在线白板</h3>
+              <h3 className="text-xl font-semibold">{t('home.tools.whiteboard.name')}</h3>
               <p className="text-muted-foreground flex-grow">
-                提供一个无限大的画布，支持画笔、橡皮擦、文本输入和形状绘制等基本功能
+                {t('home.tools.whiteboard.description')}
               </p>
               <div className="mt-auto pt-4">
                 <Button className="w-full" onClick={handleWhiteboard}>
-                  开始创作
+                  {t('home.tools.whiteboard.button')}
                 </Button>
               </div>
             </div>
@@ -623,13 +625,13 @@ export default function Home() {
               <div className="rounded-full bg-green-100 p-3 w-fit">
                 <RotateCw className="h-6 w-6 text-green-600" />
               </div>
-              <h3 className="text-xl font-semibold">GIF分解/合成器</h3>
+              <h3 className="text-xl font-semibold">{t('home.tools.gifTool.name')}</h3>
               <p className="text-muted-foreground flex-grow">
-                将GIF动图分解为单帧静态图片，或将多张图片合成为动态GIF，支持帧率调节
+                {t('home.tools.gifTool.description')}
               </p>
               <div className="mt-auto pt-4">
                 <Button className="w-full" onClick={handleGifTool}>
-                  开始使用
+                  {t('home.tools.gifTool.button')}
                 </Button>
               </div>
             </div>
@@ -644,13 +646,13 @@ export default function Home() {
                 <div className="rounded-full bg-sky-100 p-3 w-fit">
                   <CloudSun className="h-6 w-6 text-sky-600" />
                 </div>
-                <h3 className="text-xl font-semibold">天气预报工具</h3>
+                <h3 className="text-xl font-semibold">{t('home.tools.weatherTool.name')}</h3>
                 <p className="text-muted-foreground flex-grow">
-                  实时获取当前位置天气，查看未来3天预报和空气质量，支持城市搜索功能
+                  {t('home.tools.weatherTool.description')}
                 </p>
                 <div className="mt-auto pt-4">
                   <Button className="w-full" onClick={handleWeatherTool}>
-                    查看天气
+                    {t('home.tools.weatherTool.button')}
                   </Button>
                 </div>
               </div>
@@ -665,13 +667,13 @@ export default function Home() {
                 <div className="rounded-full bg-purple-100 p-3 w-fit">
                   <BarChart2 className="h-6 w-6 text-purple-600" />
                 </div>
-                <h3 className="text-xl font-semibold">数据转图表</h3>
+                <h3 className="text-xl font-semibold">{t('home.tools.dataToChart.name')}</h3>
                 <p className="text-muted-foreground flex-grow">
-                  输入CSV或JSON数据，通过简单配置将数据映射到图表轴，生成并导出柱状图、折线图或饼图
+                  {t('home.tools.dataToChart.description')}
                 </p>
                 <div className="mt-auto pt-4">
                   <Button className="w-full" onClick={handleDataToChart}>
-                    开始可视化
+                    {t('home.tools.dataToChart.button')}
                   </Button>
                 </div>
               </div>
@@ -690,13 +692,13 @@ export default function Home() {
                     <path d="M7 11V7a5 5 0 0 1 10 0v4" />
                   </svg>
                 </div>
-                <h3 className="text-xl font-semibold">在线电子钢琴</h3>
+                <h3 className="text-xl font-semibold">{t('home.tools.piano.name')}</h3>
                 <p className="text-muted-foreground flex-grow">
-                  使用电脑键盘或鼠标弹奏钢琴，体验真实的钢琴音色，支持一个完整八度的音符
+                  {t('home.tools.piano.description')}
                 </p>
                 <div className="mt-auto pt-4">
                   <Button className="w-full" onClick={handlePiano}>
-                    开始演奏
+                    {t('home.tools.piano.button')}
                   </Button>
                 </div>
               </div>
@@ -711,13 +713,13 @@ export default function Home() {
                 <div className="rounded-full bg-amber-100 p-3 w-fit">
                   <FlaskConical className="h-6 w-6 text-amber-600" />
                 </div>
-                <h3 className="text-xl font-semibold">交互式2D物理实验室</h3>
+                <h3 className="text-xl font-semibold">{t('home.tools.physicsLab.name')}</h3>
                 <p className="text-muted-foreground flex-grow">
-                  模拟初中力学实验的虚拟实验室，自由创造、交互和观察符合物理规律的物体运动
+                  {t('home.tools.physicsLab.description')}
                 </p>
                 <div className="mt-auto pt-4">
                   <Button className="w-full" onClick={handlePhysicsLab}>
-                    开始实验
+                    {t('home.tools.physicsLab.button')}
                   </Button>
                 </div>
               </div>
@@ -728,34 +730,34 @@ export default function Home() {
       {/* 特性介绍 */}
       <section className="bg-muted rounded-lg p-8 md:p-12 space-y-8">
         <div className="text-center space-y-2">
-          <h2 className="text-3xl font-bold">为什么选择我们</h2>
+          <h2 className="text-3xl font-bold">{t('home.whyChooseUs')}</h2>
           <p className="text-muted-foreground max-w-2xl mx-auto">
-            我们致力于提供最优质的在线工具体验
+            {t('home.whyChooseUsDesc')}
           </p>
         </div>
 
         <div className="grid md:grid-cols-3 gap-8">
           <div className="space-y-3 text-center">
             <Monitor className="h-12 w-12 mx-auto text-primary mb-2" />
-            <h3 className="text-xl font-semibold">全平台支持</h3>
+            <h3 className="text-xl font-semibold">{t('home.crossPlatform')}</h3>
             <p className="text-muted-foreground">
-              基于浏览器的解决方案，无需安装，随时随地可用
+              {t('home.crossPlatformDesc')}
             </p>
           </div>
 
           <div className="space-y-3 text-center">
             <Lock className="h-12 w-12 mx-auto text-primary mb-2" />
-            <h3 className="text-xl font-semibold">数据隐私</h3>
+            <h3 className="text-xl font-semibold">{t('home.dataPrivacy')}</h3>
             <p className="text-muted-foreground">
-              本地处理，不上传您的敏感文件，确保数据安全
+              {t('home.dataPrivacyDesc')}
             </p>
           </div>
 
           <div className="space-y-3 text-center">
             <Globe className="h-12 w-12 mx-auto text-primary mb-2" />
-            <h3 className="text-xl font-semibold">持续更新</h3>
+            <h3 className="text-xl font-semibold">{t('home.continuousUpdates')}</h3>
             <p className="text-muted-foreground">
-              不断添加新功能和改进现有工具，满足您的需求
+              {t('home.continuousUpdatesDesc')}
             </p>
           </div>
         </div>
@@ -763,12 +765,12 @@ export default function Home() {
 
       {/* CTA区域 */}
       <section className="text-center py-12">
-        <h2 className="text-3xl font-bold mb-4">准备好提升您的创意工作流了吗？</h2>
+        <h2 className="text-3xl font-bold mb-4">{t('home.readyToImprove')}</h2>
         <p className="text-muted-foreground mb-8 max-w-2xl mx-auto">
-          加入数千名创意专业人士的行列，使用CreatiKit.io提升工作效率
+          {t('home.readyToImproveDesc')}
         </p>
         <Button size="lg" className="px-8 py-6 text-lg" onClick={handleFreeUse}>
-          立即开始免费使用
+          {t('home.startFreeNow')}
         </Button>
       </section>
 

@@ -2,8 +2,11 @@
 
 import { useState, useEffect } from 'react';
 import { marked } from 'marked';
+import { useI18n } from '@/contexts/I18nContext';
 
 export default function MarkdownEditor() {
+  const { t } = useI18n();
+  
   // 初始Markdown内容 - 使用基础语法避免转义问题
   const [markdownContent, setMarkdownContent] = useState(
     '# Markdown编辑器\n\n' +
@@ -145,7 +148,7 @@ export default function MarkdownEditor() {
       // 创建临时提示元素
       const notification = document.createElement('div');
       notification.className = 'fixed bottom-4 right-4 bg-green-600 text-white px-4 py-2 rounded-md shadow-lg z-50 transition-opacity duration-300';
-      notification.textContent = '已复制到剪贴板';
+      notification.textContent = t('markdownEditorPage.copiedToClipboard');
       document.body.appendChild(notification);
       
       // 2秒后自动消失
@@ -181,22 +184,22 @@ export default function MarkdownEditor() {
   return (
     <div className="min-h-screen bg-gray-50 p-4 md:p-8">
       <div className="max-w-5xl mx-auto">
-          <h1 className="text-3xl font-bold mb-4 text-gray-800">Markdown编辑器</h1>
+          <h1 className="text-3xl font-bold mb-4 text-gray-800">{t('markdownEditorPage.title')}</h1>
           <div className="bg-blue-50 border border-blue-100 rounded-lg p-6 mb-6 shadow-sm">
             <p className="text-gray-700 mb-3">
-              👋 欢迎来到Markdown编辑器！即使你是第一次使用，也能轻松上手！
+              {t('markdownEditorPage.welcome')}
             </p>
             <p className="text-gray-600 mb-3">
-              <span className="font-medium text-blue-700">• 编辑模式：</span> 在这里输入Markdown代码（看看左侧的初始内容作为示例）
+              <span className="font-medium text-blue-700">{t('markdownEditorPage.editMode')}</span> {t('markdownEditorPage.editModeDesc')}
             </p>
             <p className="text-gray-600 mb-3">
-              <span className="font-medium text-blue-700">• 预览模式：</span> 查看你的内容渲染后的样子
+              <span className="font-medium text-blue-700">{t('markdownEditorPage.previewMode')}</span> {t('markdownEditorPage.previewModeDesc')}
             </p>
             <p className="text-gray-600 mb-3">
-              <span className="font-medium text-blue-700">• 分屏模式：</span> 边写边看效果，超方便！
+              <span className="font-medium text-blue-700">{t('markdownEditorPage.splitMode')}</span> {t('markdownEditorPage.splitModeDesc')}
             </p>
             <p className="text-gray-600">
-              <span className="font-medium text-blue-700">💡 小提示：</span> 向下滚动页面，查看底部的Markdown语法指南，包含了所有常用语法和示例！
+              <span className="font-medium text-blue-700">{t('markdownEditorPage.tip')}</span> {t('markdownEditorPage.tipDesc')}
             </p>
           </div>
         
@@ -206,19 +209,19 @@ export default function MarkdownEditor() {
               onClick={() => setActiveTab('edit')}
               className={`px-4 py-2 rounded-md ${activeTab === 'edit' ? 'bg-black text-white' : 'bg-gray-200 text-gray-700'}`}
             >
-              编辑
+              {t('markdownEditorPage.edit')}
             </button>
             <button
               onClick={() => setActiveTab('preview')}
               className={`px-4 py-2 rounded-md ${activeTab === 'preview' ? 'bg-black text-white' : 'bg-gray-200 text-gray-700'}`}
             >
-              预览
+              {t('markdownEditorPage.preview')}
             </button>
             <button
               onClick={() => setActiveTab('split')}
               className={`px-4 py-2 rounded-md ${activeTab === 'split' ? 'bg-black text-white' : 'bg-gray-200 text-gray-700'}`}
             >
-              分屏
+              {t('markdownEditorPage.split')}
             </button>
           </div>
           <div className="flex space-x-2">
@@ -226,19 +229,19 @@ export default function MarkdownEditor() {
               onClick={copyToClipboard}
               className="px-4 py-2 bg-white text-black border border-gray-300 rounded-md hover:bg-gray-100"
             >
-              复制
+              {t('markdownEditorPage.copy')}
             </button>
             <button
               onClick={downloadMarkdown}
               className="px-4 py-2 bg-white text-black border border-gray-300 rounded-md hover:bg-gray-100"
             >
-              下载
+              {t('markdownEditorPage.download')}
             </button>
             <button
               onClick={resetContent}
               className="px-4 py-2 bg-white text-black border border-gray-300 rounded-md hover:bg-gray-100"
             >
-              重置
+              {t('markdownEditorPage.reset')}
             </button>
             
 
@@ -251,7 +254,7 @@ export default function MarkdownEditor() {
               value={markdownContent}
               onChange={(e) => setMarkdownContent(e.target.value)}
               className="w-full h-[600px] p-6 bg-white dark:bg-white text-gray-800 dark:text-gray-800 font-mono focus:outline-none resize-none"
-              placeholder="在此输入Markdown内容..."
+              placeholder={t('markdownEditorPage.placeholder')}
             />
           )}
 
@@ -268,7 +271,7 @@ export default function MarkdownEditor() {
                 value={markdownContent}
                 onChange={(e) => setMarkdownContent(e.target.value)}
                 className="w-1/2 p-6 bg-white dark:bg-white text-gray-800 dark:text-gray-800 font-mono focus:outline-none resize-none border-r dark:border-gray-300"
-                placeholder="在此输入Markdown内容..."
+                placeholder={t('markdownEditorPage.placeholder')}
               />
               <div 
                 className="w-1/2 p-6 overflow-y-auto"
@@ -279,12 +282,12 @@ export default function MarkdownEditor() {
         </div>
 
         <div className="mt-8">
-          <h2 className="text-xl font-bold mb-6 text-gray-800">📝 Markdown语法指南</h2>
+          <h2 className="text-xl font-bold mb-6 text-gray-800">{t('markdownEditorPage.syntaxGuide')}</h2>
           
           <div className="bg-white rounded-lg shadow-md p-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <h3 className="text-lg font-semibold mb-3 text-gray-700">✨ 文本格式化</h3>
+                <h3 className="text-lg font-semibold mb-3 text-gray-700">{t('markdownEditorPage.textFormatting')}</h3>
                 <pre className="bg-white border border-gray-200 p-4 rounded-md overflow-x-auto text-sm mb-4">
 {`**粗体文本** 或 __粗体文本__
 *斜体文本* 或 _斜体文本_
@@ -295,7 +298,7 @@ export default function MarkdownEditor() {
               </div>
               
               <div>
-                <h3 className="text-lg font-semibold mb-3 text-gray-700">📋 列表</h3>
+                <h3 className="text-lg font-semibold mb-3 text-gray-700">{t('markdownEditorPage.lists')}</h3>
                 <pre className="bg-white border border-gray-200 p-4 rounded-md overflow-x-auto text-sm mb-4">
 {`# 无序列表
 - 项目1
@@ -312,7 +315,7 @@ export default function MarkdownEditor() {
               </div>
               
               <div>
-                <h3 className="text-lg font-semibold mb-3 text-gray-700">🔗 链接和图片</h3>
+                <h3 className="text-lg font-semibold mb-3 text-gray-700">{t('markdownEditorPage.linksAndImages')}</h3>
                 <pre className="bg-white border border-gray-200 p-4 rounded-md overflow-x-auto text-sm mb-4">
 {`# 链接
 [链接文本](https://example.com)
@@ -326,7 +329,7 @@ export default function MarkdownEditor() {
               </div>
               
               <div>
-                <h3 className="text-lg font-semibold mb-3 text-gray-700">💻 代码和表格</h3>
+                <h3 className="text-lg font-semibold mb-3 text-gray-700">{t('markdownEditorPage.codeBlocks')} & {t('markdownEditorPage.tables')}</h3>
                 <pre className="bg-white border border-gray-200 p-4 rounded-md overflow-x-auto text-sm mb-4">
 {`# 代码块
 \`\`\`javascript

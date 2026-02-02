@@ -1,8 +1,10 @@
 'use client';
 
 import React, { useRef, useState, useCallback } from 'react';
+import { useI18n } from '@/contexts/I18nContext';
 
 export default function BackgroundRemover() {
+  const { t } = useI18n();
   const [image, setImage] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string>('');
   const [processedImage, setProcessedImage] = useState<string>('');
@@ -164,12 +166,12 @@ export default function BackgroundRemover() {
 
   // 快速预设颜色
   const presetColors = [
-    { r: 255, g: 255, b: 255, name: '白色' },
-    { r: 0, g: 0, b: 0, name: '黑色' },
-    { r: 255, g: 0, b: 0, name: '红色' },
-    { r: 0, g: 128, b: 0, name: '绿色' },
-    { r: 0, g: 0, b: 255, name: '蓝色' },
-    { r: 255, g: 255, b: 0, name: '黄色' }
+    { r: 255, g: 255, b: 255, name: t('backgroundRemoverPage.white') },
+    { r: 0, g: 0, b: 0, name: t('backgroundRemoverPage.black') },
+    { r: 255, g: 0, b: 0, name: t('backgroundRemoverPage.red') },
+    { r: 0, g: 128, b: 0, name: t('backgroundRemoverPage.green') },
+    { r: 0, g: 0, b: 255, name: t('backgroundRemoverPage.blue') },
+    { r: 255, g: 255, b: 0, name: t('backgroundRemoverPage.yellow') }
   ];
 
   return (
@@ -179,14 +181,14 @@ export default function BackgroundRemover() {
         <div className="text-center mb-10">
           <div className="relative inline-block">
             <h1 className="text-4xl font-bold text-pink-600 mb-3 tracking-tight animate-bounce-in">
-              ✨ 魔法背景移除 ✨
+              {t('backgroundRemoverPage.title')}
             </h1>
             {/* 装饰元素 */}
             <div className="absolute -top-6 -left-8 w-12 h-12 bg-yellow-200 rounded-full opacity-50 blur-sm"></div>
             <div className="absolute -top-4 -right-6 w-10 h-10 bg-blue-200 rounded-full opacity-50 blur-sm"></div>
           </div>
           <p className="text-purple-700 max-w-2xl mx-auto mt-4 text-lg">
-            🎨 一键去除图片背景，让你的照片变得超可爱！简单易用，效果超棒～
+            {t('backgroundRemoverPage.subtitle')}
           </p>
         </div>
         
@@ -200,7 +202,7 @@ export default function BackgroundRemover() {
               htmlFor="file-upload" 
               className="block text-sm font-medium text-gray-700 mb-3"
             >
-              上传图片
+              {t('backgroundRemoverPage.uploadImage')}
             </label>
             <div className="relative">
               <input
@@ -214,8 +216,8 @@ export default function BackgroundRemover() {
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 mx-auto text-pink-500 mb-3 transform transition-transform duration-300 hover:scale-110" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                 </svg>
-                <p className="text-purple-700 mb-2 font-medium">🎉 拖放图片到这里，或点击选择文件</p>
-                <p className="text-pink-600 text-sm">支持 JPG, PNG, GIF 等常见图片格式～</p>
+                <p className="text-purple-700 mb-2 font-medium">{t('backgroundRemoverPage.dragDropHint')}</p>
+                <p className="text-pink-600 text-sm">{t('backgroundRemoverPage.supportedFormats')}</p>
               </div>
             </div>
           </div>
@@ -226,14 +228,14 @@ export default function BackgroundRemover() {
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-purple-500" viewBox="0 0 20 20" fill="currentColor">
                     <path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" />
                 </svg>
-                图片处理设置
+                {t('backgroundRemoverPage.imageSettings')}
               </h2>
               
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* 阈值设置 */}
                 <div className="bg-purple-50 rounded-2xl p-5 border-2 border-purple-100 shadow-sm">
                   <label className="block text-sm font-medium text-purple-700 mb-3 flex justify-between">
-                    <span>🪄 魔法强度</span>
+                    <span>{t('backgroundRemoverPage.magicStrength')}</span>
                     <span className="text-pink-600 font-medium">{threshold}%</span>
                   </label>
                   <input
@@ -245,15 +247,15 @@ export default function BackgroundRemover() {
                     className="w-full h-3 bg-purple-200 rounded-full appearance-none cursor-pointer accent-pink-500 transform transition-all duration-300 hover:scale-105"
                   />
                   <div className="flex justify-between text-xs text-purple-600 mt-2">
-                    <span>🎯 精确</span>
-                    <span>🌈 宽松</span>
+                    <span>{t('backgroundRemoverPage.precise')}</span>
+                    <span>{t('backgroundRemoverPage.loose')}</span>
                   </div>
                 </div>
                 
                 {/* 颜色选择 */}
                 <div className="bg-pink-50 rounded-2xl p-5 border-2 border-pink-100 shadow-sm">
                   <label className="block text-sm font-medium text-pink-700 mb-3">
-                    要移除的颜色 🎨
+                    {t('backgroundRemoverPage.colorToRemove')}
                   </label>
                   
                   <div className="flex flex-col gap-4">
@@ -279,14 +281,14 @@ export default function BackgroundRemover() {
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
                           <path fillRule="evenodd" d="M13.104 8.222a1 1 0 01.892 1.784c-.271.152-.553.288-.843.402-.29.113-.592.17-.897.17a1 1 0 01-.892-1.784c.271-.152.553-.288.843-.402.29-.113.592-.17.897-.17a1 1 0 01.892 1.784zm-1.89-1.784a1 1 0 00-1.784-.892c-.152.271-.288.553-.402.843-.113.29-.17.592-.17.897a1 1 0 001.784.892c.152-.271.288-.553.402-.843.113-.29.17-.592.17-.897a1 1 0 00-.892-1.784zm3 1.784a1 1 0 01.892 1.784c-.271.152-.553.288-.843.402-.29.113-.592.17-.897.17a1 1 0 01-.892-1.784c.271-.152.553-.288.843-.402.29-.113.592-.17.897-.17a1 1 0 01.892 1.784zM13 9a1 1 0 100 2h4a1 1 0 100-2h-4zm-3-7a1 1 0 011-1h2a1 1 0 110 2h-2a1 1 0 01-1-1zm11 7a1 1 0 100 2h-2a1 1 0 100-2h2zM9 11a1 1 0 100 2H5a1 1 0 100-2h4zm7-7a1 1 0 110 2H9a1 1 0 110-2h7zM7 12a1 1 0 100 2H3a1 1 0 100-2h4zm4-8a1 1 0 011-1h4a1 1 0 110 2h-4a1 1 0 01-1-1z" clipRule="evenodd" />
                         </svg>
-                        取色笔
+                        {t('backgroundRemoverPage.colorPicker')}
                       </button>
                     </div>
                     
                     {/* 颜色值输入 - 参考调色板样式 */}
                     <div className="mt-4 space-y-4">
                       <div className="relative">
-                        <label className="block text-sm font-medium text-purple-700 mb-1">🌈 十六进制颜色</label>
+                        <label className="block text-sm font-medium text-purple-700 mb-1">{t('backgroundRemoverPage.hexColor')}</label>
                         <div className="flex gap-2">
                           <input
                             type="text"
@@ -307,7 +309,7 @@ export default function BackgroundRemover() {
                               navigator.clipboard.writeText(`#${[bgColor.r, bgColor.g, bgColor.b].map(x => x.toString(16).padStart(2, '0')).join('').toUpperCase()}`);
                             }}
                             className="p-2 bg-purple-100 hover:bg-purple-200 rounded-xl transition-colors duration-200 shadow-sm hover:shadow"
-                            title="复制颜色值"
+                            title={t('backgroundRemoverPage.copyColor')}
                           >
                             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
@@ -354,7 +356,7 @@ export default function BackgroundRemover() {
                     
                     {/* 预设颜色 - 参考调色板样式 */}
                     <div className="mt-2">
-                      <label className="block text-sm font-medium text-purple-700 mb-2">🎨 快捷颜色</label>
+                      <label className="block text-sm font-medium text-purple-700 mb-2">{t('backgroundRemoverPage.quickColors')}</label>
                       <div className="flex gap-4 flex-wrap">
                         {presetColors.map((color, index) => (
                           <button
@@ -397,7 +399,7 @@ export default function BackgroundRemover() {
                     <path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" />
                   </svg>
                 )}
-                {isProcessing ? '处理中...' : '移除背景'}
+                {isProcessing ? t('backgroundRemoverPage.processing') : t('backgroundRemoverPage.removeBackground')}
               </button>
             )}
             {processedImage && (
@@ -408,7 +410,7 @@ export default function BackgroundRemover() {
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                   <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd" />
                 </svg>
-                下载图片
+                {t('backgroundRemoverPage.downloadImage')}
               </button>
             )}
             {previewUrl && processedImage && (
@@ -419,7 +421,7 @@ export default function BackgroundRemover() {
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                   <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
                 </svg>
-                重新处理
+                {t('backgroundRemoverPage.reprocess')}
               </button>
             )}
           </div>
@@ -433,12 +435,12 @@ export default function BackgroundRemover() {
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-purple-500" viewBox="0 0 20 20" fill="currentColor">
                   <path fillRule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clipRule="evenodd" />
                 </svg>
-                原始图片
+                {t('backgroundRemoverPage.originalImage')}
               </h2>
               <div className="relative flex justify-center items-center min-h-[300px] bg-gradient-to-br from-purple-50 to-pink-50 rounded-2xl overflow-hidden border-2 border-purple-100 shadow-sm">
                 <img
                   src={previewUrl}
-                  alt="原始图片"
+                  alt={t('backgroundRemoverPage.originalImage')}
                   className="max-w-full max-h-[300px] object-contain transition-transform duration-200 hover:scale-105"
                 />
               </div>
@@ -451,14 +453,14 @@ export default function BackgroundRemover() {
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-pink-500" viewBox="0 0 20 20" fill="currentColor">
                   <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                 </svg>
-                处理后图片
+                {t('backgroundRemoverPage.processedImage')}
               </h2>
               <div className="relative flex justify-center items-center min-h-[300px] bg-gradient-to-br from-blue-50 to-pink-50 rounded-2xl overflow-hidden border-2 border-pink-100 shadow-sm">
                 {/* 透明背景图案 */}
                 <div className="absolute inset-0 opacity-25 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgdmlld0JveD0iMCAwIDYwIDYwIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4wNSI+PHBhdGggZD0iTTAgMGg2MHY2MEgwVjB6bTE1IDE1aDMwdjMwSDBNMCAxNWgzMHYzMEgweiIvPjwvZz48L2c+PC9zdmc+')]"></div>
                 <img
                   src={processedImage}
-                  alt="处理后图片"
+                  alt={t('backgroundRemoverPage.processedImage')}
                   className="max-w-full max-h-[300px] object-contain transition-transform duration-200 hover:scale-105 relative z-10"
                 />
               </div>
@@ -474,7 +476,7 @@ export default function BackgroundRemover() {
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" viewBox="0 0 20 20" fill="currentColor">
                   <path fillRule="evenodd" d="M13.104 8.222a1 1 0 01.892 1.784c-.271.152-.553.288-.843.402-.29.113-.592.17-.897.17a1 1 0 01-.892-1.784c.271-.152.553-.288.843-.402.29-.113.592-.17.897-.17a1 1 0 01.892 1.784zm-1.89-1.784a1 1 0 00-1.784-.892c-.152.271-.288.553-.402.843-.113.29-.17.592-.17.897a1 1 0 001.784.892c.152-.271.288-.553.402-.843.113-.29.17-.592.17-.897a1 1 0 00-.892-1.784zm3 1.784a1 1 0 01.892 1.784c-.271.152-.553.288-.843.402-.29.113-.592.17-.897.17a1 1 0 01-.892-1.784c.271-.152.553-.288.843-.402.29-.113.592-.17.897-.17a1 1 0 01.892 1.784zM13 9a1 1 0 100 2h4a1 1 0 100-2h-4zm-3-7a1 1 0 011-1h2a1 1 0 110 2h-2a1 1 0 01-1-1zm11 7a1 1 0 100 2h-2a1 1 0 100-2h2zM9 11a1 1 0 100 2H5a1 1 0 100-2h4zm7-7a1 1 0 110 2H9a1 1 0 110-2h7zM7 12a1 1 0 100 2H3a1 1 0 100-2h4zm4-8a1 1 0 011-1h4a1 1 0 110 2h-4a1 1 0 01-1-1z" clipRule="evenodd" />
                 </svg>
-                🎨 点击屏幕任意位置取色（按 Esc 取消）
+                {t('backgroundRemoverPage.colorPickerActive')}
               </div>
             </div>
           </div>
@@ -485,7 +487,7 @@ export default function BackgroundRemover() {
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-3xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-auto border-2 border-pink-200">
               <div className="p-4 border-b border-pink-100 flex justify-between items-center">
-                <h3 className="text-lg font-semibold text-pink-600">🎨 从图片中选择颜色</h3>
+                <h3 className="text-lg font-semibold text-pink-600">{t('backgroundRemoverPage.selectColorFromImage')}</h3>
                 <button
                   onClick={() => setIsColorPickerActive(false)}
                   className="text-pink-500 hover:text-pink-700 transition-colors"
@@ -497,7 +499,7 @@ export default function BackgroundRemover() {
               </div>
               <div className="p-4">
                 <div className="text-center mb-4 text-purple-700 font-medium">
-                  ✨ 点击图片中的任意位置来选择要移除的颜色
+                  {t('backgroundRemoverPage.clickToSelectColor')}
                 </div>
                 <div className="flex justify-center">
                   <canvas

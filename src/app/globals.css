@@ -141,5 +141,15 @@
       font-size: 0.75rem;
       color: #6b7280;
     }
+
+    /* 隐藏滚动条但仍允许滚动，用于弹窗内容过长的场景 */
+    .no-scrollbar {
+      -ms-overflow-style: none; /* IE and Edge */
+      scrollbar-width: none; /* Firefox */
+    }
+
+    .no-scrollbar::-webkit-scrollbar {
+      display: none; /* Chrome, Safari and Opera */
+    }
   }
 }

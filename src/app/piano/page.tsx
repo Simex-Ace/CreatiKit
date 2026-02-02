@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { usePianoSound, KEY_TO_NOTE, NOTE_FREQUENCIES, AudioEvent } from '../../components/piano/usePianoSound';
 import { Piano } from '../../components/piano/Piano';
+import { useI18n } from '@/contexts/I18nContext';
 
 // 录音元数据接口
 interface RecordingMetadata {
@@ -12,6 +13,8 @@ interface RecordingMetadata {
 }
 
 export default function PianoPage() {
+  const { t } = useI18n();
+  
   // 音频相关状态
   const {
     playNote,
@@ -114,7 +117,7 @@ export default function PianoPage() {
   // 开始录音
   const startRecording = useCallback(() => {
     if (!audioInitialized) {
-      showNotification('请先初始化音频系统', 'error');
+      showNotification(t('pianoPage.initAudioFirst'), 'error');
       return;
     }
     
@@ -218,7 +221,7 @@ export default function PianoPage() {
     }).catch(error => {
         console.error('音频初始化失败，无法播放录音:', error);
         setIsPlayingBack(false);
-        showNotification('无法播放录音，请确保音频系统已正确初始化。', 'error');
+        showNotification(t('pianoPage.cannotPlayRecording'), 'error');
       });
   }, [audioInitialized, recordingEvents, playNote, stopNote, initAudioSystem, showNotification]);
   
@@ -237,7 +240,7 @@ export default function PianoPage() {
   // 保存录音到本地
   const saveRecording = useCallback(() => {
     if (recordingEvents.length === 0) {
-      showNotification('没有可保存的录音', 'error');
+      showNotification(t('pianoPage.noRecordingToSave'), 'error');
       return;
     }
     
@@ -282,7 +285,7 @@ export default function PianoPage() {
     
     // 检查文件扩展名
         if (!file.name.endsWith('.json')) {
-          showNotification('请选择JSON格式的录音文件', 'error');
+          showNotification(t('pianoPage.selectJsonFile'), 'error');
           event.target.value = '';
           return;
         }
@@ -295,11 +298,11 @@ export default function PianoPage() {
         
         // 详细验证数据格式
         if (!metadata || typeof metadata !== 'object') {
-          throw new Error('无效的录音文件格式');
+          throw new Error(t('pianoPage.invalidFileFormat'));
         }
         
         if (!metadata.notes || !Array.isArray(metadata.notes)) {
-          throw new Error('录音文件缺少有效的音符数据');
+          throw new Error(t('pianoPage.missingNotesData'));
         }
         
         // 验证每个音符事件的格式
@@ -314,7 +317,7 @@ export default function PianoPage() {
         });
         
         if (validNotes.length === 0) {
-          throw new Error('录音文件中没有有效的音符数据');
+          throw new Error(t('pianoPage.noValidNotes'));
         }
         
         // 确保音频已初始化
@@ -332,15 +335,15 @@ export default function PianoPage() {
             }, 2000);
           }
           
-          showNotification(`录音导入成功！包含 ${validNotes.length} 个有效音符。点击播放按钮开始播放。`);
+          showNotification(t('pianoPage.importSuccess', { count: validNotes.length }));
           console.log('导入的录音数据:', validNotes);
         }).catch(error => {
           console.error('初始化音频失败:', error);
-          showNotification('录音导入成功，但音频系统初始化失败，请点击页面初始化音频后再播放。', 'error');
+          showNotification(t('pianoPage.importSuccessButInitFailed'), 'error');
         });
       } catch (error) {
         console.error('导入文件解析错误:', error);
-        showNotification(`导入失败: ${error instanceof Error ? error.message : '未知错误'}`, 'error');
+        showNotification(`${t('pianoPage.importFailed')}: ${error instanceof Error ? error.message : '未知错误'}`, 'error');
       }
     };
     reader.readAsText(file);
@@ -452,8 +455,8 @@ export default function PianoPage() {
               <path d="M7 11V7a5 5 0 0 1 10 0v4" />
             </svg>
           </div>
-          <h1 className="text-4xl font-bold text-gray-900 mb-2 tracking-tight">迷你音乐工作站</h1>
-          <p className="text-gray-600 max-w-2xl mx-auto">专业级在线钢琴，支持多八度演奏、录音和本地保存</p>
+          <h1 className="text-4xl font-bold text-gray-900 mb-2 tracking-tight">{t('pianoPage.title')}</h1>
+          <p className="text-gray-600 max-w-2xl mx-auto">{t('pianoPage.subtitle')}</p>
         </header>
 
         {/* 控制区域 */}
@@ -467,7 +470,7 @@ export default function PianoPage() {
             >
               ↓
             </button>
-            <span className="font-semibold">八度: {currentOctave}</span>
+            <span className="font-semibold">{t('pianoPage.octave')}: {currentOctave}</span>
             <button
               onClick={() => changeOctave('up')}
               disabled={currentOctave >= 5}
@@ -480,7 +483,7 @@ export default function PianoPage() {
 
           {/* 延音踏板指示器 */}
           <div className={`px-4 py-2 rounded-lg font-medium transition-colors ${sustain ? 'bg-yellow-100 text-yellow-700' : 'bg-gray-100 text-gray-600'}`}>
-            🎹 延音踏板: {sustain ? '已按下' : '已释放'} <span className="text-xs ml-1">[空格键]</span>
+            🎹 {t('pianoPage.sustainPedal')}: {sustain ? t('pianoPage.pressed') : t('pianoPage.released')} <span className="text-xs ml-1">[空格键]</span>
           </div>
 
           {/* 录音控制 */}
@@ -491,14 +494,14 @@ export default function PianoPage() {
                 disabled={!audioInitialized || isPlayingBack}
                 className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg flex items-center gap-2 disabled:bg-gray-400"
               >
-                🎤 开始录音
+                🎤 {t('pianoPage.startRecording')}
               </button>
             ) : (
               <button
                 onClick={stopRecording}
                 className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg flex items-center gap-2 animate-pulse"
               >
-                ⏹️ 停止录音 ({recordingEvents.length}个音符)
+                ⏹️ {t('pianoPage.stopRecording')} ({t('pianoPage.notesCount', { count: recordingEvents.length })})
               </button>
             )}
           </div>
@@ -511,14 +514,14 @@ export default function PianoPage() {
                 disabled={!audioInitialized || recordingEvents.length === 0 || isRecording}
                 className="px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg flex items-center gap-2 disabled:bg-gray-400"
               >
-                ▶️ 播放 ({recordingEvents.length}个音符)
+                ▶️ {t('pianoPage.play')} ({t('pianoPage.notesCount', { count: recordingEvents.length })})
               </button>
             ) : (
               <button
                 onClick={stopPlayback}
                 className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg flex items-center gap-2"
               >
-                ⏹️ 停止播放
+                ⏹️ {t('pianoPage.stopPlayback')}
               </button>
             )}
           </div>
@@ -530,13 +533,13 @@ export default function PianoPage() {
               disabled={recordingEvents.length === 0}
               className="px-4 py-2 bg-purple-500 hover:bg-purple-600 text-white rounded-lg flex items-center gap-2 disabled:bg-gray-400"
             >
-              💾 保存录音
+              💾 {t('pianoPage.saveRecording')}
             </button>
             <button
               onClick={importRecording}
               className="px-4 py-2 bg-indigo-500 hover:bg-indigo-600 text-white rounded-lg flex items-center gap-2"
             >
-              📂 导入录音
+              📂 {t('pianoPage.importRecording')}
             </button>
             <input
               ref={fileInputRef}
@@ -558,14 +561,14 @@ export default function PianoPage() {
               {isLoading && (
                 <div className="text-center mb-6">
                   <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-2"></div>
-                  <p className="text-blue-600">正在加载钢琴音色...</p>
+                  <p className="text-blue-600">{t('pianoPage.loadingPiano')}</p>
                 </div>
               )}
               
               {!audioInitialized && !isLoading && (
                 <div className="text-center p-8 mb-4 cursor-pointer">
-                  <p className="text-blue-600 font-medium">点击此处初始化音频系统</p>
-                  <p className="text-gray-500 text-sm mt-2">需要您的交互来激活音频功能</p>
+                  <p className="text-blue-600 font-medium">{t('pianoPage.clickToInitAudio')}</p>
+                  <p className="text-gray-500 text-sm mt-2">{t('pianoPage.needInteraction')}</p>
                 </div>
               )}
               
@@ -577,7 +580,7 @@ export default function PianoPage() {
               />
               
               <div className="mt-8 text-center space-y-4">
-                <h3 className="text-xl font-semibold text-gray-800">键盘映射</h3>
+                <h3 className="text-xl font-semibold text-gray-800">{t('pianoPage.keyboardMapping')}</h3>
                 <div className="grid grid-cols-3 md:grid-cols-6 gap-2 text-sm">
                   <div className="bg-gray-100 p-3 rounded-lg">
                     <span className="font-mono bg-gray-200 px-2 py-1 rounded">s</span>

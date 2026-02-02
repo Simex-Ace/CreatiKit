@@ -6,6 +6,7 @@ import { Card } from '@/components/ui/card';
 import { Slider } from '@/components/ui/slider';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
+import { useI18n } from '@/contexts/I18nContext';
 
 // 导入类型和工具
 import { SandboxConfig, Stats, TerrainDistribution } from './types';
@@ -16,6 +17,7 @@ import { RuleDescription } from './RuleDescription';
 // 主组件
 
 const EcosystemSandbox = () => {
+  const { t } = useI18n();
   // Canvas相关引用
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationRef = useRef<number>();
@@ -368,28 +370,28 @@ const EcosystemSandbox = () => {
     <div className="min-h-screen flex flex-col p-4 md:p-8 bg-slate-50">
       <header className="mb-8">
         <h1 className="text-3xl md:text-4xl font-bold text-center bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">
-          生物沙盒模拟
+          {t('ecosystemSandboxPage.title')}
         </h1>
         <p className="text-center text-slate-600 mt-2">
-          高性能纯前端生态系统模拟演示
+          {t('ecosystemSandboxPage.subtitle')}
         </p>
       </header>
 
       <main className="flex-grow flex flex-col md:flex-row gap-6 max-w-7xl mx-auto w-full">
         {/* 控制面板 */}
         <Card className="p-4 w-full md:w-72 flex-shrink-0 min-w-72" style={{ maxWidth: '280px' }}>
-          <h2 className="text-xl font-semibold mb-4">控制面板</h2>
+          <h2 className="text-xl font-semibold mb-4">{t('ecosystemSandboxPage.controlPanel')}</h2>
           
           <div className="space-y-6">
             {/* 运行/暂停控制 */}
             <div className="flex items-center justify-between">
-              <Label htmlFor="running-toggle">运行模拟</Label>
+              <Label htmlFor="running-toggle">{t('ecosystemSandboxPage.runSimulation')}</Label>
               <Button 
                 id="running-toggle"
                 className={`px-4 ${config.isRunning ? 'bg-green-600 hover:bg-green-700' : 'bg-amber-500 hover:bg-amber-600'}`}
                 onClick={toggleRunning}
               >
-                {config.isRunning ? '暂停' : '运行'}
+                {config.isRunning ? t('ecosystemSandboxPage.pause') : t('ecosystemSandboxPage.run')}
               </Button>
             </div>
             
@@ -398,8 +400,8 @@ const EcosystemSandbox = () => {
             {/* 速度控制 */}
             <div className="space-y-2">
               <div className="flex justify-between items-center">
-                <Label htmlFor="speed-slider">移动速度</Label>
-                <span className="text-sm font-mono">{config.speed.toFixed(1)}px/帧</span>
+                <Label htmlFor="speed-slider">{t('ecosystemSandboxPage.movementSpeed')}</Label>
+                <span className="text-sm font-mono">{config.speed.toFixed(1)}{t('ecosystemSandboxPage.pxPerFrame')}</span>
               </div>
               <Slider
                 id="speed-slider"
@@ -419,42 +421,42 @@ const EcosystemSandbox = () => {
                 className="w-full bg-green-600 hover:bg-green-700" 
                 onClick={addOrganism}
               >
-                添加生物
+                {t('ecosystemSandboxPage.addOrganism')}
               </Button>
               
               <Button 
                 className="w-full bg-amber-500 hover:bg-amber-600" 
                 onClick={() => initOrganisms(config.organismCount)}
               >
-                重置生物（{config.organismCount}个）
+                {t('ecosystemSandboxPage.resetOrganisms', { count: config.organismCount })}
               </Button>
               
               <Button 
                 className="w-full bg-emerald-500 hover:bg-emerald-600" 
                 onClick={resetFoods}
               >
-                重置食物（{config.foodCount}个）
+                {t('ecosystemSandboxPage.resetFoods', { count: config.foodCount })}
               </Button>
               
               <Button 
                 className="w-full bg-red-500 hover:bg-red-600" 
                 onClick={clearAll}
               >
-                清空所有
+                {t('ecosystemSandboxPage.clearAll')}
               </Button>
               
               <Button 
                 className="w-full bg-blue-600 hover:bg-blue-700" 
                 onClick={() => ecosystemManagerRef.current?.resetSandbox()}
               >
-                重置沙盒
+                {t('ecosystemSandboxPage.resetSandbox')}
               </Button>
               
               <Button 
                 className="w-full bg-indigo-600 hover:bg-indigo-700" 
                 onClick={resetView}
               >
-                重置视角
+                {t('ecosystemSandboxPage.resetView')}
               </Button>
             </div>
             
@@ -462,22 +464,22 @@ const EcosystemSandbox = () => {
             
             {/* 性能统计 */}
             <div className="space-y-2">
-              <h3 className="text-sm font-medium text-slate-500">性能统计</h3>
+              <h3 className="text-sm font-medium text-slate-500">{t('ecosystemSandboxPage.performanceStats')}</h3>
               <div className="text-sm font-mono">
-                <div>FPS: {stats.fps} <span className={`${stats.fps < 30 ? 'text-red-500' : stats.fps < 50 ? 'text-amber-500' : 'text-green-500'}`}>({stats.fps < 30 ? '低' : stats.fps < 50 ? '中' : '高'})</span></div>
-                  <div>生物总数: {stats.organismTypes.basic + stats.organismTypes.predator + stats.organismTypes.scavenger}</div>
+                <div>FPS: {stats.fps} <span className={`${stats.fps < 30 ? 'text-red-500' : stats.fps < 50 ? 'text-amber-500' : 'text-green-500'}`}>({stats.fps < 30 ? t('ecosystemSandboxPage.fpsLow') : stats.fps < 50 ? t('ecosystemSandboxPage.fpsMedium') : t('ecosystemSandboxPage.fpsHigh')})</span></div>
+                  <div>{t('ecosystemSandboxPage.totalOrganisms')}: {stats.organismTypes.basic + stats.organismTypes.predator + stats.organismTypes.scavenger}</div>
                 <Separator className="my-2" />
                 <div className="space-y-1">
                   <div className="flex items-center justify-between">
-                    <span>基础生物:</span>
+                    <span>{t('ecosystemSandboxPage.basicOrganisms')}</span>
                     <span className="text-green-600">{stats.organismTypes.basic || 0}</span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span>捕食者:</span>
+                    <span>{t('ecosystemSandboxPage.predators')}</span>
                     <span className="text-red-600">{stats.organismTypes.predator || 0}</span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span>清道夫:</span>
+                    <span>{t('ecosystemSandboxPage.scavengers')}</span>
                     <span className="text-purple-600">{stats.organismTypes.scavenger || 0}</span>
                   </div>
                 </div>
@@ -499,7 +501,7 @@ const EcosystemSandbox = () => {
             />
             {!config.isRunning && (
               <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-20 text-white font-bold text-xl pointer-events-none">
-                已暂停
+                {t('ecosystemSandboxPage.paused')}
               </div>
             )}
           </div>
@@ -510,7 +512,7 @@ const EcosystemSandbox = () => {
         <RuleDescription />
 
         <footer className="mt-6 mb-4 text-center text-sm text-slate-500">
-          <p>点击沙盒区域也可以添加生物</p>
+          <p>{t('ecosystemSandboxPage.clickToAdd')}</p>
         </footer>
     </div>
   );

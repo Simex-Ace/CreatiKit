@@ -9,6 +9,7 @@ import { Slider } from '@/components/ui/slider';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Play, Pause, Square, Download, Sparkles, Copy, Check } from 'lucide-react';
 import { useToast } from '@/contexts/ToastContext';
+import { useI18n } from '@/contexts/I18nContext';
 
 interface Particle {
   x: number;
@@ -43,6 +44,7 @@ export default function ParticleEditor() {
   const emitterXRef = useRef(400);
   const emitterYRef = useRef(300);
   const { toast } = useToast();
+  const { t } = useI18n();
 
   // 初始化画布
   useEffect(() => {
@@ -301,8 +303,8 @@ export default function ParticleEditor() {
     link.click();
     URL.revokeObjectURL(url);
     toast({
-      title: '导出成功',
-      description: '粒子配置已导出为JSON文件',
+      title: t('particleEditorPage.exportSuccess'),
+      description: t('particleEditorPage.configExported'),
       variant: 'success',
     });
   };
@@ -315,8 +317,8 @@ export default function ParticleEditor() {
     link.href = canvasRef.current.toDataURL('image/png');
     link.click();
     toast({
-      title: '导出成功',
-      description: '粒子效果已导出为PNG图片',
+      title: t('particleEditorPage.exportSuccess'),
+      description: t('particleEditorPage.screenshotExported'),
       variant: 'success',
     });
   };
@@ -338,8 +340,8 @@ export default function ParticleEditor() {
     };
     navigator.clipboard.writeText(JSON.stringify(config, null, 2));
     toast({
-      title: '已复制',
-      description: '粒子配置已复制到剪贴板',
+      title: t('particleEditorPage.copied'),
+      description: t('particleEditorPage.configCopied'),
       variant: 'success',
     });
   };
@@ -349,24 +351,24 @@ export default function ParticleEditor() {
       <div className="mb-8 text-center">
         <h1 className="text-3xl font-bold mb-2 flex items-center justify-center gap-2">
           <Sparkles className="h-8 w-8" />
-          粒子系统编辑器
+          {t('particleEditorPage.title')}
         </h1>
         <p className="text-muted-foreground max-w-2xl mx-auto">
-          创建和编辑粒子效果，实时预览，支持多种形状和混合模式
+          {t('particleEditorPage.subtitle')}
         </p>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">
         {/* 控制面板 */}
         <Card className="p-6 lg:col-span-1">
-          <h2 className="text-xl font-semibold mb-4 text-center">粒子设置</h2>
+          <h2 className="text-xl font-semibold mb-4 text-center">{t('particleEditorPage.particleSettings')}</h2>
           
           <div className="space-y-4">
             {/* 播放控制 */}
             <div className="flex gap-2">
               <Button onClick={() => setIsPlaying(!isPlaying)} className="flex-1">
                 {isPlaying ? <Pause className="h-4 w-4 mr-2" /> : <Play className="h-4 w-4 mr-2" />}
-                {isPlaying ? '暂停' : '播放'}
+                {isPlaying ? t('audioVisualizerPage.pause') : t('audioVisualizerPage.play')}
               </Button>
               <Button variant="outline" onClick={() => (particlesRef.current = [])}>
                 <Square className="h-4 w-4" />
@@ -375,7 +377,7 @@ export default function ParticleEditor() {
 
             {/* 粒子数量 */}
             <div className="space-y-2">
-              <Label>粒子数量: {particleCount}</Label>
+              <Label>{t('particleEditorPage.particleCount')}: {particleCount}</Label>
               <Slider
                 value={[particleCount]}
                 onValueChange={(value) => setParticleCount(value[0])}
@@ -387,7 +389,7 @@ export default function ParticleEditor() {
 
             {/* 发射速率 */}
             <div className="space-y-2">
-              <Label>发射速率: {emissionRate}/帧</Label>
+              <Label>{t('particleEditorPage.emissionRate')}: {emissionRate}{t('particleEditorPage.perFrame')}</Label>
               <Slider
                 value={[emissionRate]}
                 onValueChange={(value) => setEmissionRate(value[0])}
@@ -399,7 +401,7 @@ export default function ParticleEditor() {
 
             {/* 粒子大小 */}
             <div className="space-y-2">
-              <Label>粒子大小: {particleSize}</Label>
+              <Label>{t('particleEditorPage.particleSize')}: {particleSize}</Label>
               <Slider
                 value={[particleSize]}
                 onValueChange={(value) => setParticleSize(value[0])}
@@ -411,7 +413,7 @@ export default function ParticleEditor() {
 
             {/* 粒子速度 */}
             <div className="space-y-2">
-              <Label>粒子速度: {particleSpeed}</Label>
+              <Label>{t('particleEditorPage.particleSpeed')}: {particleSpeed}</Label>
               <Slider
                 value={[particleSpeed]}
                 onValueChange={(value) => setParticleSpeed(value[0])}
@@ -423,7 +425,7 @@ export default function ParticleEditor() {
 
             {/* 生命周期 */}
             <div className="space-y-2">
-              <Label>生命周期: {particleLife}s</Label>
+              <Label>{t('particleEditorPage.lifecycle')}: {particleLife}s</Label>
               <Slider
                 value={[particleLife]}
                 onValueChange={(value) => setParticleLife(value[0])}
@@ -435,7 +437,7 @@ export default function ParticleEditor() {
 
             {/* 重力 */}
             <div className="space-y-2">
-              <Label>重力: {gravity.toFixed(2)}</Label>
+              <Label>{t('particleEditorPage.gravity')}: {gravity.toFixed(2)}</Label>
               <Slider
                 value={[gravity]}
                 onValueChange={(value) => setGravity(value[0])}
@@ -447,7 +449,7 @@ export default function ParticleEditor() {
 
             {/* 风力 */}
             <div className="space-y-2">
-              <Label>风力: {wind.toFixed(2)}</Label>
+              <Label>{t('particleEditorPage.wind')}: {wind.toFixed(2)}</Label>
               <Slider
                 value={[wind]}
                 onValueChange={(value) => setWind(value[0])}
@@ -459,23 +461,23 @@ export default function ParticleEditor() {
 
             {/* 粒子形状 */}
             <div className="space-y-2">
-              <Label>粒子形状</Label>
+              <Label>{t('particleEditorPage.particleShape')}</Label>
               <Select value={shape} onValueChange={(value) => setShape(value as ParticleShape)}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="circle">圆形</SelectItem>
-                  <SelectItem value="square">方形</SelectItem>
-                  <SelectItem value="star">星形</SelectItem>
-                  <SelectItem value="triangle">三角形</SelectItem>
+                  <SelectItem value="circle">{t('particleEditorPage.circle')}</SelectItem>
+                  <SelectItem value="square">{t('particleEditorPage.square')}</SelectItem>
+                  <SelectItem value="star">{t('particleEditorPage.star')}</SelectItem>
+                  <SelectItem value="triangle">{t('particleEditorPage.triangle')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             {/* 起始颜色 */}
             <div className="space-y-2">
-              <Label>起始颜色</Label>
+              <Label>{t('particleEditorPage.startColor')}</Label>
               <Input
                 type="color"
                 value={colorStart}
@@ -485,7 +487,7 @@ export default function ParticleEditor() {
 
             {/* 结束颜色 */}
             <div className="space-y-2">
-              <Label>结束颜色</Label>
+              <Label>{t('particleEditorPage.endColor')}</Label>
               <Input
                 type="color"
                 value={colorEnd}
@@ -495,16 +497,16 @@ export default function ParticleEditor() {
 
             {/* 混合模式 */}
             <div className="space-y-2">
-              <Label>混合模式</Label>
+              <Label>{t('particleEditorPage.blendMode')}</Label>
               <Select value={blendMode} onValueChange={(value) => setBlendMode(value as GlobalCompositeOperation)}>
                 <SelectTrigger className="w-full">
-                  <SelectValue placeholder="选择混合模式" />
+                  <SelectValue placeholder={t('particleEditorPage.selectBlendMode')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="source-over">正常</SelectItem>
-                  <SelectItem value="screen">屏幕</SelectItem>
-                  <SelectItem value="multiply">正片叠底</SelectItem>
-                  <SelectItem value="lighter">叠加</SelectItem>
+                  <SelectItem value="source-over">{t('particleEditorPage.normal')}</SelectItem>
+                  <SelectItem value="screen">{t('particleEditorPage.screen')}</SelectItem>
+                  <SelectItem value="multiply">{t('particleEditorPage.multiply')}</SelectItem>
+                  <SelectItem value="lighter">{t('particleEditorPage.lighter')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -514,7 +516,7 @@ export default function ParticleEditor() {
               <div className="flex gap-2">
                 <Button variant="outline" className="flex-1" onClick={exportConfig}>
                   <Download className="h-4 w-4 mr-2" />
-                  导出配置
+                  {t('particleEditorPage.exportConfig')}
                 </Button>
                 <Button variant="outline" onClick={copyConfig}>
                   <Copy className="h-4 w-4" />
@@ -522,7 +524,7 @@ export default function ParticleEditor() {
               </div>
               <Button variant="outline" className="w-full" onClick={exportScreenshot}>
                 <Download className="h-4 w-4 mr-2" />
-                导出截图 (PNG)
+                {t('particleEditorPage.exportScreenshot')}
               </Button>
             </div>
           </div>
@@ -530,7 +532,7 @@ export default function ParticleEditor() {
 
         {/* 画布 */}
         <Card className="p-6 lg:col-span-2">
-          <h2 className="text-xl font-semibold mb-4 text-center">预览</h2>
+          <h2 className="text-xl font-semibold mb-4 text-center">{t('particleEditorPage.preview')}</h2>
           <div className="bg-gradient-to-br from-gray-900 via-black to-gray-900 rounded-lg overflow-hidden relative flex items-center justify-center">
             <canvas
               ref={canvasRef}
@@ -556,7 +558,7 @@ export default function ParticleEditor() {
             )}
           </div>
           <p className="text-sm text-muted-foreground mt-2">
-            移动鼠标到画布上设置粒子发射位置
+            {t('particleEditorPage.moveMouseToSetEmitter')}
           </p>
         </Card>
       </div>

@@ -1,12 +1,14 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useI18n } from '@/contexts/I18nContext';
 
 interface WaterDropLoaderProps {
   onAnimationComplete?: () => void;
 }
 
 export function WaterDropLoader({ onAnimationComplete }: WaterDropLoaderProps) {
+  const { t } = useI18n();
   const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
@@ -86,12 +88,12 @@ export function WaterDropLoader({ onAnimationComplete }: WaterDropLoaderProps) {
         <div className="text-center">
           <h2 className="text-xl font-bold text-blue-800 mb-2">
             <span className="sparkle" style={{animationDelay: '0s'}}></span>
-            正在准备魔法
+            {t('loaderPage.preparingMagic')}
             <span className="sparkle" style={{animationDelay: '0.3s'}}></span>
           </h2>
           <p className="text-blue-600">
             <span className="sparkle" style={{animationDelay: '0.1s'}}></span>
-            页面马上就好啦
+            {t('loaderPage.pageReadySoon')}
             <span className="sparkle" style={{animationDelay: '0.2s'}}></span>
           </p>
         </div>

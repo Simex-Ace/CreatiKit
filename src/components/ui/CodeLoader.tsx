@@ -1,12 +1,14 @@
 'use client';
 
 import { useEffect } from 'react';
+import { useI18n } from '@/contexts/I18nContext';
 
 interface CodeLoaderProps {
   onAnimationComplete: () => void;
 }
 
 export function CodeLoader({ onAnimationComplete }: CodeLoaderProps) {
+  const { t } = useI18n();
   useEffect(() => {
     // 缩短动画时间：1秒
     const timer = setTimeout(() => {
@@ -78,9 +80,9 @@ export function CodeLoader({ onAnimationComplete }: CodeLoaderProps) {
         </div>
         
         <div className="text-center">
-          <h2 className="text-xl font-bold text-gray-800">⚙️ 正在准备代码工具 ⚙️</h2>
+          <h2 className="text-xl font-bold text-gray-800">⚙️ {t('loaderPage.preparingCodeTools')} ⚙️</h2>
           <p className="text-gray-600 mt-2">
-            请稍候，正在加载格式化工具...
+            {t('loaderPage.loadingFormattingTool')}
           </p>
         </div>
       </div>

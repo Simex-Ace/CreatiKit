@@ -1,8 +1,10 @@
 'use client';
 import React, { useRef, useState, useEffect } from 'react';
+import { useI18n } from '@/contexts/I18nContext';
 
 // 增强版白板实现
 export default function Whiteboard() {
+  const { t } = useI18n();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const [lastX, setLastX] = useState(0);
@@ -270,8 +272,8 @@ export default function Whiteboard() {
     <div className="min-h-screen bg-gray-50 flex flex-col items-center py-8 px-4 sm:px-6 lg:px-8">
       <div className="w-full max-w-5xl">
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">创意白板</h1>
-          <p className="text-gray-600">自由绘制你的创意和想法</p>
+          <h1 className="text-4xl font-bold text-gray-900 mb-2">{t('whiteboardPage.title')}</h1>
+          <p className="text-gray-600">{t('whiteboardPage.subtitle')}</p>
         </div>
         
         {/* 控制面板 */}
@@ -279,7 +281,7 @@ export default function Whiteboard() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
             {/* 颜色选择器 */}
             <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">颜色</label>
+              <label className="block text-sm font-medium text-gray-700">{t('whiteboardPage.color')}</label>
               <div className="flex items-center gap-3">
                 <input
                   type="color"
@@ -304,7 +306,7 @@ export default function Whiteboard() {
             {/* 笔刷大小 */}
             <div className="space-y-2">
               <label className="block text-sm font-medium text-gray-700">
-                笔刷大小: {lineWidth}px
+                {t('whiteboardPage.brushSize')}: {lineWidth}px
               </label>
               <input
                 type="range"
@@ -327,7 +329,7 @@ export default function Whiteboard() {
                     : 'bg-gray-700 text-white hover:bg-gray-800'
                 }`}
               >
-                上一步
+                {t('whiteboardPage.undo')}
               </button>
               <button
                 onClick={handleRedo}
@@ -338,19 +340,19 @@ export default function Whiteboard() {
                     : 'bg-gray-700 text-white hover:bg-gray-800'
                 }`}
               >
-                下一步
+                {t('whiteboardPage.redo')}
               </button>
               <button
                 onClick={handleSaveImage}
                 className="px-6 py-2 bg-gray-700 text-white rounded-lg font-medium hover:bg-gray-800 transition-colors shadow-sm"
               >
-                保存图片
+                {t('whiteboardPage.saveImage')}
               </button>
               <button
                 onClick={handleClearCanvas}
                 className="px-6 py-2 bg-gray-700 text-white rounded-lg font-medium hover:bg-gray-800 transition-colors shadow-sm"
               >
-                清除画布
+                {t('whiteboardPage.clearCanvas')}
               </button>
             </div>
           </div>
@@ -381,8 +383,8 @@ export default function Whiteboard() {
         <div className="bg-white rounded-lg shadow-md p-4">
           <p className="text-gray-600 text-sm text-center">
             {window.innerWidth < 768 
-              ? '使用手指在画布上绘制，选择不同的颜色和笔刷大小来创作你的作品'
-              : '使用鼠标在画布上绘制，选择不同的颜色和笔刷大小来创作你的作品'
+              ? t('whiteboardPage.mobileInstructions')
+              : t('whiteboardPage.desktopInstructions')
             }
           </p>
         </div>

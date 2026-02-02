@@ -8,12 +8,14 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { FileCode, Copy, Check, RotateCcw, Download, AlertCircle, Code2 } from 'lucide-react';
+import { useI18n } from '@/contexts/I18nContext';
 // 代码格式化工具相关导入
 
 
 
 
 export default function CodeTools() {
+  const { t } = useI18n();
   const [code, setCode] = useState(`// JavaScript 示例
 function hello() {
 console.log("Hello, CreatiKit!");
@@ -1134,15 +1136,15 @@ print(f"数字: {i}")`,
         <div className="inline-flex items-center justify-center p-2 rounded-full bg-blue-100 mb-4">
           <FileCode className="h-8 w-8 text-blue-600" />
         </div>
-        <h1 className="text-3xl font-bold">代码工具</h1>
-        <p className="text-gray-600">简单的代码格式化和编辑工具</p>
+        <h1 className="text-3xl font-bold">{t('codeToolsPage.title')}</h1>
+        <p className="text-gray-600">{t('codeToolsPage.subtitle')}</p>
       </div>
 
       <Tabs defaultValue="formatter" className="w-full" onValueChange={handleTabChange}>
         <TabsList className="grid w-full max-w-md mx-auto grid-cols-3 mb-4">
-          <TabsTrigger value="formatter">代码格式化</TabsTrigger>
-          <TabsTrigger value="minifier">代码压缩</TabsTrigger>
-          <TabsTrigger value="transformer">代码转化</TabsTrigger>
+          <TabsTrigger value="formatter">{t('codeToolsPage.tabFormatter')}</TabsTrigger>
+          <TabsTrigger value="minifier">{t('codeToolsPage.tabMinifier')}</TabsTrigger>
+          <TabsTrigger value="transformer">{t('codeToolsPage.tabTransformer')}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="formatter" className="space-y-6 pt-4">
@@ -1153,12 +1155,12 @@ print(f"数字: {i}")`,
               {syntaxRestored && (
                 <div className="bg-amber-50 border border-amber-200 text-amber-700 px-4 py-2 rounded-md flex items-center gap-2 text-sm">
                   <AlertCircle className="h-4 w-4" />
-                  <span>检测到语法问题并尝试修复。请注意检查结果是否符合预期。</span>
+                  <span>{t('codeToolsPage.syntaxFixed')}</span>
                 </div>
               )}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="flex justify-between items-center">
-                  <Label htmlFor="language-select">编程语言</Label>
+                  <Label htmlFor="language-select">{t('codeToolsPage.language')}</Label>
                   <div className="custom-select-wrapper">
                     <select
                   id="language-select"
@@ -1177,7 +1179,7 @@ print(f"数字: {i}")`,
                   </div>
                 </div>
                 <div className="flex justify-between items-center">
-                  <Label htmlFor="empty-line-mode-select">空行处理</Label>
+                  <Label htmlFor="empty-line-mode-select">{t('codeToolsPage.emptyLineMode')}</Label>
                   <div className="custom-select-wrapper">
                     <select
                   id="empty-line-mode-select"
@@ -1185,8 +1187,8 @@ print(f"数字: {i}")`,
                   onChange={(e) => setEmptyLineMode(e.target.value as 'keepOne' | 'removeAll')}
                   className="w-[140px] h-10 px-3 py-2 pr-8 text-sm bg-white text-gray-900 dark:bg-white dark:text-gray-900 cursor-pointer custom-select"
                 >
-                      <option value="keepOne">保留一行空格</option>
-                      <option value="removeAll">移除所有空格行</option>
+                      <option value="keepOne">{t('codeToolsPage.keepOne')}</option>
+                      <option value="removeAll">{t('codeToolsPage.removeAll')}</option>
                     </select>
                   </div>
                 </div>
@@ -1196,10 +1198,10 @@ print(f"数字: {i}")`,
                 value={code}
                 onChange={(e) => setCode(e.target.value)}
                 className="min-h-[300px] font-mono text-sm resize-none w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-900 dark:bg-white dark:text-gray-900"
-                placeholder={`输入${language}代码...`}
+                placeholder={t('codeToolsPage.codePlaceholder', { language })}
               />
               <div className="flex gap-2">
-                <Button onClick={formatCode} className="flex-1">格式化代码</Button>
+                <Button onClick={formatCode} className="flex-1">{t('codeToolsPage.format')}</Button>
                 <Button variant="secondary" onClick={clearCode} size="icon">
                   <RotateCcw className="h-4 w-4" />
                 </Button>
@@ -1209,7 +1211,7 @@ print(f"数字: {i}")`,
             {/* 输出区域 */}
             <Card className="p-4 space-y-4">
               <div className="flex justify-between items-center flex-wrap gap-2">
-                <Label htmlFor="code-output">格式化结果</Label>
+                <Label htmlFor="code-output">{t('codeToolsPage.formattedResult')}</Label>
                 <div className="flex gap-2">
                   <Button
                     variant="secondary"
@@ -1220,12 +1222,12 @@ print(f"数字: {i}")`,
                     {copySuccess ? (
                       <>
                         <Check className="h-4 w-4" />
-                        <span>已复制</span>
+                        <span>{t('codeToolsPage.copied')}</span>
                       </>
                     ) : (
                       <>
                         <Copy className="h-4 w-4" />
-                        <span>复制</span>
+                        <span>{t('codeToolsPage.copy')}</span>
                       </>
                     )}
                   </Button>
@@ -1236,7 +1238,7 @@ print(f"数字: {i}")`,
                     className="flex items-center gap-1"
                   >
                     <Download className="h-4 w-4" />
-                    <span>下载</span>
+                    <span>{t('codeToolsPage.download')}</span>
                   </Button>
                 </div>
               </div>
@@ -1250,7 +1252,7 @@ print(f"数字: {i}")`,
           </div>
 
           <div className="text-center text-sm text-gray-600">
-            <p>提示：这是一个简单的代码格式化工具，对于复杂的代码格式化，建议使用专业的IDE或更强大的工具。</p>
+            <p>{t('codeToolsPage.formatterHint')}</p>
           </div>
         </TabsContent>
 
@@ -1260,7 +1262,7 @@ print(f"数字: {i}")`,
             <Card className="p-4 space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-1 gap-4">
                 <div className="flex justify-between items-center">
-                  <Label htmlFor="language-select">编程语言</Label>
+                  <Label htmlFor="language-select">{t('codeToolsPage.language')}</Label>
                   <div className="custom-select-wrapper">
                     <select
                   id="language-select"
@@ -1280,7 +1282,7 @@ print(f"数字: {i}")`,
                 
                 {/* 压缩选项 */}
                 <div className="space-y-2">
-                  <Label>压缩选项：</Label>
+                  <Label>{t('codeToolsPage.minifyOptions')}</Label>
                   <div className="flex items-center space-x-2">
                     <input
                       type="checkbox"
@@ -1289,7 +1291,7 @@ print(f"数字: {i}")`,
                       onChange={(e) => updateMinifyOptions('removeComments', e.target.checked)}
                       className="h-4 w-4 text-blue-600"
                     />
-                    <label htmlFor="remove-comments" className="text-sm">移除注释</label>
+                    <label htmlFor="remove-comments" className="text-sm">{t('codeToolsPage.removeComments')}</label>
                   </div>
                   <div className="flex items-center space-x-2">
                     <input
@@ -1299,7 +1301,7 @@ print(f"数字: {i}")`,
                       onChange={(e) => updateMinifyOptions('removeWhitespace', e.target.checked)}
                       className="h-4 w-4 text-blue-600"
                     />
-                    <label htmlFor="remove-whitespace" className="text-sm">移除空白字符</label>
+                    <label htmlFor="remove-whitespace" className="text-sm">{t('codeToolsPage.removeWhitespace')}</label>
                   </div>
                   {language === 'css' && (
                     <div className="flex items-center space-x-2">
@@ -1310,7 +1312,7 @@ print(f"数字: {i}")`,
                         onChange={(e) => updateMinifyOptions('preserveImportant', e.target.checked)}
                         className="h-4 w-4 text-blue-600"
                       />
-                      <label htmlFor="preserve-important" className="text-sm">保留 !important</label>
+                      <label htmlFor="preserve-important" className="text-sm">{t('codeToolsPage.preserveImportant')}</label>
                     </div>
                   )}
                 </div>
@@ -1320,10 +1322,10 @@ print(f"数字: {i}")`,
                 value={code}
                 onChange={(e) => setCode(e.target.value)}
                 className="min-h-[300px] font-mono text-sm resize-none w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-900 dark:bg-white dark:text-gray-900"
-                placeholder={`输入${language}代码...`}
+                placeholder={t('codeToolsPage.codePlaceholder', { language })}
               />
               <div className="flex gap-2">
-                <Button onClick={minifyCode} className="flex-1">压缩代码</Button>
+                <Button onClick={minifyCode} className="flex-1">{t('codeToolsPage.minify')}</Button>
                 <Button variant="secondary" onClick={clearCode} size="icon">
                   <RotateCcw className="h-4 w-4" />
                 </Button>
@@ -1333,7 +1335,7 @@ print(f"数字: {i}")`,
             {/* 输出区域 */}
             <Card className="p-4 space-y-4">
               <div className="flex justify-between items-center flex-wrap gap-2">
-                <Label htmlFor="minify-code-output">压缩结果</Label>
+                <Label htmlFor="minify-code-output">{t('codeToolsPage.minifiedResult')}</Label>
                 <div className="flex gap-2">
                   <Button
                     variant="secondary"
@@ -1344,12 +1346,12 @@ print(f"数字: {i}")`,
                     {copySuccess ? (
                       <>
                         <Check className="h-4 w-4" />
-                        <span>已复制</span>
+                        <span>{t('codeToolsPage.copied')}</span>
                       </>
                     ) : (
                       <>
                         <Copy className="h-4 w-4" />
-                        <span>复制</span>
+                        <span>{t('codeToolsPage.copy')}</span>
                       </>
                     )}
                   </Button>
@@ -1360,11 +1362,11 @@ print(f"数字: {i}")`,
                     className="flex items-center gap-1"
                   >
                     <Download className="h-4 w-4" />
-                    <span>下载</span>
+                    <span>{t('codeToolsPage.download')}</span>
                   </Button>
                   {minifiedCode && code.length > 0 && (
                     <span className="text-sm text-gray-600">
-                      压缩率: {((1 - minifiedCode.length / code.length) * 100).toFixed(1)}%
+                      {t('codeToolsPage.compressionRate')}: {((1 - minifiedCode.length / code.length) * 100).toFixed(1)}%
                     </span>
                   )}
                 </div>
@@ -1379,7 +1381,7 @@ print(f"数字: {i}")`,
           </div>
 
           <div className="text-center text-sm text-gray-600">
-            <p>提示：代码压缩会移除不必要的空白字符和注释，减小文件体积，适用于生产环境部署。</p>
+            <p>{t('codeToolsPage.minifierHint')}</p>
           </div>
         </TabsContent>
         
@@ -1389,7 +1391,7 @@ print(f"数字: {i}")`,
             <Card className="p-4 space-y-4">
               <div className="grid grid-cols-1 gap-4">
                 <div className="flex justify-between items-center">
-                  <Label htmlFor="language-select">编程语言</Label>
+                  <Label htmlFor="language-select">{t('codeToolsPage.language')}</Label>
                   <div className="custom-select-wrapper">
                     <select
                   id="language-select"
@@ -1410,12 +1412,12 @@ print(f"数字: {i}")`,
                 
                 {/* 转化选项 */}
                 <div className="space-y-4">
-                  <Label>转化选项：</Label>
+                  <Label>{t('codeToolsPage.transformOptions')}</Label>
                   
                   <div className="grid grid-cols-1 gap-4">
                     <div>
                       <div className="flex justify-between items-center mb-1">
-                        <label htmlFor="quote-type" className="text-sm">引号类型：</label>
+                        <label htmlFor="quote-type" className="text-sm">{t('codeToolsPage.quoteType')}</label>
                         <div className="custom-select-wrapper">
                           <select
                   id="quote-type"
@@ -1423,18 +1425,18 @@ print(f"数字: {i}")`,
                   onChange={(e) => updateTransformOptions('quoteType', e.target.value)}
                   className="w-[140px] h-10 px-3 py-2 pr-8 text-sm bg-white text-gray-900 dark:bg-white dark:text-gray-900 cursor-pointer custom-select"
                 >
-                            <option value="none">不转换</option>
-                            <option value="single">单引号</option>
-                            <option value="double">双引号</option>
+                            <option value="none">{t('codeToolsPage.none')}</option>
+                            <option value="single">{t('codeToolsPage.single')}</option>
+                            <option value="double">{t('codeToolsPage.double')}</option>
                           </select>
                         </div>
                       </div>
-                      <p className="text-xs text-gray-500 ml-1">提示：将字符串引号统一转换为单引号或双引号</p>
+                      <p className="text-xs text-gray-500 ml-1">{t('codeToolsPage.quoteTypeHint')}</p>
                     </div>
                     
                     <div>
                       <div className="flex justify-between items-center mb-1">
-                        <label htmlFor="indent-type" className="text-sm">缩进类型：</label>
+                        <label htmlFor="indent-type" className="text-sm">{t('codeToolsPage.indentType')}</label>
                         <div className="custom-select-wrapper">
                           <select
                   id="indent-type"
@@ -1442,19 +1444,19 @@ print(f"数字: {i}")`,
                   onChange={(e) => updateTransformOptions('indentType', e.target.value)}
                   className="w-[140px] h-10 px-3 py-2 pr-8 text-sm bg-white text-gray-900 dark:bg-white dark:text-gray-900 cursor-pointer custom-select"
                 >
-                            <option value="none">不转换</option>
-                            <option value="space">空格</option>
-                            <option value="tab">Tab</option>
+                            <option value="none">{t('codeToolsPage.none')}</option>
+                            <option value="space">{t('codeToolsPage.space')}</option>
+                            <option value="tab">{t('codeToolsPage.tab')}</option>
                           </select>
                         </div>
                       </div>
-                      <p className="text-xs text-gray-500 ml-1">提示：选择使用空格或Tab键进行代码缩进</p>
+                      <p className="text-xs text-gray-500 ml-1">{t('codeToolsPage.indentTypeHint')}</p>
                     </div>
                     
                     {transformOptions.indentType === 'space' && (
                       <div>
                         <div className="flex justify-between items-center mb-1">
-                          <label htmlFor="indent-size" className="text-sm">空格数：</label>
+                          <label htmlFor="indent-size" className="text-sm">{t('codeToolsPage.indentSize')}</label>
                           <div className="custom-select-wrapper">
                             <select
                                 id="indent-size"
@@ -1468,13 +1470,13 @@ print(f"数字: {i}")`,
                             </select>
                           </div>
                         </div>
-                        <p className="text-xs text-gray-500 ml-1">提示：设置每次缩进使用的空格数量</p>
+                        <p className="text-xs text-gray-500 ml-1">{t('codeToolsPage.indentSizeHint')}</p>
                       </div>
                     )}
                     
                     <div>
                       <div className="flex justify-between items-center mb-1">
-                        <label htmlFor="naming-style" className="text-sm">命名风格：</label>
+                        <label htmlFor="naming-style" className="text-sm">{t('codeToolsPage.namingStyle')}</label>
                         <div className="custom-select-wrapper">
                           <select
                   id="naming-style"
@@ -1482,19 +1484,19 @@ print(f"数字: {i}")`,
                   onChange={(e) => updateTransformOptions('namingStyle', e.target.value)}
                   className="w-[140px] h-10 px-3 py-2 pr-8 text-sm bg-white text-gray-900 dark:bg-white dark:text-gray-900 cursor-pointer custom-select"
                 >
-                            <option value="none">不转换</option>
-                            <option value="camelCase">驼峰命名</option>
-                            <option value="snake_case">下划线命名</option>
+                            <option value="none">{t('codeToolsPage.none')}</option>
+                            <option value="camelCase">{t('codeToolsPage.camelCase')}</option>
+                            <option value="snake_case">{t('codeToolsPage.snakeCase')}</option>
                           </select>
                         </div>
                       </div>
-                      <p className="text-xs text-gray-500 ml-1">提示：camelCase（驼峰命名）或snake_case（下划线命名）</p>
+                      <p className="text-xs text-gray-500 ml-1">{t('codeToolsPage.namingStyleHint')}</p>
                     </div>
                     
                     {(language === 'javascript' || language === 'typescript') && (
                       <div>
                         <div className="flex justify-between items-center mb-1">
-                          <label htmlFor="comment-style" className="text-sm">注释风格：</label>
+                          <label htmlFor="comment-style" className="text-sm">{t('codeToolsPage.commentStyle')}</label>
                           <div className="custom-select-wrapper">
                             <select
                   id="comment-style"
@@ -1502,13 +1504,13 @@ print(f"数字: {i}")`,
                   onChange={(e) => updateTransformOptions('commentStyle', e.target.value)}
                   className="w-[140px] h-10 px-3 py-2 pr-8 text-sm bg-white text-gray-900 dark:bg-white dark:text-gray-900 cursor-pointer custom-select"
                 >
-                              <option value="none">不转换</option>
-                              <option value="line">单行注释</option>
-                              <option value="block">块注释</option>
+                              <option value="none">{t('codeToolsPage.none')}</option>
+                              <option value="line">{t('codeToolsPage.line')}</option>
+                              <option value="block">{t('codeToolsPage.block')}</option>
                             </select>
                           </div>
                         </div>
-                        <p className="text-xs text-gray-500 ml-1">提示：将注释统一转换为//单行注释或/*块注释*/</p>
+                        <p className="text-xs text-gray-500 ml-1">{t('codeToolsPage.commentStyleHint')}</p>
                       </div>
                     )}
                   </div>
@@ -1519,10 +1521,10 @@ print(f"数字: {i}")`,
                 value={code}
                 onChange={(e) => setCode(e.target.value)}
                 className="min-h-[300px] font-mono text-sm resize-none w-full p-3 border border-gray-300 dark:border-gray-700 bg-white text-gray-900 dark:bg-white dark:text-gray-900 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder={`输入${language}代码...`}
+                placeholder={t('codeToolsPage.codePlaceholder', { language })}
               />
               <div className="flex gap-2">
-                <Button onClick={transformCode} className="flex-1">转化代码</Button>
+                <Button onClick={transformCode} className="flex-1">{t('codeToolsPage.transform')}</Button>
                 <Button variant="secondary" onClick={clearCode} size="icon">
                   <RotateCcw className="h-4 w-4" />
                 </Button>
@@ -1532,7 +1534,7 @@ print(f"数字: {i}")`,
             {/* 输出区域 */}
             <Card className="p-4 space-y-4">
               <div className="flex justify-between items-center flex-wrap gap-2">
-                <Label htmlFor="transform-code-output">转化结果</Label>
+                <Label htmlFor="transform-code-output">{t('codeToolsPage.transformedResult')}</Label>
                 <div className="flex gap-2">
                   <Button
                     variant="secondary"
@@ -1543,12 +1545,12 @@ print(f"数字: {i}")`,
                     {copySuccess ? (
                       <>
                         <Check className="h-4 w-4" />
-                        <span>已复制</span>
+                        <span>{t('codeToolsPage.copied')}</span>
                       </>
                     ) : (
                       <>
                         <Copy className="h-4 w-4" />
-                        <span>复制</span>
+                        <span>{t('codeToolsPage.copy')}</span>
                       </>
                     )}
                   </Button>
@@ -1559,11 +1561,11 @@ print(f"数字: {i}")`,
                     className="flex items-center gap-1"
                   >
                     <Download className="h-4 w-4" />
-                    <span>下载</span>
+                    <span>{t('codeToolsPage.download')}</span>
                   </Button>
                   {transformedCode && code.length > 0 && (
                     <span className="text-sm text-gray-600">
-                      转换成功
+                      {t('codeToolsPage.transformSuccess')}
                     </span>
                   )}
                 </div>
