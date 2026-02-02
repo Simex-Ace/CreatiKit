@@ -1,5 +1,6 @@
 import React from 'react';
 import { NOTE_FREQUENCIES, KEY_TO_NOTE } from './usePianoSound';
+import { useI18n } from '@/contexts/I18nContext';
 
 interface PianoKey {
   name: string;
@@ -73,6 +74,7 @@ export const Piano: React.FC<PianoProps> = ({
   activeNotes,
   disabled = false
 }) => {
+  const { t } = useI18n();
 
   // 使用完整的88键音符列表
   const notes = generateCompletePianoNotes();
@@ -117,7 +119,7 @@ export const Piano: React.FC<PianoProps> = ({
     <div className="w-full overflow-x-auto pb-4">
       {/* 88键钢琴指示器 */}
       <div className="text-center mb-2 text-sm text-gray-600 font-medium">
-        标准88键钢琴 (A0 - C8)
+        {t('pianoPage.standard88Keys')}
       </div>
       
       {/* 八度标记 */}
@@ -237,7 +239,7 @@ export const Piano: React.FC<PianoProps> = ({
       
       {/* 键盘使用提示 */}
       <div className="mt-2 text-xs text-gray-500 text-center">
-        提示：可以使用键盘按键或鼠标/触摸屏点击钢琴键进行演奏
+        {t('pianoPage.keyboardHint')}
       </div>
     </div>
   );

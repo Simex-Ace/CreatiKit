@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Eye, AlertCircle } from 'lucide-react';
+import { useI18n } from '@/contexts/I18nContext';
 
 interface EyedropperProps {
   onColorPick: (color: string) => void;
@@ -31,7 +32,7 @@ async function getColorFromCanvas(x: number, y: number): Promise<string> {
   const context = canvas.getContext('2d');
   
   if (!context) {
-    throw new Error('无法创建Canvas上下文');
+    throw new Error('Failed to create Canvas context');
   }
   
   try {
@@ -58,12 +59,13 @@ async function getColorFromCanvas(x: number, y: number): Promise<string> {
       };
     });
   } catch (error) {
-    console.error('屏幕共享失败:', error);
-    throw new Error('无法获取屏幕颜色');
+    console.error('Screen sharing failed:', error);
+    throw new Error('Failed to get screen color');
   }
 }
 
 export function Eyedropper({ onColorPick }: EyedropperProps) {
+  const { t } = useI18n();
   const [isActive, setIsActive] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [hasEyeDropperAPI, setHasEyeDropperAPI] = useState(false);
@@ -86,7 +88,7 @@ export function Eyedropper({ onColorPick }: EyedropperProps) {
       } catch (err) {
         // 用户取消取色不算错误
         if ((err as Error).name !== 'AbortError') {
-          setError('取色失败，请重试');
+          setError(t('colorPalettePage.colorPickFailed'));
           console.error('EyeDropper错误:', err);
         }
       } finally {
@@ -106,8 +108,8 @@ export function Eyedropper({ onColorPick }: EyedropperProps) {
       message.className = 'fixed inset-0 bg-black/50 z-50 flex items-center justify-center pointer-events-none';
       message.innerHTML = `
         <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-xl text-center">
-          <p className="text-lg font-medium mb-2">点击屏幕上的任意位置进行取色</p>
-          <p className="text-sm text-gray-500 dark:text-gray-400">按ESC键取消</p>
+          <p className="text-lg font-medium mb-2">${t('colorPalettePage.clickScreenToPick')}</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400">${t('colorPalettePage.pressEscToCancel')}</p>
         </div>
       `;
       document.body.appendChild(message);
@@ -140,7 +142,7 @@ export function Eyedropper({ onColorPick }: EyedropperProps) {
           const color = await getColorFromCanvas(e.clientX, e.clientY);
           onColorPick(color);
         } catch (err) {
-          setError('屏幕取色失败，请使用原生取色器');
+          setError(t('colorPalettePage.screenPickFailed'));
           console.error('回退取色器错误:', err);
         } finally {
           cleanup();
@@ -169,7 +171,7 @@ export function Eyedropper({ onColorPick }: EyedropperProps) {
       window.addEventListener('keydown', handleEsc);
       
     } catch (err) {
-      setError('不支持屏幕取色，请使用原生浏览器功能');
+      setError(t('colorPalettePage.screenPickNotSupported'));
       console.error('初始化回退取色器失败:', err);
       setIsActive(false);
     }
@@ -193,7 +195,7 @@ export function Eyedropper({ onColorPick }: EyedropperProps) {
         className="flex items-center gap-2"
       >
         <Eye size={16} />
-        {isActive ? '取色中...' : '屏幕取色'}
+        {isActive ? t('colorPalettePage.pickingColor') : t('colorPalettePage.screenColorPicker')}
       </Button>
       
       {error && (
@@ -205,7 +207,7 @@ export function Eyedropper({ onColorPick }: EyedropperProps) {
       
       {!hasEyeDropperAPI && !error && (
         <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-          提示：您的浏览器不支持原生取色器，将使用屏幕共享功能作为回退方案
+          {t('colorPalettePage.browserNotSupportedHint')}
         </div>
       )}
     </div>

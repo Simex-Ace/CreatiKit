@@ -440,7 +440,7 @@ const QRCodeGenerator: React.FC = () => {
     
     // 检查URL长度，避免过长的URL导致API请求失败
     if (urlText.length > 2000) {
-      alert('URL过长，请缩短URL后再试（建议不超过2000字符）');
+      alert(t('qrCodeGeneratorPage.urlTooLong'));
       return;
     }
     
@@ -495,7 +495,7 @@ const QRCodeGenerator: React.FC = () => {
       }));
       
       // 显示友好的错误提示而不是模拟链接
-      alert('短链接生成失败，请稍后重试或直接使用原始URL生成二维码');
+      alert(t('qrCodeGeneratorPage.shortUrlFailed'));
     }
   };
 
@@ -505,12 +505,12 @@ const QRCodeGenerator: React.FC = () => {
     
     const file = files[0];
     if (!file.type.startsWith('image/')) {
-      alert('请上传图片文件');
+      alert(t('qrCodeGeneratorPage.uploadImageFile'));
       return;
     }
     
     if (file.size > 1024 * 1024) {
-      alert('图片大小不能超过1MB');
+      alert(t('qrCodeGeneratorPage.imageSizeExceeded'));
       return;
     }
     
@@ -632,32 +632,32 @@ const QRCodeGenerator: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-50 py-8 px-4">
       <div className="max-w-7xl mx-auto">
-        <h1 className="text-4xl font-bold text-center mb-8">二维码工作站</h1>
+        <h1 className="text-4xl font-bold text-center mb-8">{t('qrCodeGeneratorPage.title')}</h1>
         
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* 配置面板 */}
           <div className="lg:col-span-2 space-y-6">
             <Tabs defaultValue="content" className="w-full">
               <TabsList className="grid grid-cols-4 mb-6">
-                <TabsTrigger value="content">内容设置</TabsTrigger>
-                <TabsTrigger value="style">样式美化</TabsTrigger>
-                <TabsTrigger value="logo">Logo设置</TabsTrigger>
-                <TabsTrigger value="download">下载设置</TabsTrigger>
+                <TabsTrigger value="content">{t('qrCodeGeneratorPage.tabContent')}</TabsTrigger>
+                <TabsTrigger value="style">{t('qrCodeGeneratorPage.tabStyle')}</TabsTrigger>
+                <TabsTrigger value="logo">{t('qrCodeGeneratorPage.tabLogo')}</TabsTrigger>
+                <TabsTrigger value="download">{t('qrCodeGeneratorPage.tabDownload')}</TabsTrigger>
               </TabsList>
               
               {/* 内容设置 */}
               <TabsContent value="content" className="space-y-6 pt-6">
                 <div className="space-y-4">
-                  <h3 className="text-lg font-semibold">选择内容类型</h3>
+                  <h3 className="text-lg font-semibold">{t('qrCodeGeneratorPage.selectContentType')}</h3>
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
                     {[
-                      { value: 'text', label: '文本/网址', icon: <Link2 size={18} /> },
-                      { value: 'wifi', label: 'Wi-Fi', icon: <Wifi size={18} /> },
-                      { value: 'vcard', label: '电子名片', icon: <User size={18} /> },
-                      { value: 'email', label: '邮件', icon: <Mail size={18} /> },
-                      { value: 'sms', label: '短信', icon: <MessageSquare size={18} /> },
-                      { value: 'calendar', label: '日历', icon: <Calendar size={18} /> },
-                      { value: 'location', label: '位置', icon: <MapPin size={18} /> },
+                      { value: 'text', label: t('qrCodeGeneratorPage.textUrl'), icon: <Link2 size={18} /> },
+                      { value: 'wifi', label: t('qrCodeGeneratorPage.wifi'), icon: <Wifi size={18} /> },
+                      { value: 'vcard', label: t('qrCodeGeneratorPage.vcard'), icon: <User size={18} /> },
+                      { value: 'email', label: t('qrCodeGeneratorPage.email'), icon: <Mail size={18} /> },
+                      { value: 'sms', label: t('qrCodeGeneratorPage.sms'), icon: <MessageSquare size={18} /> },
+                      { value: 'calendar', label: t('qrCodeGeneratorPage.calendar'), icon: <Calendar size={18} /> },
+                      { value: 'location', label: t('qrCodeGeneratorPage.location'), icon: <MapPin size={18} /> },
                     ].map((item) => (
                       <Button
                         key={item.value}
@@ -678,12 +678,12 @@ const QRCodeGenerator: React.FC = () => {
                 {config.content.type === 'text' && (
                   <div className="space-y-4">
                     <div className="space-y-2">
-                      <Label htmlFor="text-content">输入文本或网址</Label>
+                      <Label htmlFor="text-content">{t('qrCodeGeneratorPage.inputTextUrl')}</Label>
                       <Input
                         id="text-content"
                         value={config.content.text || ''}
                         onChange={(e) => updateContentField('text', e.target.value)}
-                        placeholder="输入要生成二维码的文本或网址"
+                        placeholder={t('qrCodeGeneratorPage.inputTextUrlPlaceholder')}
                       />
                     </div>
                     {config.content.text?.startsWith('http') && (
@@ -696,14 +696,14 @@ const QRCodeGenerator: React.FC = () => {
                             onChange={(e) => updateShortUrl('useShortUrl', e.target.checked)}
                             className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                           />
-                          <Label htmlFor="short-url-switch">使用短链接</Label>
+                          <Label htmlFor="short-url-switch">{t('qrCodeGeneratorPage.useShortUrl')}</Label>
                         </div>
                         <Button
                           onClick={generateShortUrl}
                           disabled={config.shortUrl.isLoading || !config.content.text}
                           size="sm"
                         >
-                          {config.shortUrl.isLoading ? '生成中...' : '生成短链接'}
+                          {config.shortUrl.isLoading ? t('qrCodeGeneratorPage.generatingShortUrl') : t('qrCodeGeneratorPage.generateShortUrl')}
                         </Button>
                       </div>
                     )}
@@ -714,25 +714,25 @@ const QRCodeGenerator: React.FC = () => {
                 {config.content.type === 'wifi' && (
                   <div className="space-y-4">
                     <div className="space-y-2">
-                      <Label htmlFor="wifi-ssid">网络名称 (SSID)</Label>
+                      <Label htmlFor="wifi-ssid">{t('qrCodeGeneratorPage.wifiSSID')}</Label>
                       <Input
                         id="wifi-ssid"
                         value={config.content.wifi.ssid}
                         onChange={(e) => updateNestedContentField('wifi', 'ssid', e.target.value)}
-                        placeholder="输入Wi-Fi名称"
+                        placeholder={t('qrCodeGeneratorPage.wifiSSIDPlaceholder')}
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="wifi-password">密码</Label>
+                      <Label htmlFor="wifi-password">{t('qrCodeGeneratorPage.wifiPassword')}</Label>
                       <Input
                         id="wifi-password"
                         value={config.content.wifi.password}
                         onChange={(e) => updateNestedContentField('wifi', 'password', e.target.value)}
-                        placeholder="输入Wi-Fi密码"
+                        placeholder={t('qrCodeGeneratorPage.wifiPasswordPlaceholder')}
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="wifi-encryption">加密方式</Label>
+                      <Label htmlFor="wifi-encryption">{t('qrCodeGeneratorPage.wifiEncryption')}</Label>
                       <div className="custom-select-wrapper ml-2">
                         <select
                           id="wifi-encryption"
@@ -740,9 +740,9 @@ const QRCodeGenerator: React.FC = () => {
                           onChange={(e) => updateNestedContentField('wifi', 'encryption', e.target.value as 'WPA' | 'WEP' | 'none')}
                           className="w-full h-9 px-3 py-2 text-sm bg-gray-50 text-gray-800 border border-gray-200 rounded-md transition-all hover:border-gray-300 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=UTF-8,%3csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22currentColor%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3e%3cpolyline points=%226 9 12 15 18 9%3e%3c/polyline%3e%3c/svg%3e')] bg-no-repeat bg-right bg-[length:1.25rem] pr-9"
                         >
-                          <option value="WPA">WPA/WPA2</option>
-                          <option value="WEP">WEP</option>
-                          <option value="none">无密码</option>
+                          <option value="WPA">{t('qrCodeGeneratorPage.wifiWPA')}</option>
+                          <option value="WEP">{t('qrCodeGeneratorPage.wifiWEP')}</option>
+                          <option value="none">{t('qrCodeGeneratorPage.wifiNone')}</option>
                         </select>
                       </div>
                     </div>
@@ -753,57 +753,57 @@ const QRCodeGenerator: React.FC = () => {
                 {config.content.type === 'vcard' && (
                   <div className="space-y-4">
                     <div className="space-y-2">
-                      <Label htmlFor="vcard-name">姓名</Label>
+                      <Label htmlFor="vcard-name">{t('qrCodeGeneratorPage.vcardName')}</Label>
                       <Input
                         id="vcard-name"
                         value={config.content.vcard.name}
                         onChange={(e) => updateNestedContentField('vcard', 'name', e.target.value)}
-                        placeholder="输入姓名"
+                        placeholder={t('qrCodeGeneratorPage.vcardNamePlaceholder')}
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="vcard-phone">电话</Label>
+                      <Label htmlFor="vcard-phone">{t('qrCodeGeneratorPage.vcardPhone')}</Label>
                       <Input
                         id="vcard-phone"
                         value={config.content.vcard.phone}
                         onChange={(e) => updateNestedContentField('vcard', 'phone', e.target.value)}
-                        placeholder="输入电话号码"
+                        placeholder={t('qrCodeGeneratorPage.vcardPhonePlaceholder')}
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="vcard-email">邮箱</Label>
+                      <Label htmlFor="vcard-email">{t('qrCodeGeneratorPage.vcardEmail')}</Label>
                       <Input
                         id="vcard-email"
                         value={config.content.vcard.email}
                         onChange={(e) => updateNestedContentField('vcard', 'email', e.target.value)}
-                        placeholder="输入邮箱地址"
+                        placeholder={t('qrCodeGeneratorPage.vcardEmailPlaceholder')}
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="vcard-company">公司</Label>
+                      <Label htmlFor="vcard-company">{t('qrCodeGeneratorPage.vcardCompany')}</Label>
                       <Input
                         id="vcard-company"
                         value={config.content.vcard.company}
                         onChange={(e) => updateNestedContentField('vcard', 'company', e.target.value)}
-                        placeholder="输入公司名称"
+                        placeholder={t('qrCodeGeneratorPage.vcardCompanyPlaceholder')}
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="vcard-title">职位</Label>
+                      <Label htmlFor="vcard-title">{t('qrCodeGeneratorPage.vcardTitle')}</Label>
                       <Input
                         id="vcard-title"
                         value={config.content.vcard.title}
                         onChange={(e) => updateNestedContentField('vcard', 'title', e.target.value)}
-                        placeholder="输入职位"
+                        placeholder={t('qrCodeGeneratorPage.vcardTitlePlaceholder')}
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="vcard-website">网站</Label>
+                      <Label htmlFor="vcard-website">{t('qrCodeGeneratorPage.vcardWebsite')}</Label>
                       <Input
                         id="vcard-website"
                         value={config.content.vcard.website}
                         onChange={(e) => updateNestedContentField('vcard', 'website', e.target.value)}
-                        placeholder="输入个人/公司网站"
+                        placeholder={t('qrCodeGeneratorPage.vcardWebsitePlaceholder')}
                       />
                     </div>
                   </div>
@@ -813,31 +813,31 @@ const QRCodeGenerator: React.FC = () => {
                 {config.content.type === 'email' && (
                   <div className="space-y-4">
                     <div className="space-y-2">
-                      <Label htmlFor="email-to">收件人</Label>
+                      <Label htmlFor="email-to">{t('qrCodeGeneratorPage.emailTo')}</Label>
                       <Input
                         id="email-to"
                         type="email"
                         value={config.content.email.to}
                         onChange={(e) => updateNestedContentField('email', 'to', e.target.value)}
-                        placeholder="输入收件人邮箱"
+                        placeholder={t('qrCodeGeneratorPage.emailToPlaceholder')}
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="email-subject">主题</Label>
+                      <Label htmlFor="email-subject">{t('qrCodeGeneratorPage.emailSubject')}</Label>
                       <Input
                         id="email-subject"
                         value={config.content.email.subject}
                         onChange={(e) => updateNestedContentField('email', 'subject', e.target.value)}
-                        placeholder="输入邮件主题"
+                        placeholder={t('qrCodeGeneratorPage.emailSubjectPlaceholder')}
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="email-body">正文</Label>
+                      <Label htmlFor="email-body">{t('qrCodeGeneratorPage.emailBody')}</Label>
                       <textarea
                         id="email-body"
                         value={config.content.email.body}
                         onChange={(e) => updateNestedContentField('email', 'body', e.target.value)}
-                        placeholder="输入邮件正文"
+                        placeholder={t('qrCodeGeneratorPage.emailBodyPlaceholder')}
                         className="min-h-24 resize-y w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm"
                       />
                     </div>
@@ -848,21 +848,21 @@ const QRCodeGenerator: React.FC = () => {
                 {config.content.type === 'sms' && (
                   <div className="space-y-4">
                     <div className="space-y-2">
-                      <Label htmlFor="sms-number">手机号码</Label>
+                      <Label htmlFor="sms-number">{t('qrCodeGeneratorPage.smsNumber')}</Label>
                       <Input
                         id="sms-number"
                         value={config.content.sms.number}
                         onChange={(e) => updateNestedContentField('sms', 'number', e.target.value)}
-                        placeholder="输入手机号码"
+                        placeholder={t('qrCodeGeneratorPage.smsNumberPlaceholder')}
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="sms-message">短信内容</Label>
+                      <Label htmlFor="sms-message">{t('qrCodeGeneratorPage.smsMessage')}</Label>
                       <textarea
                         id="sms-message"
                         value={config.content.sms.message}
                         onChange={(e) => updateNestedContentField('sms', 'message', e.target.value)}
-                        placeholder="输入短信内容"
+                        placeholder={t('qrCodeGeneratorPage.smsMessagePlaceholder')}
                         className="min-h-24 resize-y w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm"
                       />
                     </div>
@@ -873,16 +873,16 @@ const QRCodeGenerator: React.FC = () => {
                 {config.content.type === 'calendar' && (
                   <div className="space-y-4">
                     <div className="space-y-2">
-                      <Label htmlFor="calendar-title">事件标题</Label>
+                      <Label htmlFor="calendar-title">{t('qrCodeGeneratorPage.calendarTitle')}</Label>
                       <Input
                         id="calendar-title"
                         value={config.content.calendar.title}
                         onChange={(e) => updateNestedContentField('calendar', 'title', e.target.value)}
-                        placeholder="输入事件标题"
+                        placeholder={t('qrCodeGeneratorPage.calendarTitlePlaceholder')}
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="calendar-start">开始时间</Label>
+                      <Label htmlFor="calendar-start">{t('qrCodeGeneratorPage.calendarStart')}</Label>
                       <Input
                         id="calendar-start"
                         type="datetime-local"
@@ -891,7 +891,7 @@ const QRCodeGenerator: React.FC = () => {
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="calendar-end">结束时间</Label>
+                      <Label htmlFor="calendar-end">{t('qrCodeGeneratorPage.calendarEnd')}</Label>
                       <Input
                         id="calendar-end"
                         type="datetime-local"
@@ -900,12 +900,12 @@ const QRCodeGenerator: React.FC = () => {
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="calendar-location">地点</Label>
+                      <Label htmlFor="calendar-location">{t('qrCodeGeneratorPage.calendarLocation')}</Label>
                       <Input
                         id="calendar-location"
                         value={config.content.calendar.location}
                         onChange={(e) => updateNestedContentField('calendar', 'location', e.target.value)}
-                        placeholder="输入事件地点"
+                        placeholder={t('qrCodeGeneratorPage.calendarLocationPlaceholder')}
                       />
                     </div>
                   </div>
@@ -915,30 +915,30 @@ const QRCodeGenerator: React.FC = () => {
                 {config.content.type === 'location' && (
                   <div className="space-y-4">
                     <div className="space-y-2">
-                      <Label htmlFor="location-latitude">纬度</Label>
+                      <Label htmlFor="location-latitude">{t('qrCodeGeneratorPage.locationLatitude')}</Label>
                       <Input
                         id="location-latitude"
                         value={config.content.location.latitude}
                         onChange={(e) => updateNestedContentField('location', 'latitude', e.target.value)}
-                        placeholder="例如：39.9042"
+                        placeholder="예: 39.9042"
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="location-longitude">经度</Label>
+                      <Label htmlFor="location-longitude">{t('qrCodeGeneratorPage.locationLongitude')}</Label>
                       <Input
                         id="location-longitude"
                         value={config.content.location.longitude}
                         onChange={(e) => updateNestedContentField('location', 'longitude', e.target.value)}
-                        placeholder="例如：116.4074"
+                        placeholder="예: 116.4074"
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="location-address">地址（用于显示）</Label>
+                      <Label htmlFor="location-address">{t('qrCodeGeneratorPage.locationAddress')}</Label>
                       <Input
                         id="location-address"
                         value={config.content.location.address}
                         onChange={(e) => updateNestedContentField('location', 'address', e.target.value)}
-                        placeholder="输入地址信息"
+                        placeholder={t('qrCodeGeneratorPage.locationAddressPlaceholder')}
                       />
                     </div>
                   </div>
@@ -948,7 +948,7 @@ const QRCodeGenerator: React.FC = () => {
               {/* 样式设置 */}
               <TabsContent value="style" className="space-y-6 pt-6">
                 <div className="space-y-4">
-                  <h3 className="text-lg font-semibold">颜色设置</h3>
+                  <h3 className="text-lg font-semibold">{t('qrCodeGeneratorPage.colorSettings')}</h3>
                   <div className="space-y-4">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-2">
@@ -959,14 +959,14 @@ const QRCodeGenerator: React.FC = () => {
                           onChange={(e) => updateStyle('useGradient', e.target.checked)}
                           className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                         />
-                        <Label htmlFor="gradient-switch">使用渐变色</Label>
+                        <Label htmlFor="gradient-switch">{t('qrCodeGeneratorPage.useGradient')}</Label>
                       </div>
                     </div>
                     
                     {!config.style.useGradient && (
                       <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
-                          <Label htmlFor="fg-color">前景色</Label>
+                          <Label htmlFor="fg-color">{t('qrCodeGeneratorPage.foregroundColor')}</Label>
                           <Input
                             id="fg-color"
                             type="color"
@@ -975,7 +975,7 @@ const QRCodeGenerator: React.FC = () => {
                           />
                         </div>
                         <div className="space-y-2">
-                          <Label htmlFor="bg-color">背景色</Label>
+                          <Label htmlFor="bg-color">{t('qrCodeGeneratorPage.backgroundColor')}</Label>
                           <Input
                             id="bg-color"
                             type="color"
@@ -989,7 +989,7 @@ const QRCodeGenerator: React.FC = () => {
                     {config.style.useGradient && (
                       <div className="space-y-4">
                         <div className="space-y-2">
-                          <Label htmlFor="gradient-color-1">渐变颜色 1</Label>
+                          <Label htmlFor="gradient-color-1">{t('qrCodeGeneratorPage.gradientColor1')}</Label>
                           <Input
                             id="gradient-color-1"
                             type="color"
@@ -998,7 +998,7 @@ const QRCodeGenerator: React.FC = () => {
                           />
                         </div>
                         <div className="space-y-2">
-                          <Label htmlFor="gradient-color-2">渐变颜色 2</Label>
+                          <Label htmlFor="gradient-color-2">{t('qrCodeGeneratorPage.gradientColor2')}</Label>
                           <Input
                             id="gradient-color-2"
                             type="color"
@@ -1007,7 +1007,7 @@ const QRCodeGenerator: React.FC = () => {
                           />
                         </div>
                         <div className="space-y-4">
-                          <Label htmlFor="gradient-direction">渐变方向</Label>
+                          <Label htmlFor="gradient-direction">{t('qrCodeGeneratorPage.gradientDirection')}</Label>
                           <div className="custom-select-wrapper">
                             <select
                               id="gradient-direction"
@@ -1015,9 +1015,9 @@ const QRCodeGenerator: React.FC = () => {
                               onChange={(e) => updateStyle('gradientDirection', e.target.value as 'horizontal' | 'vertical' | 'diagonal')}
                               className="w-full h-9 px-3 py-2 text-sm bg-gray-50 text-gray-800 border border-gray-200 rounded-md transition-all hover:border-gray-300 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=UTF-8,%3csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22currentColor%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3e%3cpolyline points=%226 9 12 15 18 9%3e%3c/polyline%3e%3c/svg%3e')] bg-no-repeat bg-right bg-[length:1.25rem] pr-9"
                             >
-                              <option value="horizontal">水平</option>
-                              <option value="vertical">垂直</option>
-                              <option value="diagonal">对角线</option>
+                              <option value="horizontal">{t('qrCodeGeneratorPage.horizontal')}</option>
+                              <option value="vertical">{t('qrCodeGeneratorPage.vertical')}</option>
+                              <option value="diagonal">{t('qrCodeGeneratorPage.diagonal')}</option>
                             </select>
                           </div>
                         </div>
@@ -1029,10 +1029,10 @@ const QRCodeGenerator: React.FC = () => {
                 <Separator />
                 
                 <div className="space-y-4">
-                  <h3 className="text-lg font-semibold">错误修正级别</h3>
+                  <h3 className="text-lg font-semibold">{t('qrCodeGeneratorPage.errorCorrectionLevel')}</h3>
                   <div className="space-y-4">
                     <div className="flex items-center justify-between gap-x-6">
-                      <Label htmlFor="error-correction">容错率</Label>
+                      <Label htmlFor="error-correction">{t('qrCodeGeneratorPage.errorCorrection')}</Label>
                       <div className="custom-select-wrapper">
                         <select
                           id="error-correction"
@@ -1040,15 +1040,15 @@ const QRCodeGenerator: React.FC = () => {
                           onChange={(e) => updateStyle('errorCorrection', e.target.value as 'L' | 'M' | 'Q' | 'H')}
                           className="w-32 h-9 px-3 py-2 text-sm bg-gray-50 text-gray-800 border border-gray-200 rounded-md transition-all hover:border-gray-300 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=UTF-8,%3csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22currentColor%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3e%3cpolyline points=%226 9 12 15 18 9%3e%3c/polyline%3e%3c/svg%3e')] bg-no-repeat bg-right bg-[length:1.25rem] pr-9"
                         >
-                          <option value="L">低 (7%)</option>
-                          <option value="M">中 (15%)</option>
-                          <option value="Q">较高 (25%)</option>
-                          <option value="H">高 (30%)</option>
+                          <option value="L">{t('qrCodeGeneratorPage.errorCorrectionL')}</option>
+                          <option value="M">{t('qrCodeGeneratorPage.errorCorrectionM')}</option>
+                          <option value="Q">{t('qrCodeGeneratorPage.errorCorrectionQ')}</option>
+                          <option value="H">{t('qrCodeGeneratorPage.errorCorrectionH')}</option>
                         </select>
                       </div>
                     </div>
                     <p className="text-sm text-gray-500">
-                      容错率越高，二维码即使被遮挡一部分也能识别，但图案会更复杂。嵌入Logo时建议使用高容错率。
+                      {t('qrCodeGeneratorPage.errorCorrectionDesc')}
                     </p>
                   </div>
                 </div>
@@ -1057,7 +1057,7 @@ const QRCodeGenerator: React.FC = () => {
                 
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
-                    <Label htmlFor="margin-slider">边距</Label>
+                    <Label htmlFor="margin-slider">{t('qrCodeGeneratorPage.margin')}</Label>
                     <span className="text-sm font-medium">{config.style.margin}px</span>
                   </div>
                   <Slider
@@ -1073,10 +1073,10 @@ const QRCodeGenerator: React.FC = () => {
                 <Separator />
                 
                 <div className="space-y-4">
-                  <h3 className="text-lg font-semibold">形状定制</h3>
+                  <h3 className="text-lg font-semibold">{t('qrCodeGeneratorPage.shapeCustomization')}</h3>
                   <div className="space-y-4">
                     <div className="space-y-4">
-                          <Label htmlFor="dot-shape" className="mr-4">码点形状</Label>
+                          <Label htmlFor="dot-shape" className="mr-4">{t('qrCodeGeneratorPage.dotShape')}</Label>
                       <div className="custom-select-wrapper">
                         <select
                           id="dot-shape"
@@ -1084,8 +1084,8 @@ const QRCodeGenerator: React.FC = () => {
                           onChange={(e) => updateStyle('dotShape', e.target.value as DotShape)}
                           className="w-full h-9 px-3 py-2 text-sm bg-gray-50 text-gray-800 border border-gray-200 rounded-md transition-all hover:border-gray-300 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=UTF-8,%3csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22currentColor%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3e%3cpolyline points=%226 9 12 15 18 9%3e%3c/polyline%3e%3c/svg%3e')] bg-no-repeat bg-right bg-[length:1.25rem] pr-9"
                         >
-                          <option value="square">方形</option>
-                          <option value="rounded">圆角</option>
+                          <option value="square">{t('qrCodeGeneratorPage.square')}</option>
+                          <option value="rounded">{t('qrCodeGeneratorPage.rounded')}</option>
                         </select>
                       </div>
                     </div>
@@ -1097,7 +1097,7 @@ const QRCodeGenerator: React.FC = () => {
                 <Separator />
                 
                 <div className="space-y-4">
-                  <h3 className="text-lg font-semibold">边框设置</h3>
+                  <h3 className="text-lg font-semibold">{t('qrCodeGeneratorPage.borderSettings')}</h3>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-2">
                       <input
@@ -1113,14 +1113,14 @@ const QRCodeGenerator: React.FC = () => {
                         }))}
                         className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                       />
-                      <Label htmlFor="border-switch">添加边框</Label>
+                      <Label htmlFor="border-switch">{t('qrCodeGeneratorPage.addBorder')}</Label>
                     </div>
                   </div>
                   
                   {config.border.enabled && (
                     <div className="space-y-4">
                       <div className="flex items-center justify-between">
-                        <Label htmlFor="border-width">边框宽度</Label>
+                        <Label htmlFor="border-width">{t('qrCodeGeneratorPage.borderWidth')}</Label>
                         <span className="text-sm font-medium">{config.border.width}px</span>
                       </div>
                       <Slider
@@ -1139,7 +1139,7 @@ const QRCodeGenerator: React.FC = () => {
                       />
                       
                       <div className="space-y-2">
-                        <Label htmlFor="border-color">边框颜色</Label>
+                        <Label htmlFor="border-color">{t('qrCodeGeneratorPage.borderColor')}</Label>
                         <Input
                           id="border-color"
                           type="color"
@@ -1155,7 +1155,7 @@ const QRCodeGenerator: React.FC = () => {
                       </div>
                       
                       <div className="flex items-center justify-between">
-                        <Label htmlFor="border-radius">边框圆角</Label>
+                        <Label htmlFor="border-radius">{t('qrCodeGeneratorPage.borderRadius')}</Label>
                         <span className="text-sm font-medium">{config.border.radius}px</span>
                       </div>
                       <Slider
@@ -1179,7 +1179,7 @@ const QRCodeGenerator: React.FC = () => {
                 <Separator />
                 
                 <div className="space-y-4">
-                  <h3 className="text-lg font-semibold">说明文字</h3>
+                  <h3 className="text-lg font-semibold">{t('qrCodeGeneratorPage.captionSettings')}</h3>
                   <div className="flex items-center justify-between mt-4">
                     <div className="flex items-center space-x-2">
                       <input
@@ -1195,14 +1195,14 @@ const QRCodeGenerator: React.FC = () => {
                         }))}
                         className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                       />
-                      <Label htmlFor="caption-switch">添加说明文字</Label>
+                      <Label htmlFor="caption-switch">{t('qrCodeGeneratorPage.enableCaption')}</Label>
                     </div>
                   </div>
                   
                   {config.caption.enabled && (
                     <div className="space-y-4">
                       <div className="space-y-2">
-                        <Label htmlFor="caption-text">文字内容</Label>
+                        <Label htmlFor="caption-text">{t('qrCodeGeneratorPage.captionText')}</Label>
                         <Input
                           id="caption-text"
                           value={config.caption.text}
@@ -1213,12 +1213,12 @@ const QRCodeGenerator: React.FC = () => {
                               text: e.target.value
                             }
                           }))}
-                          placeholder="输入说明文字"
+                          placeholder={t('qrCodeGeneratorPage.captionTextPlaceholder')}
                         />
                       </div>
                       
                       <div className="flex items-center justify-between">
-                        <Label htmlFor="caption-font-size">字体大小</Label>
+                        <Label htmlFor="caption-font-size">{t('qrCodeGeneratorPage.captionFontSize')}</Label>
                         <span className="text-sm font-medium">{config.caption.fontSize}px</span>
                       </div>
                       <Slider
@@ -1237,7 +1237,7 @@ const QRCodeGenerator: React.FC = () => {
                       />
                       
                       <div className="space-y-2">
-                        <Label htmlFor="caption-color">文字颜色</Label>
+                        <Label htmlFor="caption-color">{t('qrCodeGeneratorPage.captionTextColor')}</Label>
                         <Input
                           id="caption-color"
                           type="color"
@@ -1259,11 +1259,11 @@ const QRCodeGenerator: React.FC = () => {
               {/* Logo设置 */}
               <TabsContent value="logo" className="space-y-6 pt-6">
                 <div className="space-y-4">
-                  <h3 className="text-lg font-semibold">Logo设置</h3>
+                  <h3 className="text-lg font-semibold">{t('qrCodeGeneratorPage.tabLogo')}</h3>
                   
                   {!config.logo.url ? (
                     <div className="space-y-2">
-                      <Label htmlFor="logo-upload">上传Logo</Label>
+                      <Label htmlFor="logo-upload">{t('qrCodeGeneratorPage.logoUpload')}</Label>
                       <div className="flex space-x-2">
                         <input
                           id="logo-upload"
@@ -1277,7 +1277,7 @@ const QRCodeGenerator: React.FC = () => {
                           className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
                         />
                       </div>
-                      <p className="text-xs text-gray-500">建议使用透明背景的PNG图片，大小不超过1MB</p>
+                      <p className="text-xs text-gray-500">{t('qrCodeGeneratorPage.logoUploadHint')}</p>
                     </div>
                   ) : (
                     <div className="space-y-4">
@@ -1290,7 +1290,7 @@ const QRCodeGenerator: React.FC = () => {
                       </div>
                       
                       <div className="flex items-center justify-between">
-                        <Label htmlFor="logo-size">Logo大小</Label>
+                        <Label htmlFor="logo-size">{t('qrCodeGeneratorPage.logoSize')}</Label>
                         <span className="text-sm font-medium">{config.logo.size}%</span>
                       </div>
                       <Slider
@@ -1313,20 +1313,20 @@ const QRCodeGenerator: React.FC = () => {
                         onClick={removeLogo}
                         className="w-full"
                       >
-                        移除Logo
+                        {t('qrCodeGeneratorPage.removeLogo')}
                       </Button>
                     </div>
                   )}
                   
                   <div className="p-4 bg-yellow-50 rounded-md border border-yellow-200">
                     <p className="text-sm text-yellow-700">
-                      <strong>提示：</strong> 添加Logo会降低二维码的可扫描性，建议：
+                      <strong>{t('qrCodeGeneratorPage.logoHint')}：</strong> {t('qrCodeGeneratorPage.logoHintText')}
                     </p>
                     <ul className="list-disc list-inside text-sm text-yellow-700 mt-2 space-y-1">
-                      <li>使用高容错率（Q或H级别）</li>
-                      <li>确保Logo与二维码颜色有足够对比度</li>
-                      <li>控制Logo大小不超过二维码的30%</li>
-                      <li>优先使用透明背景的Logo</li>
+                      <li>{t('qrCodeGeneratorPage.logoHint1')}</li>
+                      <li>{t('qrCodeGeneratorPage.logoHint2')}</li>
+                      <li>{t('qrCodeGeneratorPage.logoHint3')}</li>
+                      <li>{t('qrCodeGeneratorPage.logoHint4')}</li>
                     </ul>
                   </div>
                 </div>
@@ -1335,11 +1335,11 @@ const QRCodeGenerator: React.FC = () => {
               {/* 下载设置 */}
               <TabsContent value="download" className="space-y-6 pt-6">
                 <div className="space-y-4">
-                  <h3 className="text-lg font-semibold">下载设置</h3>
+                  <h3 className="text-lg font-semibold">{t('qrCodeGeneratorPage.tabDownload')}</h3>
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-3">
-                      <Label htmlFor="download-format" className="mr-4">文件格式</Label>
+                      <Label htmlFor="download-format" className="mr-4">{t('qrCodeGeneratorPage.downloadFormat')}</Label>
                           <div className="mt-3 custom-select-wrapper">
                         <select
                           id="download-format"
@@ -1353,14 +1353,14 @@ const QRCodeGenerator: React.FC = () => {
                           }))}
                           className="w-full h-9 px-3 py-2 text-sm bg-gray-50 text-gray-800 border border-gray-200 rounded-md transition-all hover:border-gray-300 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=UTF-8,%3csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22currentColor%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3e%3cpolyline points=%226 9 12 15 18 9%3e%3c/polyline%3e%3c/svg%3e')] bg-no-repeat bg-right bg-[length:1.25rem] pr-9"
                         >
-                          <option value="png">PNG (网页使用)</option>
-                          <option value="svg">SVG (印刷矢量图)</option>
+                          <option value="png">{t('qrCodeGeneratorPage.downloadFormatPNG')}</option>
+                          <option value="svg">{t('qrCodeGeneratorPage.downloadFormatSVG')}</option>
                         </select>
                       </div>
                     </div>
                     
                     <div className="space-y-3">
-                      <Label htmlFor="download-size" className="mr-4">尺寸</Label>
+                      <Label htmlFor="download-size" className="mr-4">{t('qrCodeGeneratorPage.downloadSize')}</Label>
                           <div className="mt-3 custom-select-wrapper">
                         <select
                           id="download-size"
@@ -1385,12 +1385,12 @@ const QRCodeGenerator: React.FC = () => {
                   
                   <div className="p-4 bg-blue-50 rounded-md border border-blue-200">
                     <p className="text-sm text-blue-700">
-                      <strong>建议：</strong>
+                      <strong>{t('qrCodeGeneratorPage.downloadSuggestion')}：</strong>
                     </p>
                     <ul className="list-disc list-inside text-sm text-blue-700 mt-2 space-y-1">
-                      <li>网页使用：选择 PNG 格式，512px 或 1024px</li>
-                      <li>印刷品：选择 SVG 格式，可无限缩放不失真</li>
-                      <li>需要添加到文档：SVG 格式更适合</li>
+                      <li>{t('qrCodeGeneratorPage.downloadSuggestion1')}</li>
+                      <li>{t('qrCodeGeneratorPage.downloadSuggestion2')}</li>
+                      <li>{t('qrCodeGeneratorPage.downloadSuggestion3')}</li>
                     </ul>
                   </div>
                 </div>
@@ -1417,7 +1417,7 @@ const QRCodeGenerator: React.FC = () => {
             )}
             
             <div className="bg-white rounded-xl shadow-md p-6 border border-gray-200">
-              <h3 className="text-lg font-semibold mb-6 text-center">二维码预览</h3>
+              <h3 className="text-lg font-semibold mb-6 text-center">{t('qrCodeGeneratorPage.qrCodePreview')}</h3>
               
               <div className="flex justify-center mb-6">
                 <QRCodeErrorBoundary t={t}>
@@ -1517,39 +1517,39 @@ const QRCodeGenerator: React.FC = () => {
                 disabled={!generatedContent}
               >
                 <Download size={18} />
-                下载二维码
+                {t('qrCodeGeneratorPage.downloadQRCode')}
               </Button>
               
               <div className="mt-6 space-y-2">
-                <h4 className="text-sm font-medium text-gray-500">生成内容</h4>
+                <h4 className="text-sm font-medium text-gray-500">{t('qrCodeGeneratorPage.generatedContent')}</h4>
                 <div className="p-3 bg-gray-50 rounded-md text-sm font-mono break-all">
-                  {generatedContent || '请输入内容生成二维码'}
+                  {generatedContent || t('qrCodeGeneratorPage.generatedContentPlaceholder')}
                 </div>
               </div>
             </div>
             
             <div className="bg-white rounded-xl shadow-md p-6 border border-gray-200">
-              <h3 className="text-lg font-semibold mb-4">使用提示</h3>
+              <h3 className="text-lg font-semibold mb-4">{t('qrCodeGeneratorPage.usageTips')}</h3>
               <ul className="space-y-3 text-sm text-gray-600">
                 <li className="flex items-start gap-2">
                   <Check size={18} className="text-green-500 mt-0.5 flex-shrink-0" />
-                  <span>选择合适的内容模板，填写必要信息</span>
+                  <span>{t('qrCodeGeneratorPage.tip1')}</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <Check size={18} className="text-green-500 mt-0.5 flex-shrink-0" />
-                  <span>调整样式让二维码更具个性化</span>
+                  <span>{t('qrCodeGeneratorPage.tip2')}</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <Check size={18} className="text-green-500 mt-0.5 flex-shrink-0" />
-                  <span>添加Logo时请使用高容错率</span>
+                  <span>{t('qrCodeGeneratorPage.tip3')}</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <Check size={18} className="text-green-500 mt-0.5 flex-shrink-0" />
-                  <span>选择合适的下载格式和尺寸</span>
+                  <span>{t('qrCodeGeneratorPage.tip4')}</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <Check size={18} className="text-green-500 mt-0.5 flex-shrink-0" />
-                  <span>生成后请用手机扫描测试</span>
+                  <span>{t('qrCodeGeneratorPage.tip5')}</span>
                 </li>
               </ul>
             </div>

@@ -9,6 +9,8 @@ import { cn } from '@/lib/utils';
 const languages: { code: Locale; name: string; nativeName: string; flag: string }[] = [
   { code: 'zh-CN', name: 'Chinese', nativeName: '中文', flag: '文' },
   { code: 'en', name: 'English', nativeName: 'English', flag: 'A' },
+  { code: 'ja-JP', name: 'Japanese', nativeName: '日本語', flag: '日' },
+  { code: 'ko-KR', name: 'Korean', nativeName: '한국어', flag: '한' },
 ];
 
 export function LanguageToggle() {
@@ -32,7 +34,7 @@ export function LanguageToggle() {
             className="absolute -top-0.5 -left-0.5 text-[9px] leading-none opacity-70"
             style={{ transform: 'rotate(-15deg)' }}
           >
-            {currentLanguage.flag === 'A' ? '文' : 'A'}
+            {currentLanguage.flag === 'A' ? '文' : currentLanguage.flag === '日' ? 'A' : currentLanguage.flag === '한' ? 'A' : 'A'}
           </span>
         </div>
       </Button>
@@ -73,6 +75,16 @@ export function LanguageToggle() {
                         </span>
                       )}
                       {language.flag === '文' && (
+                        <span className="absolute -top-0.5 -left-0.5 text-[7px] leading-none opacity-60" style={{ transform: 'rotate(-15deg)' }}>
+                          A
+                        </span>
+                      )}
+                      {language.flag === '日' && (
+                        <span className="absolute -top-0.5 -left-0.5 text-[7px] leading-none opacity-60" style={{ transform: 'rotate(-15deg)' }}>
+                          A
+                        </span>
+                      )}
+                      {language.flag === '한' && (
                         <span className="absolute -top-0.5 -left-0.5 text-[7px] leading-none opacity-60" style={{ transform: 'rotate(-15deg)' }}>
                           A
                         </span>

@@ -786,12 +786,12 @@ export default function GifTool() {
               <div className="space-y-6">
                 <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
                   <ImageIcon className="h-12 w-12 mx-auto text-gray-400 mb-4" />
-                  <p className="text-gray-500 mb-4">拖放GIF文件到此处，或点击选择文件</p>
+                  <p className="text-gray-500 mb-4">{t('gifToolPage.dragDropGifHint')}</p>
                   <Button 
                     onClick={() => gifFileInputRef.current?.click()}
                     className="w-full sm:w-auto"
                   >
-                    选择GIF文件
+                    {t('gifToolPage.selectGifFile')}
                   </Button>
                   <input
                     ref={gifFileInputRef}
@@ -802,7 +802,7 @@ export default function GifTool() {
                   />
                   {selectedGif && (
                     <div className="mt-4 text-sm text-gray-500">
-                      已选择: {selectedGif.name} ({(selectedGif.size / 1024).toFixed(2)} KB)
+                      {t('gifToolPage.selectedFile')}: {selectedGif.name} ({(selectedGif.size / 1024).toFixed(2)} KB)
                     </div>
                   )}
                 </div>
@@ -815,12 +815,12 @@ export default function GifTool() {
               <div className="space-y-6">
                 <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
                   <ImageIcon className="h-12 w-12 mx-auto text-gray-400 mb-4" />
-                  <p className="text-gray-500 mb-4">拖放图片文件到此处，或点击选择文件（支持批量上传）</p>
+                  <p className="text-gray-500 mb-4">{t('gifToolPage.dragDropImagesHint')}</p>
                   <Button 
                     onClick={() => imageFileInputRef.current?.click()}
                     className="w-full sm:w-auto"
                   >
-                    选择图片文件
+                    {t('gifToolPage.selectImageFiles')}
                   </Button>
                   <input
                     ref={imageFileInputRef}
@@ -888,13 +888,13 @@ export default function GifTool() {
               </div>
               <div className="ml-3">
                 <p className="text-sm text-green-700">
-                  <span className="font-medium">功能说明：</span><br />
-                  本工具现在支持直接生成GIF动画文件！上传图片后，点击生成按钮即可获得完整的GIF文件。<br /><br />
-                  <span className="font-medium">使用提示：</span><br />
-                  - 推荐上传5-20张图片以获得最佳效果<br />
-                  - 图片会自动压缩以提高性能<br />
-                  - 生成过程中会显示实时进度<br />
-                  - 大图片或多张图片可能需要较长处理时间<br />
+                  <span className="font-medium">{t('gifToolPage.featureDescription')}：</span><br />
+                  {t('gifToolPage.featureDescriptionText')}<br /><br />
+                  <span className="font-medium">{t('gifToolPage.usageTips')}：</span><br />
+                  - {t('gifToolPage.tip1')}<br />
+                  - {t('gifToolPage.tip2')}<br />
+                  - {t('gifToolPage.tip3')}<br />
+                  - {t('gifToolPage.tip4')}<br />
                 </p>
               </div>
             </div>
@@ -902,12 +902,12 @@ export default function GifTool() {
         </Card>
 
         <Card className="p-6">
-          <h3 className="text-lg font-medium mb-4">使用说明</h3>
+          <h3 className="text-lg font-medium mb-4">{t('gifToolPage.usageInstructions')}</h3>
           <div className="space-y-3 text-sm text-gray-600">
-            <p><strong>GIF分解:</strong> 上传GIF文件，工具会将其分解为单独的帧，您可以预览、播放和下载各个帧。</p>
-            <p><strong>GIF合成:</strong> 上传多张图片，设置帧率后点击生成，系统将创建一个完整的GIF动画文件。</p>
-            <p>所有处理均在本地完成，不会上传您的文件到服务器，保护您的数据隐私。</p>
-            <p>提示：对于大图片或多张图片，生成过程可能需要一些时间，请耐心等待。</p>
+            <p><strong>{t('gifToolPage.splitGif')}:</strong> {t('gifToolPage.splitDescription')}</p>
+            <p><strong>{t('gifToolPage.createGif')}:</strong> {t('gifToolPage.createDescription')}</p>
+            <p>{t('gifToolPage.privacyNote')}</p>
+            <p>{t('gifToolPage.processingHint')}</p>
           </div>
         </Card>
       </div>

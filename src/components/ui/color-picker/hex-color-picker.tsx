@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { Slider } from '@/components/ui/slider';
 import { Label } from '@/components/ui/label';
 import { Card } from '@/components/ui/card';
+import { useI18n } from '@/contexts/I18nContext';
 
 interface HexColorPickerProps {
   color: string;
@@ -92,6 +93,7 @@ function hexToRgb(hex: string): [number, number, number] {
 }
 
 export function HexColorPicker({ color, onChange }: HexColorPickerProps) {
+  const { t } = useI18n();
   const [hsl, setHsl] = useState<[number, number, number]>([0, 0, 0]);
   const [rgb, setRgb] = useState<[number, number, number]>([0, 0, 0]);
   const [activeTab, setActiveTab] = useState<'hsl' | 'rgb'>('hsl');
@@ -145,7 +147,7 @@ export function HexColorPicker({ color, onChange }: HexColorPickerProps) {
         <div className="space-y-4">
           <div className="space-y-2">
             <div className="flex justify-between">
-              <Label htmlFor="hue">色相 (H)</Label>
+              <Label htmlFor="hue">{t('colorPalettePage.hue')}</Label>
               <span className="text-sm text-gray-500 dark:text-gray-400">{hsl[0]}°</span>
             </div>
             <div className="flex items-center gap-3">
@@ -169,7 +171,7 @@ export function HexColorPicker({ color, onChange }: HexColorPickerProps) {
 
           <div className="space-y-2">
             <div className="flex justify-between">
-              <Label htmlFor="saturation">饱和度 (S)</Label>
+              <Label htmlFor="saturation">{t('colorPalettePage.saturation')}</Label>
               <span className="text-sm text-gray-500 dark:text-gray-400">{hsl[1]}%</span>
             </div>
             <div className="flex items-center gap-3">
@@ -193,7 +195,7 @@ export function HexColorPicker({ color, onChange }: HexColorPickerProps) {
 
           <div className="space-y-2">
             <div className="flex justify-between">
-              <Label htmlFor="lightness">亮度 (L)</Label>
+              <Label htmlFor="lightness">{t('colorPalettePage.lightness')}</Label>
               <span className="text-sm text-gray-500 dark:text-gray-400">{hsl[2]}%</span>
             </div>
             <div className="flex items-center gap-3">
@@ -221,7 +223,7 @@ export function HexColorPicker({ color, onChange }: HexColorPickerProps) {
         <div className="space-y-4">
           <div className="space-y-2">
             <div className="flex justify-between">
-              <Label htmlFor="red">红色 (R)</Label>
+              <Label htmlFor="red">{t('colorPalettePage.red')}</Label>
               <span className="text-sm text-gray-500 dark:text-gray-400">{rgb[0]}</span>
             </div>
             <div className="flex items-center gap-3">
@@ -245,7 +247,7 @@ export function HexColorPicker({ color, onChange }: HexColorPickerProps) {
 
           <div className="space-y-2">
             <div className="flex justify-between">
-              <Label htmlFor="green">绿色 (G)</Label>
+              <Label htmlFor="green">{t('colorPalettePage.green')}</Label>
               <span className="text-sm text-gray-500 dark:text-gray-400">{rgb[1]}</span>
             </div>
             <div className="flex items-center gap-3">
@@ -269,7 +271,7 @@ export function HexColorPicker({ color, onChange }: HexColorPickerProps) {
 
           <div className="space-y-2">
             <div className="flex justify-between">
-              <Label htmlFor="blue">蓝色 (B)</Label>
+              <Label htmlFor="blue">{t('colorPalettePage.blue')}</Label>
               <span className="text-sm text-gray-500 dark:text-gray-400">{rgb[2]}</span>
             </div>
             <div className="flex items-center gap-3">

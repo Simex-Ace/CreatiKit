@@ -478,12 +478,12 @@ export default function PianoPage() {
             >
               ↑
             </button>
-            <span className="text-xs text-gray-500 ml-2">[Z/X键]</span>
+            <span className="text-xs text-gray-500 ml-2">{t('pianoPage.keyHintZX')}</span>
           </div>
 
           {/* 延音踏板指示器 */}
           <div className={`px-4 py-2 rounded-lg font-medium transition-colors ${sustain ? 'bg-yellow-100 text-yellow-700' : 'bg-gray-100 text-gray-600'}`}>
-            🎹 {t('pianoPage.sustainPedal')}: {sustain ? t('pianoPage.pressed') : t('pianoPage.released')} <span className="text-xs ml-1">[空格键]</span>
+            🎹 {t('pianoPage.sustainPedal')}: {sustain ? t('pianoPage.pressed') : t('pianoPage.released')} <span className="text-xs ml-1">{t('pianoPage.keyHintSpace')}</span>
           </div>
 
           {/* 录音控制 */}
@@ -584,38 +584,38 @@ export default function PianoPage() {
                 <div className="grid grid-cols-3 md:grid-cols-6 gap-2 text-sm">
                   <div className="bg-gray-100 p-3 rounded-lg">
                     <span className="font-mono bg-gray-200 px-2 py-1 rounded">s</span>
-                    <span className="ml-2">C4 (中央C)</span>
+                    <span className="ml-2">{t('pianoPage.keyMappingC4')}</span>
                   </div>
                   <div className="bg-gray-100 p-3 rounded-lg">
                     <span className="font-mono bg-gray-200 px-2 py-1 rounded">d</span>
-                    <span className="ml-2">C#4 (升Do)</span>
+                    <span className="ml-2">{t('pianoPage.keyMappingCSharp4')}</span>
                   </div>
                   <div className="bg-gray-100 p-3 rounded-lg">
                     <span className="font-mono bg-gray-200 px-2 py-1 rounded">f</span>
-                    <span className="ml-2">D4 (Re)</span>
+                    <span className="ml-2">{t('pianoPage.keyMappingD4')}</span>
                   </div>
                   <div className="bg-gray-100 p-3 rounded-lg">
                     <span className="font-mono bg-gray-200 px-2 py-1 rounded">g</span>
-                    <span className="ml-2">D#4 (升Re)</span>
+                    <span className="ml-2">{t('pianoPage.keyMappingDSharp4')}</span>
                   </div>
                   <div className="bg-gray-100 p-3 rounded-lg">
                     <span className="font-mono bg-gray-200 px-2 py-1 rounded">h</span>
-                    <span className="ml-2">E4 (Mi)</span>
+                    <span className="ml-2">{t('pianoPage.keyMappingE4')}</span>
                   </div>
                   <div className="bg-gray-100 p-3 rounded-lg">
                     <span className="font-mono bg-gray-200 px-2 py-1 rounded">j</span>
-                    <span className="ml-2">F4 (Fa)</span>
+                    <span className="ml-2">{t('pianoPage.keyMappingF4')}</span>
                   </div>
                 </div>
-                <p className="text-gray-500 text-sm">音符直接映射到对应的键位，无需八度切换</p>
+                <p className="text-gray-500 text-sm">{t('pianoPage.keyMappingHint')}</p>
                 
                 <div className="mt-6 p-4 bg-blue-50 rounded-lg">
-                  <h4 className="font-semibold text-blue-700 mb-2">快捷键说明</h4>
+                  <h4 className="font-semibold text-blue-700 mb-2">{t('pianoPage.shortcutTitle')}</h4>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
-                    <div>Z: 降低八度</div>
-                    <div>X: 升高八度</div>
-                    <div>空格键: 延音踏板</div>
-                    <div>点击任意位置: 初始化音频</div>
+                    <div>{t('pianoPage.shortcutZ')}</div>
+                    <div>{t('pianoPage.shortcutX')}</div>
+                    <div>{t('pianoPage.shortcutSpace')}</div>
+                    <div>{t('pianoPage.shortcutClick')}</div>
                   </div>
                 </div>
               </div>

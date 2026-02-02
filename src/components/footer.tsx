@@ -9,35 +9,13 @@ import { useI18n } from '@/contexts/I18nContext';
 
 export function Footer() {
   const { showAlert, alertVisible, alertMessage, alertDuration, closeAlert } = useDevelopmentAlert();
-  const { locale } = useI18n();
+  const { locale, t } = useI18n();
 
   const isEn = locale === 'en';
 
   const handleDevelopmentLink = (e: React.MouseEvent, messageEn: string, messageZh: string) => {
     e.preventDefault();
     showAlert(isEn ? messageEn : messageZh);
-  };
-
-  const tText = {
-    tagline: isEn
-      ? 'A powerful yet minimal online creative toolkit, empowering your design and development workflow'
-      : '强大而简洁的在线创意工具箱，赋能您的设计与开发工作流',
-    tools: isEn ? 'Tools' : '工具',
-    resources: isEn ? 'Resources' : '资源',
-    company: isEn ? 'Company' : '公司',
-    imageCompress: isEn ? 'Image Compress' : '图片压缩',
-    viewer3d: isEn ? '3D Viewer' : '3D预览',
-    codeTools: isEn ? 'Code Tools' : '代码工具',
-    designTools: isEn ? 'Design Tools' : '设计工具',
-    docs: isEn ? 'Docs' : '文档',
-    api: 'API',
-    blog: isEn ? 'Blog' : '博客',
-    tutorials: isEn ? 'Tutorials' : '教程',
-    about: isEn ? 'About Us' : '关于我们',
-    privacy: isEn ? 'Privacy Policy' : '隐私政策',
-    terms: isEn ? 'Terms of Use' : '使用条款',
-    contact: isEn ? 'Contact Us' : '联系我们',
-    rights: isEn ? 'All rights reserved.' : '保留所有权利。',
   };
 
   return (
@@ -51,7 +29,7 @@ export function Footer() {
               </span>
             </Link>
             <p className="text-sm text-muted-foreground">
-              {tText.tagline}
+              {t('footer.tagline')}
             </p>
             <div className="flex space-x-4">
               <Link
@@ -97,16 +75,16 @@ export function Footer() {
           </div>
 
           <div>
-            <h3 className="text-sm font-semibold mb-4">{tText.tools}</h3>
+            <h3 className="text-sm font-semibold mb-4">{t('footer.tools')}</h3>
             <ul className="space-y-2">
               <li>
                 <Link href="/compress" className="text-sm text-muted-foreground hover:text-primary">
-                  {tText.imageCompress}
+                  {t('footer.imageCompress')}
                 </Link>
               </li>
               <li>
                 <Link href="/model-viewer" className="text-sm text-muted-foreground hover:text-primary">
-                  {tText.viewer3d}
+                  {t('footer.viewer3d')}
                 </Link>
               </li>
               <li>
@@ -121,7 +99,7 @@ export function Footer() {
                     )
                   }
                 >
-                  {tText.codeTools}
+                  {t('footer.codeTools')}
                 </Link>
               </li>
               <li>
@@ -136,14 +114,14 @@ export function Footer() {
                     )
                   }
                 >
-                  {tText.designTools}
+                  {t('footer.designTools')}
                 </Link>
               </li>
             </ul>
           </div>
 
           <div>
-            <h3 className="text-sm font-semibold mb-4">{tText.resources}</h3>
+            <h3 className="text-sm font-semibold mb-4">{t('footer.resources')}</h3>
             <ul className="space-y-2">
               <li>
                 <Link
@@ -157,7 +135,7 @@ export function Footer() {
                     )
                   }
                 >
-                  {tText.docs}
+                  {t('footer.docs')}
                 </Link>
               </li>
               <li>
@@ -172,7 +150,7 @@ export function Footer() {
                     )
                   }
                 >
-                  {tText.api}
+                  {t('footer.api')}
                 </Link>
               </li>
               <li>
@@ -187,7 +165,7 @@ export function Footer() {
                     )
                   }
                 >
-                  {tText.blog}
+                  {t('footer.blog')}
                 </Link>
               </li>
               <li>
@@ -202,14 +180,14 @@ export function Footer() {
                     )
                   }
                 >
-                  {tText.tutorials}
+                  {t('footer.tutorials')}
                 </Link>
               </li>
             </ul>
           </div>
 
           <div>
-            <h3 className="text-sm font-semibold mb-4">{tText.company}</h3>
+            <h3 className="text-sm font-semibold mb-4">{t('footer.company')}</h3>
             <ul className="space-y-2">
               <li>
                 <Link
@@ -223,7 +201,7 @@ export function Footer() {
                     )
                   }
                 >
-                  {tText.about}
+                  {t('footer.about')}
                 </Link>
               </li>
               <li>
@@ -238,7 +216,7 @@ export function Footer() {
                     )
                   }
                 >
-                  {tText.privacy}
+                  {t('footer.privacy')}
                 </Link>
               </li>
               <li>
@@ -253,7 +231,7 @@ export function Footer() {
                     )
                   }
                 >
-                  {tText.terms}
+                  {t('footer.terms')}
                 </Link>
               </li>
               <li>
@@ -268,7 +246,7 @@ export function Footer() {
                     )
                   }
                 >
-                  {tText.contact}
+                  {t('footer.contact')}
                 </Link>
               </li>
             </ul>
@@ -279,7 +257,7 @@ export function Footer() {
 
         <div className="flex flex-col md:flex-row justify-between items-center">
           <p className="text-sm text-muted-foreground">
-            © {new Date().getFullYear()} CreatiKit.io. {tText.rights}
+            © {new Date().getFullYear()} CreatiKit.io. {t('footer.rights')}
           </p>
           <div className="flex space-x-6 mt-4 md:mt-0">
             <Link
@@ -293,7 +271,7 @@ export function Footer() {
                 )
               }
             >
-              {tText.privacy}
+              {t('footer.privacy')}
             </Link>
             <Link
               href="#"
@@ -306,7 +284,7 @@ export function Footer() {
                 )
               }
             >
-              {tText.terms}
+              {t('footer.terms')}
             </Link>
           </div>
         </div>

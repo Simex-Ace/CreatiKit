@@ -7,89 +7,24 @@ import { useI18n } from '@/contexts/I18nContext';
 export default function MarkdownEditor() {
   const { t } = useI18n();
   
-  // 初始Markdown内容 - 使用基础语法避免转义问题
-  const [markdownContent, setMarkdownContent] = useState(
-    '# Markdown编辑器\n\n' +
-    '## 文本格式化\n\n' +
-    '**粗体文本** 或者 __粗体文本__\n' +
-    '*斜体文本* 或者 _斜体文本_\n' +
-    '***粗斜体文本*** 或者 ___粗斜体文本___\n' +
-    '~~删除线文本~~\n' +
-    '\\`内联代码\\`\n\n' +
-    '## 列表\n\n' +
-    '### 无序列表\n' +
-    '- 项目1\n' +
-    '- 项目2\n' +
-    '- 项目3\n\n' +
-    '### 有序列表\n' +
-    '1. 第一项\n' +
-    '2. 第二项\n' +
-    '3. 第三项\n\n' +
-    '### 任务列表\n' +
-    '- [x] 已完成任务\n' +
-    '- [ ] 未完成任务\n' +
-    '- [x] 另一个已完成任务\n\n' +
-    '### 嵌套列表\n' +
-    '- 父项1\n' +
-    '  - 子项1\n' +
-    '  - 子项2\n' +
-    '    - 孙项1\n' +
-    '- 父项2\n\n' +
-    '## 代码块\n\n' +
-    '### JavaScript代码块\n' +
-    '```javascript\n' +
-    'function greet(name) {\n' +
-    '  return \`Hello, \${name}!\`;\n' +
-    '}\n\n' +
-    'console.log(greet(\'World\'));\n' +
-    '```\n\n' +
-    '### Python代码块\n' +
-    '```python\n' +
-    'def factorial(n):\n' +
-    '    if n <= 1:\n' +
-    '        return 1\n' +
-    '    return n * factorial(n-1)\n\n' +
-    'print(factorial(5))\n' +
-    '```\n\n' +
-    '## 表格\n\n' +
-    '| 姓名 | 年龄 | 职业 |\n' +
-    '|------|------|------|\n' +
-    '| 张三 | 28   | 工程师 |\n' +
-    '| 李四 | 32   | 设计师 |\n' +
-    '| 王五 | 45   | 产品经理 |\n\n' +
-    '## 链接和图片\n\n' +
-    '[百度](https://www.baidu.com)\n\n' +
-    '![图片描述](https://i.postimg.cc/yNDJYjmw/wmremove-transformed-1.png)\n\n' +
-    '## 引用\n\n' +
-    '> 这是一段引用文字。\n' +
-    '> \n' +
-    '> 这是引用的第二行。\n\n' +
-    '### 嵌套引用\n' +
-    '> 外层引用\n' +
-    '>> 内层引用\n' +
-    '>>> 更深层引用\n\n' +
-    '## 水平线\n\n' +
-    '---\n\n' +
-    '## 脚注\n\n' +
-    '这里有一个脚注引用[^1]。\n\n' +
-    '[^1]: 这是脚注的内容。\n\n' +
-    '## 标题锚点\n\n' +
-    '# 这是一个带锚点的标题\n' +
-    '## 这是第二个带锚点的标题\n\n' +
-    '## 自动链接\n\n' +
-    '<https://www.example.com>\n' +
-    '<example@example.com>\n\n' +
-    '## 特殊符号\n\n' +
-    '```\n' +
-    '* 这样就不会被解析为斜体\n' +
-    '` 这样就不会被解析为代码\n' +
-    '_ 这样就不会被解析为强调\n' +
-    '```\n'
-  );
+  // 初始Markdown内容 - 使用翻译键
+  const [markdownContent, setMarkdownContent] = useState('');
+  const [initialized, setInitialized] = useState(false);
 
   const [htmlContent, setHtmlContent] = useState('');
   const [activeTab, setActiveTab] = useState('edit'); // 'edit', 'preview', 'split'
   // 移除确认模态框状态
+
+  // 初始化Markdown内容 - 在翻译加载后设置
+  useEffect(() => {
+    if (!initialized) {
+      const initialContent = t('markdownEditorPage.initialContent');
+      if (initialContent && initialContent !== 'markdownEditorPage.initialContent') {
+        setMarkdownContent(initialContent.replace(/\\n/g, '\n'));
+        setInitialized(true);
+      }
+    }
+  }, [t, initialized]);
 
   // 配置marked选项
   useEffect(() => {

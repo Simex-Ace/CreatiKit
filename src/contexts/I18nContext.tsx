@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
-export type Locale = 'zh-CN' | 'en';
+export type Locale = 'zh-CN' | 'en' | 'ja-JP' | 'ko-KR';
 
 interface I18nContextType {
   locale: Locale;
@@ -17,6 +17,13 @@ const loadTranslations = async (locale: Locale): Promise<Record<string, any>> =>
   try {
     if (locale === 'zh-CN') {
       const translations = await import('@/locales/zh-CN.json');
+      return translations.default || translations;
+    } else if (locale === 'ja-JP') {
+      const translations = await import('@/locales/ja-JP.json');
+      console.log('Japanese translations loaded:', translations);
+      return translations.default || translations;
+    } else if (locale === 'ko-KR') {
+      const translations = await import('@/locales/ko-KR.json');
       return translations.default || translations;
     } else {
       const translations = await import('@/locales/en.json');
@@ -61,12 +68,16 @@ export function I18nProvider({ children }: { children: ReactNode }) {
   // 初始化时从 localStorage 读取语言设置
   useEffect(() => {
     const savedLocale = localStorage.getItem('locale') as Locale;
-    if (savedLocale && (savedLocale === 'zh-CN' || savedLocale === 'en')) {
+    if (savedLocale && (savedLocale === 'zh-CN' || savedLocale === 'en' || savedLocale === 'ja-JP' || savedLocale === 'ko-KR')) {
       setLocaleState(savedLocale);
     } else {
       // 检测浏览器语言
       const browserLang = navigator.language || (navigator as any).userLanguage;
-      if (browserLang.startsWith('en')) {
+      if (browserLang.startsWith('ja')) {
+        setLocaleState('ja-JP');
+      } else if (browserLang.startsWith('ko')) {
+        setLocaleState('ko-KR');
+      } else if (browserLang.startsWith('en')) {
         setLocaleState('en');
       }
     }
@@ -78,10 +89,10 @@ export function I18nProvider({ children }: { children: ReactNode }) {
   }, [locale]);
 
   const setLocale = (newLocale: Locale) => {
+    console.log('Setting locale to:', newLocale);
     setLocaleState(newLocale);
     localStorage.setItem('locale', newLocale);
-    // 重新加载翻译
-    loadTranslations(newLocale).then(setTranslations);
+    // useEffect 会自动处理翻译加载
   };
 
   const t = (key: string, params?: (Record<string, string | number> & { returnObjects?: boolean }) | { returnObjects: boolean }): string | any => {
