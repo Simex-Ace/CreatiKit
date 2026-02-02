@@ -56,7 +56,7 @@ export default function AudioVisualizer() {
       analyser.connect(audioContext.destination);
 
       const bufferLength = analyser.frequencyBinCount;
-      const dataArray = new Uint8Array(bufferLength) as Uint8Array;
+      const dataArray = new Uint8Array(new ArrayBuffer(bufferLength));
       dataArrayRef.current = dataArray;
 
       // 音频事件监听
@@ -96,7 +96,7 @@ export default function AudioVisualizer() {
         }
       }
 
-      analyser.getByteFrequencyData(dataArray as Uint8Array);
+      analyser.getByteFrequencyData(dataArray);
 
       // 使用更平滑的清除方式
       ctx.fillStyle = 'rgba(0, 0, 0, 0.15)';
@@ -164,7 +164,7 @@ export default function AudioVisualizer() {
   // 波形可视化
   const drawWaveform = (ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement, dataArray: Uint8Array) => {
     // 使用时域数据而不是频域数据
-    const waveformData = new Uint8Array(analyserRef.current!.fftSize) as Uint8Array;
+    const waveformData = new Uint8Array(new ArrayBuffer(analyserRef.current!.fftSize));
     analyserRef.current!.getByteTimeDomainData(waveformData);
     
     ctx.strokeStyle = getColor(0.5, colorScheme);
