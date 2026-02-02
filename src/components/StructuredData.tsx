@@ -118,6 +118,34 @@ export function StructuredData() {
           url: 'https://creatikit.asia/whiteboard',
           description: '无限画布绘图工具',
         },
+        {
+          '@type': 'SoftwareApplication',
+          position: 9,
+          name: 'SVG编辑器',
+          url: 'https://creatikit.asia/svg-editor',
+          description: '专业免费在线SVG编辑器，支持路径绘制、形状创建、文本编辑',
+        },
+        {
+          '@type': 'SoftwareApplication',
+          position: 10,
+          name: 'CSS动画生成器',
+          url: 'https://creatikit.asia/css-animator',
+          description: '可视化创建CSS动画，实时预览效果，导出代码直接使用',
+        },
+        {
+          '@type': 'SoftwareApplication',
+          position: 11,
+          name: '音频可视化工具',
+          url: 'https://creatikit.asia/audio-visualizer',
+          description: '音频频谱可视化，支持多种可视化效果',
+        },
+        {
+          '@type': 'SoftwareApplication',
+          position: 12,
+          name: '粒子编辑器',
+          url: 'https://creatikit.asia/particle-editor',
+          description: '创建炫酷的粒子特效，支持自定义参数和导出',
+        },
       ],
     };
 

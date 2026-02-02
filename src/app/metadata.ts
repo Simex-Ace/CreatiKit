@@ -32,6 +32,11 @@ export const homeMetadata: Metadata = {
     '免费在线工具',
     '图片编辑工具',
     '设计工具',
+    'SVG编辑器',
+    'CSS动画',
+    '音频可视化',
+    '粒子特效',
+    '前端工具',
   ],
   openGraph: {
     title: 'CreatiKit.io - 免费在线创意工具箱',
@@ -161,6 +166,26 @@ export const pageMetadata: Record<string, Metadata> = {
     title: '隔空写字 - 手势控制空中书写 | CreatiKit',
     description: '使用手势控制进行空中书写，支持多种工具、缩放和消散效果，带来全新的交互体验。',
     keywords: ['隔空写字', '手势控制', '空中书写', '手势识别', '体感交互'],
+  },
+  '/svg-editor': {
+    title: 'SVG编辑器 - 免费在线SVG路径编辑器 | CreatiKit',
+    description: '专业免费在线SVG编辑器，支持路径绘制、形状创建、文本编辑、导入导出SVG文件，实时预览代码。',
+    keywords: ['SVG编辑器', 'SVG编辑', 'SVG工具', '矢量图编辑', 'SVG路径', '在线SVG'],
+  },
+  '/css-animator': {
+    title: 'CSS动画生成器 - 可视化创建CSS动画 | CreatiKit',
+    description: '免费在线CSS动画生成器，可视化创建CSS动画，实时预览效果，支持多种动画类型和参数调整，导出代码直接使用。',
+    keywords: ['CSS动画', '动画生成器', 'CSS动画工具', '动画制作', 'CSS keyframes', '动画编辑器'],
+  },
+  '/audio-visualizer': {
+    title: '音频可视化工具 - 音乐频谱可视化 | CreatiKit',
+    description: '免费在线音频可视化工具，上传音频文件实时显示频谱、波形、圆形频谱、粒子效果和瀑布图等多种可视化效果。',
+    keywords: ['音频可视化', '频谱分析', '音频波形', '音乐可视化', '音频分析', '频谱图'],
+  },
+  '/particle-editor': {
+    title: '粒子编辑器 - 粒子特效生成器 | CreatiKit',
+    description: '免费在线粒子编辑器，创建炫酷的粒子特效，支持自定义粒子参数、形状、颜色和混合模式，导出配置和截图。',
+    keywords: ['粒子特效', '粒子编辑器', '粒子系统', '特效生成', '粒子动画', '粒子工具'],
   },
 };
 

@@ -24,6 +24,10 @@ const routes: RouteItem[] = [
   { path: '/color-palette', lastModified: new Date(), changeFrequency: 'weekly', priority: 0.8 },
   { path: '/qr-code-generator', lastModified: new Date(), changeFrequency: 'weekly', priority: 0.8 },
   { path: '/whiteboard', lastModified: new Date(), changeFrequency: 'weekly', priority: 0.7 },
+  { path: '/svg-editor', lastModified: new Date(), changeFrequency: 'weekly', priority: 0.8 },
+  { path: '/css-animator', lastModified: new Date(), changeFrequency: 'weekly', priority: 0.8 },
+  { path: '/audio-visualizer', lastModified: new Date(), changeFrequency: 'weekly', priority: 0.8 },
+  { path: '/particle-editor', lastModified: new Date(), changeFrequency: 'weekly', priority: 0.8 },
   
   // 3D和预览工具
   { path: '/model-viewer', lastModified: new Date(), changeFrequency: 'weekly', priority: 0.8 },
