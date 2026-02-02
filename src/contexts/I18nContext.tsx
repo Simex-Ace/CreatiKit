@@ -7,7 +7,7 @@ export type Locale = 'zh-CN' | 'en';
 interface I18nContextType {
   locale: Locale;
   setLocale: (locale: Locale) => void;
-  t: (key: string, params?: Record<string, string | number> & { returnObjects?: boolean }) => string | any;
+  t: (key: string, params?: (Record<string, string | number> & { returnObjects?: boolean }) | { returnObjects: boolean }) => string | any;
 }
 
 const I18nContext = createContext<I18nContextType | undefined>(undefined);
