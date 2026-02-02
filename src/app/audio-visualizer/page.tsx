@@ -166,7 +166,6 @@ export default function AudioVisualizer() {
   const drawWaveform = (ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement, dataArray: Uint8Array) => {
     // 使用时域数据而不是频域数据
     const waveformData = new Uint8Array(new ArrayBuffer(analyserRef.current!.fftSize));
-    // @ts-expect-error - TypeScript incorrectly infers Uint8Array<ArrayBufferLike> instead of Uint8Array<ArrayBuffer>
     analyserRef.current!.getByteTimeDomainData(waveformData);
     
     ctx.strokeStyle = getColor(0.5, colorScheme);
