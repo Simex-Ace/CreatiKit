@@ -90,19 +90,21 @@ export function I18nProvider({ children }: { children: ReactNode }) {
     if (returnObjects) {
       return value;
     }
-    if (params && typeof value === 'string' && 'returnObjects' in params) {
-      const otherParams = Object.keys(params).reduce((acc, paramKey) => {
-        if (paramKey !== 'returnObjects') {
-          acc[paramKey] = params[paramKey as keyof typeof params] as string | number;
-        }
-        return acc;
-      }, {} as Record<string, string | number>);
-      Object.keys(otherParams).forEach(paramKey => {
-        value = value.replace(new RegExp(`\\{${paramKey}\\}`, 'g'), String(otherParams[paramKey]));
-      });
-    } else if (params && typeof value === 'string') {
+    if (params && typeof value === 'string') {
+      // 处理参数插值
+      if ('returnObjects' in params && Object.keys(params).length === 1) {
+        // 只有 returnObjects 参数，不需要插值
+        return value;
+      }
+      // 遍历所有参数键，跳过 returnObjects
       Object.keys(params).forEach(paramKey => {
-        value = value.replace(new RegExp(`\\{${paramKey}\\}`, 'g'), String(params[paramKey as keyof typeof params]));
+        if (paramKey !== 'returnObjects') {
+          const paramValue = params[paramKey as keyof typeof params];
+          // 确保值是 string 或 number
+          if (typeof paramValue === 'string' || typeof paramValue === 'number') {
+            value = value.replace(new RegExp(`\\{${paramKey}\\}`, 'g'), String(paramValue));
+          }
+        }
       });
     }
     return value;
