@@ -84,17 +84,25 @@ export function I18nProvider({ children }: { children: ReactNode }) {
     loadTranslations(newLocale).then(setTranslations);
   };
 
-  const t = (key: string, params?: Record<string, string | number> & { returnObjects?: boolean }): string | any => {
+  const t = (key: string, params?: (Record<string, string | number> & { returnObjects?: boolean }) | { returnObjects: boolean }): string | any => {
     const returnObjects = params?.returnObjects;
     let value = getNestedValue(translations, key, returnObjects);
     if (returnObjects) {
       return value;
     }
-    if (params && typeof value === 'string') {
-      Object.keys(params).forEach(paramKey => {
+    if (params && typeof value === 'string' && 'returnObjects' in params) {
+      const otherParams = Object.keys(params).reduce((acc, paramKey) => {
         if (paramKey !== 'returnObjects') {
-          value = value.replace(new RegExp(`\\{${paramKey}\\}`, 'g'), String(params[paramKey]));
+          acc[paramKey] = params[paramKey as keyof typeof params] as string | number;
         }
+        return acc;
+      }, {} as Record<string, string | number>);
+      Object.keys(otherParams).forEach(paramKey => {
+        value = value.replace(new RegExp(`\\{${paramKey}\\}`, 'g'), String(otherParams[paramKey]));
+      });
+    } else if (params && typeof value === 'string') {
+      Object.keys(params).forEach(paramKey => {
+        value = value.replace(new RegExp(`\\{${paramKey}\\}`, 'g'), String(params[paramKey as keyof typeof params]));
       });
     }
     return value;
