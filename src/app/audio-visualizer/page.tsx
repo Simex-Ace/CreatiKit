@@ -96,6 +96,7 @@ export default function AudioVisualizer() {
         }
       }
 
+      // @ts-expect-error - TypeScript incorrectly infers Uint8Array<ArrayBufferLike> instead of Uint8Array<ArrayBuffer>
       analyser.getByteFrequencyData(dataArray);
 
       // 使用更平滑的清除方式
