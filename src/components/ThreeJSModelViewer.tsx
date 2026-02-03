@@ -491,16 +491,23 @@ const ThreeJSModelViewer = () => {
           
           {/* 文件上传区域 */}
           <div className="mt-4 flex items-center gap-3">
-            <input 
-              type="file" 
-              accept=".gltf,.glb,.obj" 
-              onChange={handleFileUpload}
-              className="flex-1 p-2 border rounded text-gray-900 dark:text-white dark:bg-gray-800"
-              id="model-upload"
-            />
+            <div className="flex-1 relative">
+              <input 
+                type="file" 
+                accept=".gltf,.glb,.obj" 
+                onChange={handleFileUpload}
+                className="hidden"
+                id="model-upload"
+              />
+              <div className="flex items-center gap-2 p-2 border rounded text-gray-900 dark:text-white dark:bg-gray-800 min-h-[40px]">
+                <span className="flex-1 text-sm">
+                  {fileInput || t('modelViewerPage.noFileSelected')}
+                </span>
+              </div>
+            </div>
             <label htmlFor="model-upload">
-              <Button variant="default" className="cursor-pointer">
-                {t('modelViewerPage.selectFile')}
+              <Button variant="default" className="cursor-pointer" asChild>
+                <span>{t('modelViewerPage.selectFile')}</span>
               </Button>
             </label>
           </div>

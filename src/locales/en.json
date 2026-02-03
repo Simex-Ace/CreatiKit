@@ -392,6 +392,7 @@
     "loadingModel": "Loading model...",
     "clickToClose": "Click anywhere to close",
     "selectFile": "Select File",
+    "noFileSelected": "No file selected",
     "dragDropHint": "Or drag and drop files directly onto the 3D view area",
     "currentModel": "Current model: {name}",
     "controllerTitle": "Controller Instructions:",

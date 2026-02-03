@@ -392,6 +392,7 @@
     "loadingModel": "모델 로딩 중...",
     "clickToClose": "아무 곳이나 클릭하여 닫기",
     "selectFile": "파일 선택",
+    "noFileSelected": "선택된 파일 없음",
     "dragDropHint": "또는 3D 보기 영역에 직접 파일을 드래그 앤 드롭",
     "currentModel": "현재 모델: {name}",
     "controllerTitle": "조작 설명:",

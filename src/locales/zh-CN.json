@@ -392,6 +392,7 @@
     "loadingModel": "正在加载模型...",
     "clickToClose": "点击任意位置关闭",
     "selectFile": "选择文件",
+    "noFileSelected": "未选择任何文件",
     "dragDropHint": "或直接将文件拖放到3D视图区域",
     "currentModel": "当前模型: {name}",
     "controllerTitle": "控制器说明:",

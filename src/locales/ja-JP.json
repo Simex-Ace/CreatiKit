@@ -392,6 +392,7 @@
     "loadingModel": "モデルを読み込み中...",
     "clickToClose": "どこでもクリックして閉じる",
     "selectFile": "ファイルを選択",
+    "noFileSelected": "ファイルが選択されていません",
     "dragDropHint": "または3Dビューエリアに直接ファイルをドラッグ＆ドロップ",
     "currentModel": "現在のモデル: {name}",
     "controllerTitle": "操作説明:",
