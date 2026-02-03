@@ -1,8 +1,21 @@
 'use client';
 import React from 'react';
+import dynamic from 'next/dynamic';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
-import PhysicsLab from '@/components/physics-lab/PhysicsLab';
 import { useI18n } from '@/contexts/I18nContext';
+
+// 动态加载 PhysicsLab 组件（包含 matter-js）
+const PhysicsLab = dynamic(() => import('@/components/physics-lab/PhysicsLab'), {
+  ssr: false,
+  loading: () => (
+    <div className="flex items-center justify-center h-full">
+      <div className="text-center">
+        <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary mb-2"></div>
+        <p className="text-sm text-muted-foreground">加载物理实验室...</p>
+      </div>
+    </div>
+  ),
+});
 
 const PhysicsLabPage: React.FC = () => {
   const { t } = useI18n();

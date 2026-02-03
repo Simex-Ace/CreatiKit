@@ -12,7 +12,12 @@ import { Toaster } from '@/components/ui/toast';
 import { I18nProvider } from '@/contexts/I18nContext';
 import { LanguageWrapper } from '@/components/LanguageWrapper';
 
-const inter = Inter({ subsets: ['latin'] });
+const inter = Inter({ 
+  subsets: ['latin'],
+  display: 'swap',
+  preload: true,
+  variable: '--font-inter',
+});
 
 export const metadata: Metadata = {
   title: {

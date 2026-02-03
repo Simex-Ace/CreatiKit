@@ -1,15 +1,18 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import dynamic from 'next/dynamic';
 import { usePathname } from 'next/navigation';
-import { WaterDropLoader } from './WaterDropLoader';
-import { CodeLoader } from './CodeLoader';
-import { ImageCompressorLoader } from './ImageCompressorLoader';
-import { MarkdownEditorLoader } from './MarkdownEditorLoader';
-import { ModelViewerLoader } from './ModelViewerLoader';
-import { StarLoader } from './StarLoader';
-import { HeartLoader } from './HeartLoader';
-import { RainbowLoader } from './RainbowLoader';
+
+// 动态加载加载器组件（减少初始 bundle 大小）
+const WaterDropLoader = dynamic(() => import('./WaterDropLoader').then(mod => ({ default: mod.WaterDropLoader })), { ssr: false });
+const CodeLoader = dynamic(() => import('./CodeLoader').then(mod => ({ default: mod.CodeLoader })), { ssr: false });
+const ImageCompressorLoader = dynamic(() => import('./ImageCompressorLoader').then(mod => ({ default: mod.ImageCompressorLoader })), { ssr: false });
+const MarkdownEditorLoader = dynamic(() => import('./MarkdownEditorLoader').then(mod => ({ default: mod.MarkdownEditorLoader })), { ssr: false });
+const ModelViewerLoader = dynamic(() => import('./ModelViewerLoader').then(mod => ({ default: mod.ModelViewerLoader })), { ssr: false });
+const StarLoader = dynamic(() => import('./StarLoader').then(mod => ({ default: mod.StarLoader })), { ssr: false });
+const HeartLoader = dynamic(() => import('./HeartLoader').then(mod => ({ default: mod.HeartLoader })), { ssr: false });
+const RainbowLoader = dynamic(() => import('./RainbowLoader').then(mod => ({ default: mod.RainbowLoader })), { ssr: false });
 
 interface PageTransitionProps {
   children: React.ReactNode;
@@ -38,15 +41,7 @@ export function PageTransition({ children }: PageTransitionProps) {
     }, 30);
   };
 
-  // 首页加载动画列表
-  const homeLoaders = [
-    <StarLoader key="star" onAnimationComplete={handleAnimationComplete} />,
-    <HeartLoader key="heart" onAnimationComplete={handleAnimationComplete} />,
-    <RainbowLoader key="rainbow" onAnimationComplete={handleAnimationComplete} />,
-    <WaterDropLoader key="water" onAnimationComplete={handleAnimationComplete} />
-  ];
-
-  // 根据路径选择对应的加载动画
+  // 根据路径选择对应的加载动画（动态加载）
   const renderLoader = () => {
     if (pathname.includes('/code-tools')) {
       return <CodeLoader onAnimationComplete={handleAnimationComplete} />;
@@ -57,9 +52,11 @@ export function PageTransition({ children }: PageTransitionProps) {
     } else if (pathname.includes('/model-viewer')) {
       return <ModelViewerLoader onAnimationComplete={handleAnimationComplete} />;
     } else {
-      // 首页随机选择加载动画
-      const randomIndex = Math.floor(Math.random() * homeLoaders.length);
-      return homeLoaders[randomIndex];
+      // 首页随机选择加载动画（动态加载）
+      const loaderComponents = [StarLoader, HeartLoader, RainbowLoader, WaterDropLoader];
+      const randomIndex = Math.floor(Math.random() * loaderComponents.length);
+      const LoaderComponent = loaderComponents[randomIndex];
+      return <LoaderComponent onAnimationComplete={handleAnimationComplete} />;
     }
   };
 

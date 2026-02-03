@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useRef, useEffect } from 'react';
+import dynamic from 'next/dynamic';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -8,9 +9,11 @@ import { Check, Download, Copy } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useI18n } from '@/contexts/I18nContext';
 
-// 导入emoji-mart相关组件和数据
-import data from '@emoji-mart/data';
-import Picker from '@emoji-mart/react';
+// 动态导入emoji-mart相关组件和数据（仅在需要时加载）
+const Picker = dynamic(() => import('@emoji-mart/react').then(mod => mod.default), { 
+  ssr: false,
+  loading: () => <div className="flex items-center justify-center p-8">加载表情选择器...</div>
+});
 
 const EmojiCollection: React.FC = () => {
   const { t } = useI18n();
@@ -18,6 +21,14 @@ const EmojiCollection: React.FC = () => {
   const [recentCopies, setRecentCopies] = useState<string[]>([]);
   const [selectedEmoji, setSelectedEmoji] = useState<any>(null);
   const [downloadSize, setDownloadSize] = useState('64');
+  const [emojiData, setEmojiData] = useState<any>(null);
+  
+  // 动态加载 emoji 数据
+  useEffect(() => {
+    import('@emoji-mart/data').then(mod => {
+      setEmojiData(mod.default);
+    });
+  }, []);
 
   // 处理emoji选择
   const handleEmojiSelect = (emoji: any) => {
@@ -186,16 +197,19 @@ const EmojiCollection: React.FC = () => {
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
           {/* 左侧：Emoji选择器 */}
           <Card className="p-4 lg:col-span-2">
-            <Picker 
-              data={data} 
-              onEmojiSelect={handleEmojiSelect}
-              previewPosition="none"
-
-              theme={document.documentElement.classList.contains('dark') ? 'dark' : 'light'}
-              emojiButtonProps={{ 
-                className: 'transition-all duration-200 hover:scale-110' 
-              }}
-            />
+            {emojiData ? (
+              <Picker 
+                data={emojiData} 
+                onEmojiSelect={handleEmojiSelect}
+                previewPosition="none"
+                theme={document.documentElement.classList.contains('dark') ? 'dark' : 'light'}
+                emojiButtonProps={{ 
+                  className: 'transition-all duration-200 hover:scale-110' 
+                }}
+              />
+            ) : (
+              <div className="flex items-center justify-center p-8 text-gray-500">加载表情选择器...</div>
+            )}
           </Card>
           
           {/* 右侧：工作台 */}

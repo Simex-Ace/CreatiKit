@@ -1,14 +1,17 @@
 'use client'
 
+import dynamic from 'next/dynamic';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Image, Globe, FileCode, Monitor, Lock, Code, BookOpen, Palette, Smile, QrCode, PencilRuler, RotateCw, CloudSun, BarChart2, FlaskConical, Heart, Music, Sparkles, Shapes } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { DevelopmentInProgress } from '@/components/ui/DevelopmentInProgress';
 import { useDevelopmentAlert } from '@/lib/useDevelopmentAlert';
-import { ToolCardFavoriteButton } from '@/components/ToolCardFavoriteButton';
 import { useI18n } from '@/contexts/I18nContext';
+
+// 动态加载非关键组件（减少首屏 bundle）
+const DevelopmentInProgress = dynamic(() => import('@/components/ui/DevelopmentInProgress').then(mod => ({ default: mod.DevelopmentInProgress })), { ssr: false });
+const ToolCardFavoriteButton = dynamic(() => import('@/components/ToolCardFavoriteButton').then(mod => ({ default: mod.ToolCardFavoriteButton })), { ssr: false });
 
 export default function Home() {
   const router = useRouter();

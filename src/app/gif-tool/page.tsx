@@ -10,8 +10,6 @@ import { Label } from '@/components/ui/label';
 import { FileDown, Play, Pause, RotateCw, ImageIcon, CheckCircle } from 'lucide-react';
 import { saveAs } from 'file-saver';
 import { useI18n } from '@/contexts/I18nContext';
-// @ts-ignore - gifshot doesn't have proper TypeScript support
-import gifshot from 'gifshot';
 
 // 简化的GIF生成函数，不依赖复杂的worker机制
 function generateSimpleGif(images: HTMLImageElement[], fps: number = 10): Promise<Blob> {
@@ -521,9 +519,13 @@ export default function GifTool() {
       const targetWidth = 320;
       const targetHeight = 240;
       
-      // 第1步：直接使用gifshot库（更简单可靠）
+      // 第1步：动态加载gifshot库（仅在需要时加载）
       setProgress(30);
       console.log('使用gifshot生成GIF...');
+      
+      // 动态导入 gifshot
+      // @ts-ignore - gifshot doesn't have proper TypeScript support
+      const gifshot = (await import('gifshot')).default;
       
       // 使用gifshot生成GIF，直接传入base64图片数组
       await new Promise<void>((resolve, reject) => {

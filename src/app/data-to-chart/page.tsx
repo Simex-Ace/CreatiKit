@@ -21,8 +21,6 @@ import {
   ZAxis
 } from 'recharts';
 
-// 导入必要的库
-import html2canvas from 'html2canvas';
 import { useI18n } from '@/contexts/I18nContext';
 
 type ChartType = 'bar' | 'line' | 'pie' | 'scatter' | 'area';
@@ -216,6 +214,9 @@ const DataToChartPage = () => {
     
     try {
       setIsLoading(true);
+      
+      // 动态导入html2canvas（仅在需要时加载）
+      const html2canvas = (await import('html2canvas')).default;
       
       // 使用html2canvas进行截图
       const canvas = await html2canvas(chartRef.current, {

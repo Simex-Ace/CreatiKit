@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+// Recharts 仅在需要时动态加载（在组件内部）
 import { Search, Download, Copy, Check, Trash2, Info, Code, BarChart2, Zap, Languages, Hash, FileText, RefreshCw } from 'lucide-react';
 import { Tooltip as UITooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -686,7 +686,7 @@ export default function TextAnalyzer() {
     );
   };
   
-  // 渲染关键词密度进度条
+  // 渲染关键词密度进度条（不使用 recharts，只是简单的进度条）
   const renderKeywordDensityBar = (density: number) => {
     let color = 'bg-red-500';
     if (density >= 2 && density <= 4) color = 'bg-green-500';
