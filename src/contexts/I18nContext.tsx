@@ -75,11 +75,16 @@ export function I18nProvider({ children }: { children: ReactNode }) {
   // 初始化时从 localStorage 读取语言设置
   useEffect(() => {
     const savedLocale = localStorage.getItem('locale') as Locale;
-    if (savedLocale && (savedLocale === 'zh-CN' || savedLocale === 'en' || savedLocale === 'ja-JP' || savedLocale === 'ko-KR')) {
+    // 默认使用英文，如果没有保存的设置或保存的是日文（重置为英文）
+    if (!savedLocale || savedLocale === 'ja-JP') {
+      setLocaleState('en');
+      localStorage.setItem('locale', 'en');
+    } else if (savedLocale === 'zh-CN' || savedLocale === 'en' || savedLocale === 'ko-KR') {
       setLocaleState(savedLocale);
     } else {
-      // 默认使用英文，如果没有保存的设置
+      // 如果保存的值无效，使用英文
       setLocaleState('en');
+      localStorage.setItem('locale', 'en');
     }
   }, []);
 

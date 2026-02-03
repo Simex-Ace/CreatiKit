@@ -16,6 +16,7 @@ const languages: { code: Locale; name: string; nativeName: string; flag: string 
 export function LanguageToggle() {
   const { locale, setLocale } = useI18n();
   const [isOpen, setIsOpen] = useState(false);
+  // 确保 locale 匹配时使用正确的语言，否则默认使用英文（languages[0]）
   const currentLanguage = languages.find(lang => lang.code === locale) || languages[0];
 
   return (
