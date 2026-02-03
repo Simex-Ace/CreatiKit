@@ -7,10 +7,10 @@ import { Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const languages: { code: Locale; name: string; nativeName: string; flag: string }[] = [
-  { code: 'zh-CN', name: 'Chinese', nativeName: '中文', flag: '文' },
   { code: 'en', name: 'English', nativeName: 'English', flag: 'A' },
   { code: 'ja-JP', name: 'Japanese', nativeName: '日本語', flag: '日' },
   { code: 'ko-KR', name: 'Korean', nativeName: '한국어', flag: '한' },
+  { code: 'zh-CN', name: 'Chinese', nativeName: '中文', flag: '文' },
 ];
 
 export function LanguageToggle() {

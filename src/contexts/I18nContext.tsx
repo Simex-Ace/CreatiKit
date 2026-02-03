@@ -68,7 +68,7 @@ const getNestedValue = (obj: any, path: string, returnObjects?: boolean): any =>
 };
 
 export function I18nProvider({ children }: { children: ReactNode }) {
-  const [locale, setLocaleState] = useState<Locale>('zh-CN');
+  const [locale, setLocaleState] = useState<Locale>('en');
   const [translations, setTranslations] = useState<Record<string, any>>({});
   const [isLoading, setIsLoading] = useState(true);
 
@@ -78,15 +78,8 @@ export function I18nProvider({ children }: { children: ReactNode }) {
     if (savedLocale && (savedLocale === 'zh-CN' || savedLocale === 'en' || savedLocale === 'ja-JP' || savedLocale === 'ko-KR')) {
       setLocaleState(savedLocale);
     } else {
-      // 检测浏览器语言
-      const browserLang = navigator.language || (navigator as any).userLanguage;
-      if (browserLang.startsWith('ja')) {
-        setLocaleState('ja-JP');
-      } else if (browserLang.startsWith('ko')) {
-        setLocaleState('ko-KR');
-      } else if (browserLang.startsWith('en')) {
-        setLocaleState('en');
-      }
+      // 默认使用英文，如果没有保存的设置
+      setLocaleState('en');
     }
   }, []);
 
