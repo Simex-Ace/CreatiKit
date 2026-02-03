@@ -8,6 +8,7 @@ interface I18nContextType {
   locale: Locale;
   setLocale: (locale: Locale) => void;
   t: (key: string, params?: (Record<string, string | number> & { returnObjects?: boolean }) | { returnObjects: boolean }) => string | any;
+  isLoading: boolean;
 }
 
 const I18nContext = createContext<I18nContextType | undefined>(undefined);
@@ -46,24 +47,30 @@ const loadTranslations = async (locale: Locale): Promise<Record<string, any>> =>
 
 // 根据路径获取嵌套值
 const getNestedValue = (obj: any, path: string, returnObjects?: boolean): any => {
+  // 如果对象为空或不是对象，返回空字符串或undefined
+  if (!obj || typeof obj !== 'object' || Object.keys(obj).length === 0) {
+    return returnObjects ? undefined : '';
+  }
+  
   const keys = path.split('.');
   let value = obj;
   for (const key of keys) {
     if (value && typeof value === 'object' && key in value) {
       value = value[key];
     } else {
-      return returnObjects ? undefined : path; // 如果找不到，返回原始key或undefined
+      return returnObjects ? undefined : ''; // 如果找不到，返回空字符串或undefined
     }
   }
   if (returnObjects && typeof value === 'object') {
     return value;
   }
-  return typeof value === 'string' ? value : (returnObjects ? value : path);
+  return typeof value === 'string' ? value : (returnObjects ? value : '');
 };
 
 export function I18nProvider({ children }: { children: ReactNode }) {
   const [locale, setLocaleState] = useState<Locale>('zh-CN');
   const [translations, setTranslations] = useState<Record<string, any>>({});
+  const [isLoading, setIsLoading] = useState(true);
 
   // 初始化时从 localStorage 读取语言设置
   useEffect(() => {
@@ -85,7 +92,16 @@ export function I18nProvider({ children }: { children: ReactNode }) {
 
   // 加载翻译文件
   useEffect(() => {
-    loadTranslations(locale).then(setTranslations);
+    setIsLoading(true);
+    loadTranslations(locale)
+      .then((loadedTranslations) => {
+        setTranslations(loadedTranslations);
+        setIsLoading(false);
+      })
+      .catch((error) => {
+        console.error('Failed to load translations:', error);
+        setIsLoading(false);
+      });
   }, [locale]);
 
   const setLocale = (newLocale: Locale) => {
@@ -96,8 +112,19 @@ export function I18nProvider({ children }: { children: ReactNode }) {
   };
 
   const t = (key: string, params?: (Record<string, string | number> & { returnObjects?: boolean }) | { returnObjects: boolean }): string | any => {
+    // 如果正在加载且翻译为空，返回空字符串而不是 key，避免显示 mmmm.mmm 格式
+    if (isLoading && Object.keys(translations).length === 0) {
+      return '';
+    }
+    
     const returnObjects = params?.returnObjects;
     let value = getNestedValue(translations, key, returnObjects);
+    
+    // 如果找不到翻译且不是返回对象，返回空字符串而不是 key
+    if (!returnObjects && (value === key || value === undefined || value === null)) {
+      return '';
+    }
+    
     if (returnObjects) {
       return value;
     }
@@ -118,11 +145,11 @@ export function I18nProvider({ children }: { children: ReactNode }) {
         }
       });
     }
-    return value;
+    return value || '';
   };
 
   return (
-    <I18nContext.Provider value={{ locale, setLocale, t }}>
+    <I18nContext.Provider value={{ locale, setLocale, t, isLoading }}>
       {children}
     </I18nContext.Provider>
   );

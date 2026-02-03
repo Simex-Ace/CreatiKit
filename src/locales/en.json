@@ -35,7 +35,14 @@
     "containsUppercase": "Contains uppercase letter",
     "containsLowercase": "Contains lowercase letter",
     "containsNumber": "Contains number",
-    "passwordRequirement": "(At least 8 characters, including uppercase, lowercase letters and numbers)"
+    "passwordRequirement": "(At least 8 characters, including uppercase, lowercase letters and numbers)",
+    "backToTop": "Back to Top",
+    "switchToLight": "Switch to Light Mode",
+    "switchToDark": "Switch to Dark Mode",
+    "scrollToTools": "Jump to Tools",
+    "showTools": "Show Tools",
+    "hideTools": "Hide Tools",
+    "showQuickTools": "Show Quick Tools"
   },
   "footer": {
     "tagline": "A powerful yet minimal online creative toolkit, empowering your design and development workflow",
@@ -161,6 +168,8 @@
     "readyToImprove": "Ready to improve your creative workflow?",
     "readyToImproveDesc": "Join thousands of creative professionals using CreatiKit.io to improve work efficiency",
     "startFreeNow": "Start Free Now",
+    "showMore": "Show More Tools",
+    "showLess": "Show Less",
     "tools": {
       "chemistryLab": {
         "name": "Interactive 2D Chemistry Lab",

@@ -35,7 +35,14 @@
     "containsUppercase": "包含大写字母",
     "containsLowercase": "包含小写字母",
     "containsNumber": "包含数字",
-    "passwordRequirement": "（至少8个字符，包含大小写字母和数字）"
+    "passwordRequirement": "（至少8个字符，包含大小写字母和数字）",
+    "backToTop": "回到顶部",
+    "switchToLight": "切换到浅色模式",
+    "switchToDark": "切换到深色模式",
+    "scrollToTools": "跳转到工具区域",
+    "showTools": "显示工具",
+    "hideTools": "隐藏工具",
+    "showQuickTools": "展开快捷工具"
   },
   "footer": {
     "tagline": "强大而简洁的在线创意工具箱，赋能您的设计与开发工作流",
@@ -161,6 +168,8 @@
     "readyToImprove": "准备好提升您的创意工作流了吗？",
     "readyToImproveDesc": "加入数千名创意专业人士的行列，使用CreatiKit.io提升工作效率",
     "startFreeNow": "立即开始免费使用",
+    "showMore": "查看更多工具",
+    "showLess": "收起工具",
     "tools": {
       "chemistryLab": {
         "name": "交互式2D化学实验室",

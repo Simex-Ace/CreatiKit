@@ -35,7 +35,14 @@
     "containsUppercase": "대문자 포함",
     "containsLowercase": "소문자 포함",
     "containsNumber": "숫자 포함",
-    "passwordRequirement": "(최소 8자, 대문자, 소문자, 숫자 포함)"
+    "passwordRequirement": "(최소 8자, 대문자, 소문자, 숫자 포함)",
+    "backToTop": "맨 위로",
+    "switchToLight": "라이트 모드로 전환",
+    "switchToDark": "다크 모드로 전환",
+    "scrollToTools": "도구 영역으로 이동",
+    "showTools": "도구 표시",
+    "hideTools": "도구 숨기기",
+    "showQuickTools": "빠른 도구 펼치기"
   },
   "footer": {
     "tagline": "강력하고 간결한 온라인 크리에이티브 툴킷, 디자인 및 개발 워크플로우에 힘을 실어주세요",
@@ -161,6 +168,8 @@
     "readyToImprove": "창의적인 워크플로우를 개선할 준비가 되셨나요?",
     "readyToImproveDesc": "CreatiKit.io를 사용하여 작업 효율을 향상시키는 수천 명의 크리에이티브 전문가에 합류하세요",
     "startFreeNow": "지금 무료로 시작하기",
+    "showMore": "더 보기",
+    "showLess": "접기",
     "tools": {
       "chemistryLab": {
         "name": "인터랙티브 2D 화학 실험실",

@@ -35,7 +35,14 @@
     "containsUppercase": "大文字を含む",
     "containsLowercase": "小文字を含む",
     "containsNumber": "数字を含む",
-    "passwordRequirement": "（8文字以上、大文字・小文字・数字を含む）"
+    "passwordRequirement": "（8文字以上、大文字・小文字・数字を含む）",
+    "backToTop": "トップに戻る",
+    "switchToLight": "ライトモードに切り替え",
+    "switchToDark": "ダークモードに切り替え",
+    "scrollToTools": "ツールエリアにジャンプ",
+    "showTools": "ツールを表示",
+    "hideTools": "ツールを非表示",
+    "showQuickTools": "クイックツールを展開"
   },
   "footer": {
     "tagline": "強力でシンプルなオンラインクリエイティブツールキット、デザインと開発のワークフローを強化",
@@ -161,6 +168,8 @@
     "readyToImprove": "クリエイティブなワークフローを改善する準備はできていますか？",
     "readyToImproveDesc": "CreatiKit.ioを使用して作業効率を向上させる何千人ものクリエイティブプロフェッショナルに参加してください",
     "startFreeNow": "今すぐ無料で始める",
+    "showMore": "もっと見る",
+    "showLess": "折りたたむ",
     "tools": {
       "chemistryLab": {
         "name": "インタラクティブ2D化学実験室",
