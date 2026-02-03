@@ -1,5 +1,6 @@
 import { Metadata } from 'next';
 
+
 // 首页的metadata配置
 export const homeMetadata: Metadata = {
   title: 'CreatiKit.io - 免费在线创意工具箱 | 20+实用工具',
