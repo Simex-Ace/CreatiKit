@@ -1,13 +1,12 @@
 'use client'
 
 import dynamic from 'next/dynamic';
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Input } from '@/components/ui/input';
 import { Image, Globe, FileCode, Monitor, Lock, Code, BookOpen, Palette, Smile, QrCode, PencilRuler, RotateCw, CloudSun, BarChart2, FlaskConical, Heart, Music, Sparkles, Shapes, ChevronDown, ChevronUp, Search, X } from 'lucide-react';
-import { BackToTop } from '@/components/ui/back-to-top';
 import { useRouter } from 'next/navigation';
 import { useDevelopmentAlert } from '@/lib/useDevelopmentAlert';
 import { useI18n } from '@/contexts/I18nContext';
@@ -16,6 +15,7 @@ import { useI18n } from '@/contexts/I18nContext';
 const DevelopmentInProgress = dynamic(() => import('@/components/ui/DevelopmentInProgress').then(mod => ({ default: mod.DevelopmentInProgress })), { ssr: false });
 const ToolCardFavoriteButton = dynamic(() => import('@/components/ToolCardFavoriteButton').then(mod => ({ default: mod.ToolCardFavoriteButton })), { ssr: false });
 const LearnMoreModal = dynamic(() => import('@/components/ui/LearnMoreModal').then(mod => ({ default: mod.LearnMoreModal })), { ssr: false });
+const BackToTop = dynamic(() => import('@/components/ui/back-to-top').then(mod => ({ default: mod.BackToTop })), { ssr: false });
 
 export default function Home() {
   const router = useRouter();
@@ -26,14 +26,22 @@ export default function Home() {
   const [searchQuery, setSearchQuery] = useState('');
   const [learnMoreModalVisible, setLearnMoreModalVisible] = useState(false);
   
-  // 根据屏幕大小设置默认显示数量（移动端6个，桌面端9个）
+  // 根据屏幕大小设置默认显示数量（移动端6个，桌面端9个）- 使用防抖优化性能
   useEffect(() => {
+    let timeoutId: NodeJS.Timeout;
     const updateCount = () => {
-      setDefaultVisibleCount(window.innerWidth >= 1024 ? 9 : 6);
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(() => {
+        setDefaultVisibleCount(window.innerWidth >= 1024 ? 9 : 6);
+      }, 150); // 防抖150ms
     };
-    updateCount();
-    window.addEventListener('resize', updateCount);
-    return () => window.removeEventListener('resize', updateCount);
+    // 初始化时立即执行一次
+    setDefaultVisibleCount(window.innerWidth >= 1024 ? 9 : 6);
+    window.addEventListener('resize', updateCount, { passive: true });
+    return () => {
+      clearTimeout(timeoutId);
+      window.removeEventListener('resize', updateCount);
+    };
   }, []);
 
   // 处理按钮点击事件
@@ -152,8 +160,8 @@ export default function Home() {
     window.scrollTo({ top: 500, behavior: 'smooth' });
   };
 
-  // 工具配置列表
-  const toolsConfig = [
+  // 工具配置列表 - 使用 useMemo 缓存，避免每次渲染都重新创建
+  const toolsConfig = useMemo(() => [
     { key: 'chemistryLab', handler: handleChemistryLab, icon: FlaskConical, color: 'cyan' },
     { key: 'compress', handler: handleImageCompressor, icon: Image, color: 'blue' },
     { key: 'modelViewer', handler: handleModelViewer, icon: Globe, color: 'purple' },
@@ -179,9 +187,16 @@ export default function Home() {
     { key: 'dataToChart', handler: handleDataToChart, icon: BarChart2, color: 'purple' },
     { key: 'piano', handler: handlePiano, icon: null, color: 'blue' },
     { key: 'physicsLab', handler: handlePhysicsLab, icon: FlaskConical, color: 'amber' },
-  ];
+  ], [
+    handleChemistryLab, handleImageCompressor, handleModelViewer, handleEcosystemSandbox,
+    handleBackgroundRemover, handleCameraGestureDrawing, handleAudioVisualizer, handleCSSAnimator,
+    handleSVGEditor, handleParticleEditor, handleCodeTools, handleMarkdownEditor,
+    handleColorPalette, handleTextAnalyzer, handleQrCodeGenerator, handleEmojiCollection,
+    handlePixelArtGenerator, handleHashCalculator, handleTimestampConverter, handleWhiteboard,
+    handleGifTool, handleWeatherTool, handleDataToChart, handlePiano, handlePhysicsLab
+  ]);
 
-  // 搜索过滤函数
+  // 搜索过滤函数 - 优化依赖项
   const filteredTools = useMemo(() => {
     if (!searchQuery.trim()) {
       return toolsConfig;

@@ -1,12 +1,15 @@
 'use client'
 
 import Link from 'next/link';
+import dynamic from 'next/dynamic';
 import { Separator } from '@/components/ui/separator';
 import { Github, Twitter, Rocket } from 'lucide-react';
-import { DevelopmentInProgress } from '@/components/ui/DevelopmentInProgress';
 import { useDevelopmentAlert } from '@/lib/useDevelopmentAlert';
 import { useI18n } from '@/contexts/I18nContext';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+
+// 动态导入非关键组件
+const DevelopmentInProgress = dynamic(() => import('@/components/ui/DevelopmentInProgress').then(mod => ({ default: mod.DevelopmentInProgress })), { ssr: false });
 
 export function Footer() {
   const { showAlert, alertVisible, alertMessage, alertDuration, closeAlert } = useDevelopmentAlert();

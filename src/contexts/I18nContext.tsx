@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, ReactNode } from 'react';
 
 export type Locale = 'zh-CN' | 'en' | 'ja-JP' | 'ko-KR';
 
@@ -13,30 +13,43 @@ interface I18nContextType {
 
 const I18nContext = createContext<I18nContextType | undefined>(undefined);
 
-// 加载翻译文件
+// 翻译文件缓存
+const translationCache = new Map<Locale, Record<string, any>>();
+
+// 加载翻译文件（带缓存）
 const loadTranslations = async (locale: Locale): Promise<Record<string, any>> => {
+  // 如果缓存中有，直接返回
+  if (translationCache.has(locale)) {
+    return translationCache.get(locale)!;
+  }
+
   try {
+    let translations: Record<string, any>;
     if (locale === 'zh-CN') {
-      const translations = await import('@/locales/zh-CN.json');
-      return translations.default || translations;
+      const loaded = await import('@/locales/zh-CN.json');
+      translations = loaded.default || loaded;
     } else if (locale === 'ja-JP') {
-      const translations = await import('@/locales/ja-JP.json');
-      console.log('Japanese translations loaded:', translations);
-      return translations.default || translations;
+      const loaded = await import('@/locales/ja-JP.json');
+      translations = loaded.default || loaded;
     } else if (locale === 'ko-KR') {
-      const translations = await import('@/locales/ko-KR.json');
-      return translations.default || translations;
+      const loaded = await import('@/locales/ko-KR.json');
+      translations = loaded.default || loaded;
     } else {
-      const translations = await import('@/locales/en.json');
-      return translations.default || translations;
+      const loaded = await import('@/locales/en.json');
+      translations = loaded.default || loaded;
     }
+    // 缓存翻译文件
+    translationCache.set(locale, translations);
+    return translations;
   } catch (error) {
     console.error(`Failed to load translations for ${locale}:`, error);
     // 如果加载失败，尝试加载英文作为后备
     if (locale !== 'en') {
       try {
         const fallback = await import('@/locales/en.json');
-        return fallback.default || fallback;
+        const fallbackTranslations = fallback.default || fallback;
+        translationCache.set('en', fallbackTranslations);
+        return fallbackTranslations;
       } catch {
         return {};
       }
@@ -102,14 +115,14 @@ export function I18nProvider({ children }: { children: ReactNode }) {
       });
   }, [locale]);
 
-  const setLocale = (newLocale: Locale) => {
+  const setLocale = useCallback((newLocale: Locale) => {
     console.log('Setting locale to:', newLocale);
     setLocaleState(newLocale);
     localStorage.setItem('locale', newLocale);
     // useEffect 会自动处理翻译加载
-  };
+  }, []);
 
-  const t = (key: string, params?: (Record<string, string | number> & { returnObjects?: boolean }) | { returnObjects: boolean }): string | any => {
+  const t = useCallback((key: string, params?: (Record<string, string | number> & { returnObjects?: boolean }) | { returnObjects: boolean }): string | any => {
     // 如果正在加载且翻译为空，返回空字符串而不是 key，避免显示 mmmm.mmm 格式
     if (isLoading && Object.keys(translations).length === 0) {
       return '';
@@ -144,10 +157,18 @@ export function I18nProvider({ children }: { children: ReactNode }) {
       });
     }
     return value || '';
-  };
+  }, [translations, isLoading]);
+
+  // 使用 useMemo 缓存 context value，避免不必要的重新渲染
+  const contextValue = useMemo(() => ({
+    locale,
+    setLocale,
+    t,
+    isLoading
+  }), [locale, setLocale, t, isLoading]);
 
   return (
-    <I18nContext.Provider value={{ locale, setLocale, t, isLoading }}>
+    <I18nContext.Provider value={contextValue}>
       {children}
     </I18nContext.Provider>
   );

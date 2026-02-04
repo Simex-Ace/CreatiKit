@@ -584,7 +584,7 @@ export default function AboutPage() {
                     {t('aboutPage.faq1Question') || '使用这些工具需要注册账号吗？'}
                   </h3>
                   <p className="text-sm text-muted-foreground leading-relaxed">
-                    <span className="text-green-600 dark:text-green-400 font-medium">A:</span> {t('aboutPage.faq1Answer') || '大部分工具无需注册即可使用。注册账号可以保存您的作品和历史记录，享受更多个性化功能。'}
+                    <span className="text-blue-600 dark:text-blue-400 font-medium">A:</span> {t('aboutPage.faq1Answer') || '大部分工具无需注册即可使用。注册账号可以保存您的作品和历史记录，享受更多个性化功能。'}
                   </p>
                 </div>
               </div>
@@ -601,7 +601,7 @@ export default function AboutPage() {
                     {t('aboutPage.faq2Question') || '我的文件会被上传到服务器吗？'}
                   </h3>
                   <p className="text-sm text-muted-foreground leading-relaxed">
-                    <span className="text-green-600 dark:text-green-400 font-medium">A:</span> {t('aboutPage.faq2Answer') || '不会！所有处理都在您的浏览器本地完成，文件不会上传到任何服务器，完全保护您的隐私安全。'}
+                    <span className="text-blue-600 dark:text-blue-400 font-medium">A:</span> {t('aboutPage.faq2Answer') || '不会！所有处理都在您的浏览器本地完成，文件不会上传到任何服务器，完全保护您的隐私安全。'}
                   </p>
                 </div>
               </div>
@@ -618,7 +618,7 @@ export default function AboutPage() {
                     {t('aboutPage.faq3Question') || '工具支持哪些文件格式？'}
                   </h3>
                   <p className="text-sm text-muted-foreground leading-relaxed">
-                    <span className="text-purple-600 dark:text-purple-400 font-medium">A:</span> {t('aboutPage.faq3Answer') || '不同工具支持不同格式。图片工具支持JPG、PNG、WebP、GIF；3D工具支持GLB、GLTF、OBJ等；代码工具支持多种编程语言。具体格式请查看各工具页面。'}
+                    <span className="text-blue-600 dark:text-blue-400 font-medium">A:</span> {t('aboutPage.faq3Answer') || '不同工具支持不同格式。图片工具支持JPG、PNG、WebP、GIF；3D工具支持GLB、GLTF、OBJ等；代码工具支持多种编程语言。具体格式请查看各工具页面。'}
                   </p>
                 </div>
               </div>
@@ -635,7 +635,7 @@ export default function AboutPage() {
                     {t('aboutPage.faq4Question') || '如何反馈问题或建议新功能？'}
                   </h3>
                   <p className="text-sm text-muted-foreground leading-relaxed">
-                    <span className="text-orange-600 dark:text-orange-400 font-medium">A:</span> {t('aboutPage.faq4Answer') || '欢迎通过联系我们页面、GitHub Issues或社交媒体向我们反馈。您的建议对我们非常重要！'}
+                    <span className="text-blue-600 dark:text-blue-400 font-medium">A:</span> {t('aboutPage.faq4Answer') || '欢迎通过联系我们页面、GitHub Issues或社交媒体向我们反馈。您的建议对我们非常重要！'}
                   </p>
                 </div>
               </div>

@@ -6,15 +6,18 @@ import { Separator } from '@/components/ui/separator';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { Menu, X } from 'lucide-react';
 import { useState, useEffect } from 'react';
-import { DevelopmentInProgress } from '@/components/ui/DevelopmentInProgress';
+import dynamic from 'next/dynamic';
 import { useDevelopmentAlert } from '@/lib/useDevelopmentAlert';
 import { useAuth } from '@/contexts/AuthContext';
-import { AuthModal } from '@/components/auth/AuthModal';
-import { UserMenu } from '@/components/auth/UserMenu';
 import { LogOut } from 'lucide-react';
 import { useToast } from '@/contexts/ToastContext';
 import { useI18n } from '@/contexts/I18nContext';
 import { LanguageToggle } from '@/components/ui/language-toggle';
+
+// 动态导入非关键组件
+const DevelopmentInProgress = dynamic(() => import('@/components/ui/DevelopmentInProgress').then(mod => ({ default: mod.DevelopmentInProgress })), { ssr: false });
+const AuthModal = dynamic(() => import('@/components/auth/AuthModal').then(mod => ({ default: mod.AuthModal })), { ssr: false });
+const UserMenu = dynamic(() => import('@/components/auth/UserMenu').then(mod => ({ default: mod.UserMenu })), { ssr: false });
 
 export function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);

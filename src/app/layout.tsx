@@ -1,16 +1,19 @@
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
+import dynamic from 'next/dynamic';
 import './globals.css';
 import { Header } from '@/components/header';
-import { Footer } from '@/components/footer';
 import { ThemeProvider } from '@/components/ui/theme-provider';
-import { PageTransition } from '@/components/ui/PageTransition';
 import { StructuredData } from '@/components/StructuredData';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { ToastProvider } from '@/contexts/ToastContext';
 import { Toaster } from '@/components/ui/toast';
 import { I18nProvider } from '@/contexts/I18nContext';
 import { LanguageWrapper } from '@/components/LanguageWrapper';
+
+// 动态导入非关键组件
+const Footer = dynamic(() => import('@/components/footer').then(mod => ({ default: mod.Footer })), { ssr: true });
+const PageTransition = dynamic(() => import('@/components/ui/PageTransition').then(mod => ({ default: mod.PageTransition })), { ssr: true });
 
 const inter = Inter({ 
   subsets: ['latin'],

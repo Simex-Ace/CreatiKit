@@ -66,6 +66,7 @@ User-agent: meta-externalagent
 Disallow: /
 
 # END Cloudflare Managed Content
+Sitemap: ${baseUrl}/sitemap.xml
 `;
 
   return new NextResponse(robotsTxt, {
