@@ -1,11 +1,12 @@
 'use client'
 
 import dynamic from 'next/dynamic';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { Image, Globe, FileCode, Monitor, Lock, Code, BookOpen, Palette, Smile, QrCode, PencilRuler, RotateCw, CloudSun, BarChart2, FlaskConical, Heart, Music, Sparkles, Shapes, ChevronDown, ChevronUp } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Image, Globe, FileCode, Monitor, Lock, Code, BookOpen, Palette, Smile, QrCode, PencilRuler, RotateCw, CloudSun, BarChart2, FlaskConical, Heart, Music, Sparkles, Shapes, ChevronDown, ChevronUp, Search, X } from 'lucide-react';
 import { BackToTop } from '@/components/ui/back-to-top';
 import { useRouter } from 'next/navigation';
 import { useDevelopmentAlert } from '@/lib/useDevelopmentAlert';
@@ -14,6 +15,7 @@ import { useI18n } from '@/contexts/I18nContext';
 // 动态加载非关键组件（减少首屏 bundle）
 const DevelopmentInProgress = dynamic(() => import('@/components/ui/DevelopmentInProgress').then(mod => ({ default: mod.DevelopmentInProgress })), { ssr: false });
 const ToolCardFavoriteButton = dynamic(() => import('@/components/ToolCardFavoriteButton').then(mod => ({ default: mod.ToolCardFavoriteButton })), { ssr: false });
+const LearnMoreModal = dynamic(() => import('@/components/ui/LearnMoreModal').then(mod => ({ default: mod.LearnMoreModal })), { ssr: false });
 
 export default function Home() {
   const router = useRouter();
@@ -21,6 +23,8 @@ export default function Home() {
   const { t } = useI18n();
   const [showAllTools, setShowAllTools] = useState(false);
   const [defaultVisibleCount, setDefaultVisibleCount] = useState(6);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [learnMoreModalVisible, setLearnMoreModalVisible] = useState(false);
   
   // 根据屏幕大小设置默认显示数量（移动端6个，桌面端9个）
   useEffect(() => {
@@ -39,7 +43,7 @@ export default function Home() {
   };
 
   const handleLearnMore = () => {
-    showAlert(t('home.learnMoreAlert'));
+    setLearnMoreModalVisible(true);
   };
 
   const handleImageCompressor = () => {
@@ -148,6 +152,66 @@ export default function Home() {
     window.scrollTo({ top: 500, behavior: 'smooth' });
   };
 
+  // 工具配置列表
+  const toolsConfig = [
+    { key: 'chemistryLab', handler: handleChemistryLab, icon: FlaskConical, color: 'cyan' },
+    { key: 'compress', handler: handleImageCompressor, icon: Image, color: 'blue' },
+    { key: 'modelViewer', handler: handleModelViewer, icon: Globe, color: 'purple' },
+    { key: 'ecosystemSandbox', handler: handleEcosystemSandbox, icon: CloudSun, color: 'emerald' },
+    { key: 'backgroundRemover', handler: handleBackgroundRemover, icon: null, color: 'pink' },
+    { key: 'cameraGestureDrawing', handler: handleCameraGestureDrawing, icon: PencilRuler, color: 'blue' },
+    { key: 'audioVisualizer', handler: handleAudioVisualizer, icon: Music, color: 'indigo' },
+    { key: 'cssAnimator', handler: handleCSSAnimator, icon: Sparkles, color: 'pink' },
+    { key: 'svgEditor', handler: handleSVGEditor, icon: Shapes, color: 'purple' },
+    { key: 'particleEditor', handler: handleParticleEditor, icon: Sparkles, color: 'orange' },
+    { key: 'codeTools', handler: handleCodeTools, icon: FileCode, color: 'green' },
+    { key: 'markdown', handler: handleMarkdownEditor, icon: Code, color: 'yellow' },
+    { key: 'colorPalette', handler: handleColorPalette, icon: Palette, color: 'red' },
+    { key: 'textAnalyzer', handler: handleTextAnalyzer, icon: BookOpen, color: 'indigo' },
+    { key: 'qrCode', handler: handleQrCodeGenerator, icon: QrCode, color: 'teal' },
+    { key: 'emojiCollection', handler: handleEmojiCollection, icon: Smile, color: 'pink' },
+    { key: 'pixelArt', handler: handlePixelArtGenerator, icon: Monitor, color: 'orange' },
+    { key: 'hashCalculator', handler: handleHashCalculator, icon: Lock, color: 'cyan' },
+    { key: 'timestampConverter', handler: handleTimestampConverter, icon: Monitor, color: 'orange' },
+    { key: 'whiteboard', handler: handleWhiteboard, icon: PencilRuler, color: 'blue' },
+    { key: 'gifTool', handler: handleGifTool, icon: RotateCw, color: 'green' },
+    { key: 'weatherTool', handler: handleWeatherTool, icon: CloudSun, color: 'sky' },
+    { key: 'dataToChart', handler: handleDataToChart, icon: BarChart2, color: 'purple' },
+    { key: 'piano', handler: handlePiano, icon: null, color: 'blue' },
+    { key: 'physicsLab', handler: handlePhysicsLab, icon: FlaskConical, color: 'amber' },
+  ];
+
+  // 搜索过滤函数
+  const filteredTools = useMemo(() => {
+    if (!searchQuery.trim()) {
+      return toolsConfig;
+    }
+    const query = searchQuery.toLowerCase().trim();
+    return toolsConfig.filter(tool => {
+      const name = t(`home.tools.${tool.key}.name`) || '';
+      const description = t(`home.tools.${tool.key}.description`) || '';
+      return name.toLowerCase().includes(query) || description.toLowerCase().includes(query);
+    });
+  }, [searchQuery, toolsConfig, t]);
+
+  // 根据搜索结果显示工具
+  const displayedTools = useMemo(() => {
+    if (searchQuery.trim()) {
+      // 有搜索内容时，显示所有匹配的工具
+      return filteredTools;
+    }
+    // 没有搜索内容时，显示前3个工具 + 展开后的其他工具
+    if (showAllTools) {
+      return filteredTools;
+    }
+    return filteredTools.slice(0, 3);
+  }, [searchQuery, showAllTools, filteredTools]);
+
+  // 检查工具是否应该显示
+  const shouldShowTool = (toolKey: string) => {
+    return displayedTools.some(tool => tool.key === toolKey);
+  };
+
   return (
     <div className="space-y-8 md:space-y-12 px-4 sm:px-6 lg:px-8">
       <section className="py-8 md:py-16 text-center space-y-4 md:space-y-8">
@@ -189,9 +253,50 @@ export default function Home() {
           </p>
         </div>
 
+        {/* 搜索框 */}
+        <div className="max-w-2xl mx-auto px-4">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+            <Input
+              type="text"
+              placeholder={t('home.searchPlaceholder') || '搜索工具...'}
+              value={searchQuery}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                if (e.target.value.trim()) {
+                  setShowAllTools(true); // 有搜索内容时自动展开
+                }
+              }}
+              className="pl-10 pr-10 h-12 text-base"
+            />
+            {searchQuery && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="absolute right-1 top-1/2 transform -translate-y-1/2 h-8 w-8"
+                onClick={() => {
+                  setSearchQuery('');
+                  setShowAllTools(false);
+                }}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
+        </div>
+
+        {/* 搜索结果提示 */}
+        {searchQuery.trim() && filteredTools.length === 0 && (
+          <div className="text-center py-12 px-4">
+            <p className="text-muted-foreground text-lg">
+              {t('home.noSearchResults') || `未找到包含"${searchQuery}"的工具`}
+            </p>
+          </div>
+        )}
+
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5 md:gap-6">
-          {/* 前3个卡片始终显示 */}
           {/* 交互式2D化学实验室卡片 */}
+          {shouldShowTool('chemistryLab') && (
           <Card className="relative min-h-[280px] sm:min-h-[300px] flex flex-col transition-all duration-300 hover:shadow-xl hover:-translate-y-2 hover:border-cyan-500 active:scale-[0.98] border-2 border-cyan-400 touch-manipulation">
             <div className="absolute -top-2 sm:-top-3 -right-2 sm:-right-3 bg-cyan-500 text-white text-[10px] sm:text-xs font-bold px-2 sm:px-3 py-0.5 sm:py-1 rounded-full z-20">
               {t('home.new')}
@@ -214,8 +319,10 @@ export default function Home() {
               </div>
             </div>
           </Card>
+          )}
 
           {/* 图片压缩工具卡片 */}
+          {shouldShowTool('compress') && (
           <Card className="relative min-h-[280px] sm:min-h-[300px] flex flex-col transition-all duration-300 hover:shadow-xl hover:-translate-y-2 active:scale-[0.98] touch-manipulation">
             <div className="absolute top-3 sm:top-4 right-3 sm:right-4 z-30">
               <ToolCardFavoriteButton toolPath="/compress" />
@@ -235,8 +342,10 @@ export default function Home() {
               </div>
             </div>
           </Card>
+          )}
 
           {/* 3D模型预览器卡片 */}
+          {shouldShowTool('modelViewer') && (
           <Card className="relative min-h-[280px] sm:min-h-[300px] flex flex-col transition-all duration-300 hover:shadow-xl hover:-translate-y-2 active:scale-[0.98] touch-manipulation">
             <div className="absolute top-3 sm:top-4 right-3 sm:right-4 z-30">
               <ToolCardFavoriteButton toolPath="/model-viewer" />
@@ -256,11 +365,13 @@ export default function Home() {
               </div>
             </div>
           </Card>
+          )}
 
           {/* 从第4个卡片开始，根据showAllTools状态显示 */}
-          {showAllTools && (
-          <div className="w-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5 md:gap-6" style={{ gridColumn: '1 / -1' }}>
+          {(showAllTools || searchQuery.trim()) && (
+          <>
           {/* 生物沙盒卡片 */}
+          {shouldShowTool('ecosystemSandbox') && (
           <Card className="relative min-h-[300px] flex flex-col transition-all duration-300 hover:shadow-xl hover:-translate-y-2 hover:border-emerald-500 border-2 border-emerald-400 animate-slideUpFadeIn" style={{ animationDelay: '0ms', opacity: 0 }}>
             <div className="absolute -top-3 -right-3 bg-emerald-500 text-white text-xs font-bold px-3 py-1 rounded-full z-20">
               {t('home.new')}
@@ -283,8 +394,10 @@ export default function Home() {
               </div>
             </div>
           </Card>
+          )}
           
           {/* 背景移除工具卡片 */}
+          {shouldShowTool('backgroundRemover') && (
           <Card className="relative min-h-[300px] flex flex-col transition-all duration-300 hover:shadow-xl hover:-translate-y-2 hover:border-pink-400 border-2 border-pink-300 animate-slideUpFadeIn" style={{ animationDelay: '80ms', opacity: 0 }}>
             <div className="absolute -top-3 -right-3 bg-pink-500 text-white text-xs font-bold px-3 py-1 rounded-full z-20">
               {t('home.hot')}
@@ -315,8 +428,10 @@ export default function Home() {
             <div className="absolute -bottom-6 -right-6 w-24 h-24 rounded-full bg-gradient-to-br from-yellow-200 to-yellow-100 opacity-50 blur-sm z-0"></div>
             <div className="absolute -top-4 -left-4 w-16 h-16 rounded-full bg-gradient-to-br from-blue-200 to-blue-100 opacity-50 blur-sm z-0"></div>
           </Card>
+          )}
 
           {/* 隔空写字卡片 */}
+          {shouldShowTool('cameraGestureDrawing') && (
           <Card className="relative min-h-[300px] flex flex-col transition-all duration-300 hover:shadow-xl hover:-translate-y-2 hover:border-blue-500 border-2 border-blue-400 animate-slideUpFadeIn" style={{ animationDelay: '160ms', opacity: 0 }}>
             <div className="absolute -top-3 -right-3 bg-blue-500 text-white text-xs font-bold px-3 py-1 rounded-full z-20">
               {t('home.new')}
@@ -339,8 +454,10 @@ export default function Home() {
               </div>
             </div>
           </Card>
+          )}
 
           {/* 音频可视化器卡片 */}
+          {shouldShowTool('audioVisualizer') && (
           <Card className="relative min-h-[300px] flex flex-col transition-all duration-300 hover:shadow-xl hover:-translate-y-2 hover:border-indigo-500 border-2 border-indigo-400 animate-slideUpFadeIn" style={{ animationDelay: '240ms', opacity: 0 }}>
             <div className="absolute -top-3 -right-3 bg-indigo-500 text-white text-xs font-bold px-3 py-1 rounded-full z-20">
               {t('home.new')}
@@ -363,8 +480,10 @@ export default function Home() {
               </div>
             </div>
           </Card>
+          )}
 
           {/* CSS动画生成器卡片 */}
+          {shouldShowTool('cssAnimator') && (
           <Card className="relative min-h-[300px] flex flex-col transition-all duration-300 hover:shadow-xl hover:-translate-y-2 hover:border-pink-500 border-2 border-pink-400 animate-slideUpFadeIn" style={{ animationDelay: '320ms', opacity: 0 }}>
             <div className="absolute -top-3 -right-3 bg-pink-500 text-white text-xs font-bold px-3 py-1 rounded-full z-20">
               {t('home.new')}
@@ -387,8 +506,10 @@ export default function Home() {
               </div>
             </div>
           </Card>
+          )}
 
           {/* SVG路径编辑器卡片 */}
+          {shouldShowTool('svgEditor') && (
           <Card className="relative min-h-[300px] flex flex-col transition-all duration-300 hover:shadow-xl hover:-translate-y-2 hover:border-purple-500 border-2 border-purple-400 animate-slideUpFadeIn" style={{ animationDelay: '400ms', opacity: 0 }}>
             <div className="absolute -top-3 -right-3 bg-purple-500 text-white text-xs font-bold px-3 py-1 rounded-full z-20">
               {t('home.new')}
@@ -411,8 +532,10 @@ export default function Home() {
               </div>
             </div>
           </Card>
+          )}
 
           {/* 粒子系统编辑器卡片 */}
+          {shouldShowTool('particleEditor') && (
           <Card className="relative min-h-[300px] flex flex-col transition-all duration-300 hover:shadow-xl hover:-translate-y-2 hover:border-orange-500 border-2 border-orange-400 animate-slideUpFadeIn" style={{ animationDelay: '480ms', opacity: 0 }}>
             <div className="absolute -top-3 -right-3 bg-orange-500 text-white text-xs font-bold px-3 py-1 rounded-full z-20">
               {t('home.new')}
@@ -435,8 +558,10 @@ export default function Home() {
               </div>
             </div>
           </Card>
+          )}
 
           {/* 代码工具卡片 */}
+          {shouldShowTool('codeTools') && (
           <Card className="relative min-h-[300px] flex flex-col transition-all duration-300 hover:shadow-xl hover:-translate-y-2 animate-slideUpFadeIn" style={{ animationDelay: '560ms', opacity: 0 }}>
             <div className="absolute top-4 right-4 z-10">
               <ToolCardFavoriteButton toolPath="/code-tools" />
@@ -456,8 +581,10 @@ export default function Home() {
               </div>
             </div>
           </Card>
+          )}
 
           {/* Markdown编辑器卡片 */}
+          {shouldShowTool('markdown') && (
           <Card className="relative min-h-[300px] flex flex-col transition-all duration-300 hover:shadow-xl hover:-translate-y-2 animate-slideUpFadeIn" style={{ animationDelay: '640ms', opacity: 0 }}>
             <div className="absolute top-4 right-4 z-10">
               <ToolCardFavoriteButton toolPath="/markdown-editor" />
@@ -477,8 +604,10 @@ export default function Home() {
               </div>
             </div>
           </Card>
+          )}
 
           {/* 调色板工具卡片 */}
+          {shouldShowTool('colorPalette') && (
           <Card className="relative min-h-[300px] flex flex-col transition-all duration-300 hover:shadow-xl hover:-translate-y-2 animate-slideUpFadeIn" style={{ animationDelay: '720ms', opacity: 0 }}>
             <div className="absolute top-4 right-4 z-10">
               <ToolCardFavoriteButton toolPath="/color-palette" />
@@ -498,8 +627,10 @@ export default function Home() {
               </div>
             </div>
           </Card>
+          )}
 
           {/* 文本分析工具卡片 */}
+          {shouldShowTool('textAnalyzer') && (
           <Card className="relative min-h-[300px] flex flex-col transition-all duration-300 hover:shadow-xl hover:-translate-y-2 animate-slideUpFadeIn" style={{ animationDelay: '800ms', opacity: 0 }}>
             <div className="absolute top-4 right-4 z-10">
               <ToolCardFavoriteButton toolPath="/text-analyzer" />
@@ -519,8 +650,10 @@ export default function Home() {
               </div>
             </div>
           </Card>
+          )}
           
           {/* 二维码生成器卡片 */}
+          {shouldShowTool('qrCode') && (
           <Card className="relative min-h-[300px] flex flex-col transition-all duration-300 hover:shadow-xl hover:-translate-y-2 animate-slideUpFadeIn" style={{ animationDelay: '880ms', opacity: 0 }}>
             <div className="absolute top-4 right-4 z-10">
               <ToolCardFavoriteButton toolPath="/qr-code-generator" />
@@ -540,8 +673,10 @@ export default function Home() {
               </div>
             </div>
           </Card>
+          )}
 
           {/* Emoji大全卡片 */}
+          {shouldShowTool('emojiCollection') && (
           <Card className="relative min-h-[300px] flex flex-col transition-all duration-300 hover:shadow-xl hover:-translate-y-2 animate-slideUpFadeIn" style={{ animationDelay: '960ms', opacity: 0 }}>
             <div className="absolute top-4 right-4 z-10">
               <ToolCardFavoriteButton toolPath="/emoji-collection" />
@@ -561,8 +696,10 @@ export default function Home() {
               </div>
             </div>
           </Card>
+          )}
 
           {/* 像素艺术生成器卡片 */}
+          {shouldShowTool('pixelArt') && (
           <Card className="relative min-h-[300px] flex flex-col transition-all duration-300 hover:shadow-xl hover:-translate-y-2 animate-slideUpFadeIn" style={{ animationDelay: '1040ms', opacity: 0 }}>
             <div className="absolute top-4 right-4 z-10">
               <ToolCardFavoriteButton toolPath="/pixel-art-generator" />
@@ -582,8 +719,10 @@ export default function Home() {
               </div>
             </div>
           </Card>
+          )}
 
           {/* 哈希/散列值计算器卡片 */}
+          {shouldShowTool('hashCalculator') && (
           <Card className="relative min-h-[300px] flex flex-col transition-all duration-300 hover:shadow-xl hover:-translate-y-2 animate-slideUpFadeIn" style={{ animationDelay: '1120ms', opacity: 0 }}>
             <div className="absolute top-4 right-4 z-10">
               <ToolCardFavoriteButton toolPath="/hash-calculator" />
@@ -603,8 +742,10 @@ export default function Home() {
               </div>
             </div>
           </Card>
+          )}
 
           {/* Unix 时间戳转换器卡片 */}
+          {shouldShowTool('timestampConverter') && (
           <Card className="relative min-h-[300px] flex flex-col transition-all duration-300 hover:shadow-xl hover:-translate-y-2 animate-slideUpFadeIn" style={{ animationDelay: '1200ms', opacity: 0 }}>
             <div className="absolute top-4 right-4 z-10">
               <ToolCardFavoriteButton toolPath="/timestamp-converter" />
@@ -624,8 +765,10 @@ export default function Home() {
               </div>
             </div>
           </Card>
+          )}
 
           {/* 在线白板工具卡片 */}
+          {shouldShowTool('whiteboard') && (
           <Card className="relative min-h-[300px] flex flex-col transition-all duration-300 hover:shadow-xl hover:-translate-y-2 animate-slideUpFadeIn" style={{ animationDelay: '1280ms', opacity: 0 }}>
             <div className="absolute top-4 right-4 z-10">
               <ToolCardFavoriteButton toolPath="/whiteboard" />
@@ -645,8 +788,10 @@ export default function Home() {
               </div>
             </div>
           </Card>
+          )}
 
           {/* GIF分解/合成器卡片 */}
+          {shouldShowTool('gifTool') && (
           <Card className="relative min-h-[300px] flex flex-col transition-all duration-300 hover:shadow-xl hover:-translate-y-2 animate-slideUpFadeIn" style={{ animationDelay: '1360ms', opacity: 0 }}>
             <div className="absolute top-4 right-4 z-10">
               <ToolCardFavoriteButton toolPath="/gif-tool" />
@@ -666,8 +811,10 @@ export default function Home() {
               </div>
             </div>
           </Card>
+          )}
 
             {/* 天气预报工具卡片 */}
+            {shouldShowTool('weatherTool') && (
             <Card className="relative min-h-[300px] flex flex-col transition-all duration-300 hover:shadow-xl hover:-translate-y-2 animate-slideUpFadeIn" style={{ animationDelay: '1440ms', opacity: 0 }}>
               <div className="absolute top-4 right-4 z-10">
                 <ToolCardFavoriteButton toolPath="/weather-tool" />
@@ -687,8 +834,10 @@ export default function Home() {
                 </div>
               </div>
             </Card>
+            )}
 
             {/* 数据转图表工具卡片 */}
+            {shouldShowTool('dataToChart') && (
             <Card className="relative min-h-[300px] flex flex-col transition-all duration-300 hover:shadow-lg animate-slideUpFadeIn" style={{ animationDelay: '1520ms', opacity: 0 }}>
               <div className="absolute top-4 right-4 z-10">
                 <ToolCardFavoriteButton toolPath="/data-to-chart" />
@@ -708,8 +857,10 @@ export default function Home() {
                 </div>
               </div>
             </Card>
+            )}
 
             {/* 在线电子钢琴卡片 */}
+            {shouldShowTool('piano') && (
             <Card className="relative min-h-[300px] flex flex-col transition-all duration-300 hover:shadow-xl hover:-translate-y-2 animate-slideUpFadeIn" style={{ animationDelay: '1600ms', opacity: 0 }}>
               <div className="absolute top-4 right-4 z-10">
                 <ToolCardFavoriteButton toolPath="/piano" />
@@ -733,8 +884,10 @@ export default function Home() {
                 </div>
               </div>
             </Card>
+            )}
             
             {/* 交互式2D物理实验室卡片 */}
+            {shouldShowTool('physicsLab') && (
             <Card className="relative min-h-[300px] flex flex-col transition-all duration-300 hover:shadow-xl hover:-translate-y-2 animate-slideUpFadeIn" style={{ animationDelay: '1680ms', opacity: 0 }}>
               <div className="absolute top-4 right-4 z-10">
                 <ToolCardFavoriteButton toolPath="/physics-lab" />
@@ -754,11 +907,13 @@ export default function Home() {
                 </div>
               </div>
             </Card>
-          </div>
+            )}
+          </>
           )}
         </div>
         
-        {/* 展开/收缩按钮 */}
+        {/* 展开/收缩按钮 - 只在没有搜索时显示 */}
+        {!searchQuery.trim() && (
         <div className="flex justify-center pt-6 md:pt-8">
           <Button
             variant="outline"
@@ -799,6 +954,7 @@ export default function Home() {
             <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 via-purple-500/10 to-pink-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
           </Button>
         </div>
+        )}
       </section>
 
       {/* 特性介绍 */}
@@ -856,6 +1012,12 @@ export default function Home() {
         onClose={closeAlert}
         duration={alertDuration}
         message={alertMessage}
+      />
+
+      {/* 了解更多模态框 */}
+      <LearnMoreModal
+        visible={learnMoreModalVisible}
+        onClose={() => setLearnMoreModalVisible(false)}
       />
 
       {/* 回到顶部按钮 */}

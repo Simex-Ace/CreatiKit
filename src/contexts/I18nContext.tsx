@@ -83,7 +83,7 @@ export function I18nProvider({ children }: { children: ReactNode }) {
       setLocaleState(savedLocale);
     } else {
       // 如果保存的值无效，使用英文
-      setLocaleState('en');
+        setLocaleState('en');
       localStorage.setItem('locale', 'en');
     }
   }, []);

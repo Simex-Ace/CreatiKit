@@ -33,10 +33,10 @@ export function Footer() {
               {t('footer.tagline')}
             </p>
             <TooltipProvider delayDuration={200}>
-              <div className="flex space-x-4">
+            <div className="flex space-x-4">
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Link
+              <Link
                       href="https://github.com/Simex-Ace/CreatiKit"
                       target="_blank"
                       rel="noopener noreferrer"
@@ -44,7 +44,7 @@ export function Footer() {
                     >
                       <div className="absolute inset-0 rounded-full bg-gray-500/20 opacity-0 group-hover:opacity-100 blur-md transition-opacity duration-300 -z-10"></div>
                       <Github className="h-5 w-5 transition-transform duration-300 group-hover:rotate-12" />
-                    </Link>
+              </Link>
                   </TooltipTrigger>
                   <TooltipContent 
                     side="top"
@@ -60,7 +60,7 @@ export function Footer() {
                 </Tooltip>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Link
+              <Link
                       href="https://x.com/Simex_Ace"
                       target="_blank"
                       rel="noopener noreferrer"
@@ -68,7 +68,7 @@ export function Footer() {
                     >
                       <div className="absolute inset-0 rounded-full bg-blue-500/20 opacity-0 group-hover:opacity-100 blur-md transition-opacity duration-300 -z-10"></div>
                       <Twitter className="h-5 w-5 transition-transform duration-300 group-hover:-rotate-12" />
-                    </Link>
+              </Link>
                   </TooltipTrigger>
                   <TooltipContent 
                     side="top"
@@ -84,7 +84,7 @@ export function Footer() {
                 </Tooltip>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Link
+              <Link
                       href="https://www.producthunt.com/@new_user___0322026c227496c9a841bc0"
                       target="_blank"
                       rel="noopener noreferrer"
@@ -93,7 +93,7 @@ export function Footer() {
                     >
                       <div className="absolute inset-0 rounded-full bg-orange-500/20 opacity-0 group-hover:opacity-100 blur-md transition-opacity duration-300 -z-10"></div>
                       <Rocket className="h-5 w-5 transition-transform duration-300 group-hover:rotate-12 group-hover:translate-y-[-2px]" />
-                    </Link>
+              </Link>
                   </TooltipTrigger>
                   <TooltipContent 
                     side="top"
@@ -107,7 +107,7 @@ export function Footer() {
                     <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-orange-500 rotate-45 border-r border-b border-orange-400/50"></div>
                   </TooltipContent>
                 </Tooltip>
-              </div>
+            </div>
             </TooltipProvider>
           </div>
 
