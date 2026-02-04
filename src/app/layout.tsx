@@ -111,7 +111,7 @@ export const metadata: Metadata = {
   },
   // 百度网站验证
   other: {
-    'baidu-site-verification': 'codeva-3JyJ4GRp3R',
+    'baidu-site-verification': 'codeva-vrSUPylANY',
   },
 };
 
