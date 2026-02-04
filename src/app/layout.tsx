@@ -109,6 +109,10 @@ export const metadata: Metadata = {
     // 可以添加Google Search Console验证码
     // google: 'your-google-verification-code',
   },
+  // 百度网站验证
+  other: {
+    'baidu-site-verification': 'codeva-3JyJ4GRp3R',
+  },
 };
 
 // 移除动态导入，采用正确的方式处理主题水合
