@@ -7,23 +7,28 @@
 
 import Link from 'next/link';
 import { useI18n } from '@/contexts/I18nContext';
-import { addLocaleToPath } from '@/lib/i18n-routing';
-import type { LinkProps } from 'next/link';
-import { forwardRef } from 'react';
+import { addLocaleToPath, removeLocaleFromPath } from '@/lib/i18n-routing';
+import React from 'react';
 
-interface LocalizedLinkProps extends Omit<LinkProps, 'href'> {
+interface LocalizedLinkProps extends Omit<React.ComponentPropsWithoutRef<typeof Link>, 'href'> {
   href: string;
-  children?: React.ReactNode;
+  children: React.ReactNode;
 }
 
-export const LocalizedLink = forwardRef<HTMLAnchorElement, LocalizedLinkProps>(
-  ({ href, ...props }, ref) => {
-    const { locale } = useI18n();
-    const localizedHref = addLocaleToPath(href, locale);
-    
-    return <Link ref={ref} href={localizedHref} {...props} />;
-  }
-);
+export const LocalizedLink: React.FC<LocalizedLinkProps> = ({ href, children, ...props }) => {
+  const { locale } = useI18n();
 
-LocalizedLink.displayName = 'LocalizedLink';
+  // 确保 href 是字符串
+  const hrefString = typeof href === 'string' ? href : href.pathname || '';
+
+  // 如果 href 已经是带有语言前缀的，则先移除，再添加当前语言的
+  const cleanHref = removeLocaleFromPath(hrefString);
+  const localizedHref = addLocaleToPath(cleanHref, locale);
+
+  return (
+    <Link href={localizedHref} {...props}>
+      {children}
+    </Link>
+  );
+};
 
