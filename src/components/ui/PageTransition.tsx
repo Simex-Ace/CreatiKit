@@ -20,25 +20,29 @@ interface PageTransitionProps {
 
 export function PageTransition({ children }: PageTransitionProps) {
   const pathname = usePathname();
-  const [isLoading, setIsLoading] = useState(true);
-  const [showContent, setShowContent] = useState(false);
-  const [contentOpacity, setContentOpacity] = useState(0);
+  const [isLoading, setIsLoading] = useState(false); // 初始不显示加载动画，避免首次加载时闪烁
+  const [showContent, setShowContent] = useState(true); // 初始显示内容
+  const [contentOpacity, setContentOpacity] = useState(1); // 初始完全不透明
+  const [prevPathname, setPrevPathname] = useState(pathname);
 
   useEffect(() => {
-    // 路由变化时重新显示加载动画
-    setIsLoading(true);
-    setShowContent(false);
-    setContentOpacity(0);
-  }, [pathname]);
+    // 只在路径真正变化时显示加载动画（避免首次加载时显示）
+    if (prevPathname !== pathname && prevPathname !== '') {
+      setIsLoading(true);
+      setShowContent(false);
+      setContentOpacity(0);
+    }
+    setPrevPathname(pathname);
+  }, [pathname, prevPathname]);
 
   const handleAnimationComplete = () => {
     setIsLoading(false);
     setShowContent(true);
     
     // 加快内容载入速度
-    setTimeout(() => {
+    requestAnimationFrame(() => {
       setContentOpacity(1);
-    }, 30);
+    });
   };
 
   // 根据路径选择对应的加载动画（动态加载）

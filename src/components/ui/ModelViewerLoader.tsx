@@ -13,12 +13,12 @@ export function ModelViewerLoader({ onAnimationComplete }: ModelViewerLoaderProp
 
   useEffect(() => {
     setIsMounted(true);
-    // 动画时间：1.5秒
+    // 缩短动画时间：0.8秒，提升性能
     const timer = setTimeout(() => {
       if (onAnimationComplete) {
         onAnimationComplete();
       }
-    }, 1500);
+    }, 800);
 
     return () => clearTimeout(timer);
   }, [onAnimationComplete]);
@@ -38,6 +38,7 @@ export function ModelViewerLoader({ onAnimationComplete }: ModelViewerLoaderProp
           justify-content: center;
           background: radial-gradient(circle at center, #faf5ff 0%, #fdf4ff 100%);
           overflow: hidden;
+          will-change: opacity;
         }
         
         .loading-content {
@@ -47,14 +48,16 @@ export function ModelViewerLoader({ onAnimationComplete }: ModelViewerLoaderProp
           align-items: center;
           justify-content: center;
           z-index: 2;
+          will-change: transform;
         }
         
         .model-cube {
           width: 80px;
           height: 80px;
           transform-style: preserve-3d;
-          animation: rotateCube 3.5s ease-in-out infinite;
+          animation: rotateCube 2s ease-in-out infinite;
           position: relative;
+          will-change: transform;
         }
         
         .cube-face {
@@ -109,7 +112,8 @@ export function ModelViewerLoader({ onAnimationComplete }: ModelViewerLoaderProp
           width: 200px;
           height: 200px;
           transform-style: preserve-3d;
-          animation: orbitRotate 10.5s linear infinite;
+          animation: orbitRotate 6s linear infinite;
+          will-change: transform;
         }
         
         .orbiting-sphere {
@@ -166,16 +170,14 @@ export function ModelViewerLoader({ onAnimationComplete }: ModelViewerLoaderProp
           border-radius: 50%;
           background-color: rgba(139, 92, 246, 0.6);
           opacity: 0;
+          will-change: transform, opacity;
         }
         
-        .particle:nth-child(1) { top: 10%; left: 20%; animation: float 8.5s infinite ease-in-out; }
-        .particle:nth-child(2) { top: 30%; left: 70%; animation: float 6.5s infinite ease-in-out; }
-        .particle:nth-child(3) { top: 60%; left: 40%; animation: float 7.5s infinite ease-in-out; }
-        .particle:nth-child(4) { top: 80%; left: 10%; animation: float 9.5s infinite ease-in-out; }
-        .particle:nth-child(5) { top: 20%; left: 80%; animation: float 5.5s infinite ease-in-out; }
-        .particle:nth-child(6) { top: 50%; left: 90%; animation: float 8s infinite ease-in-out; }
-        .particle:nth-child(7) { top: 70%; left: 30%; animation: float 7s infinite ease-in-out; }
-        .particle:nth-child(8) { top: 40%; left: 60%; animation: float 9s infinite ease-in-out; }
+        /* 减少粒子数量，只保留4个以提升性能 */
+        .particle:nth-child(1) { top: 20%; left: 30%; animation: float 6s infinite ease-in-out; }
+        .particle:nth-child(2) { top: 60%; left: 70%; animation: float 5s infinite ease-in-out; }
+        .particle:nth-child(3) { top: 40%; left: 50%; animation: float 7s infinite ease-in-out; }
+        .particle:nth-child(4) { top: 80%; left: 20%; animation: float 6.5s infinite ease-in-out; }
         
         @keyframes float {
           0% { transform: translateY(0) translateX(0); opacity: 0; }
@@ -232,12 +234,8 @@ export function ModelViewerLoader({ onAnimationComplete }: ModelViewerLoaderProp
       `}</style>
       
       <div className="loading-container">
-        {/* 背景粒子 */}
+        {/* 背景粒子 - 减少数量以提升性能 */}
         <div className="particles">
-          <div className="particle"></div>
-          <div className="particle"></div>
-          <div className="particle"></div>
-          <div className="particle"></div>
           <div className="particle"></div>
           <div className="particle"></div>
           <div className="particle"></div>

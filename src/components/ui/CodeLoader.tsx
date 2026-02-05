@@ -10,10 +10,10 @@ interface CodeLoaderProps {
 export function CodeLoader({ onAnimationComplete }: CodeLoaderProps) {
   const { t } = useI18n();
   useEffect(() => {
-    // 缩短动画时间：1秒
+    // 缩短动画时间：0.7秒，提升性能
     const timer = setTimeout(() => {
       onAnimationComplete();
-    }, 1000);
+    }, 700);
 
     return () => clearTimeout(timer);
   }, [onAnimationComplete]);

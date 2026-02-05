@@ -24,7 +24,7 @@ export function Footer() {
   };
 
   return (
-    <footer className="w-full border-t bg-background/95">
+    <footer className="w-full border-t bg-background/95 relative z-10">
       <div className="container py-10 md:py-12">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           <div className="space-y-4">
@@ -37,7 +37,7 @@ export function Footer() {
               {t('footer.tagline')}
             </p>
             <TooltipProvider delayDuration={200}>
-            <div className="flex space-x-4">
+            <div className="flex space-x-4 relative z-20">
                 <Tooltip>
                   <TooltipTrigger asChild>
               <Link

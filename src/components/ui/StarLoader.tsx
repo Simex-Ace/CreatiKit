@@ -13,10 +13,10 @@ export function StarLoader({ onAnimationComplete }: StarLoaderProps) {
 
   useEffect(() => {
     setIsMounted(true);
-    // 缩短动画时间：1秒
+    // 缩短动画时间：0.7秒，提升性能
     const timer = setTimeout(() => {
       onAnimationComplete();
-    }, 1000);
+    }, 700);
 
     return () => clearTimeout(timer);
   }, [onAnimationComplete]);
