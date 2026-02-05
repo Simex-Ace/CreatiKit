@@ -1,6 +1,8 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, ReactNode } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
+import { getLocaleFromPath, addLocaleToPath, removeLocaleFromPath, type Locale as LocaleType } from '@/lib/i18n-routing';
 
 export type Locale = 'zh-CN' | 'en' | 'ja-JP' | 'ko-KR';
 
@@ -81,25 +83,38 @@ const getNestedValue = (obj: any, path: string, returnObjects?: boolean): any =>
 };
 
 export function I18nProvider({ children }: { children: ReactNode }) {
-  const [locale, setLocaleState] = useState<Locale>('en');
+  const pathname = usePathname();
+  const router = useRouter();
+  const [locale, setLocaleState] = useState<Locale>('zh-CN');
   const [translations, setTranslations] = useState<Record<string, any>>({});
   const [isLoading, setIsLoading] = useState(true);
 
-  // 初始化时从 localStorage 读取语言设置
+  // 从URL路径中读取语言代码（优先级最高）
   useEffect(() => {
-    const savedLocale = localStorage.getItem('locale') as Locale;
-    // 默认使用英文，如果没有保存的设置或保存的是日文（重置为英文）
-    if (!savedLocale || savedLocale === 'ja-JP') {
-      setLocaleState('en');
-      localStorage.setItem('locale', 'en');
-    } else if (savedLocale === 'zh-CN' || savedLocale === 'en' || savedLocale === 'ko-KR') {
-      setLocaleState(savedLocale);
-    } else {
-      // 如果保存的值无效，使用英文
-        setLocaleState('en');
-      localStorage.setItem('locale', 'en');
+    const pathLocale = getLocaleFromPath(pathname);
+    if (pathLocale) {
+      setLocaleState(pathLocale);
+      localStorage.setItem('locale', pathLocale);
+      return;
     }
-  }, []);
+
+    // 如果URL中没有语言代码，检查保存的设置
+    const savedLocale = localStorage.getItem('locale') as Locale;
+    if (savedLocale && (savedLocale === 'zh-CN' || savedLocale === 'en' || savedLocale === 'ko-KR' || savedLocale === 'ja-JP')) {
+      // 重定向到带语言前缀的URL
+      const newPath = addLocaleToPath(pathname, savedLocale);
+      router.replace(newPath);
+      setLocaleState(savedLocale);
+      return;
+    }
+
+    // 如果都没有，使用默认语言并重定向
+    const defaultLocale: Locale = 'zh-CN';
+    const newPath = addLocaleToPath(pathname, defaultLocale);
+    router.replace(newPath);
+    setLocaleState(defaultLocale);
+    localStorage.setItem('locale', defaultLocale);
+  }, [pathname, router]);
 
   // 加载翻译文件
   useEffect(() => {
@@ -119,8 +134,14 @@ export function I18nProvider({ children }: { children: ReactNode }) {
     console.log('Setting locale to:', newLocale);
     setLocaleState(newLocale);
     localStorage.setItem('locale', newLocale);
+    
+    // 更新URL以包含新的语言前缀
+    const currentPath = removeLocaleFromPath(pathname);
+    const newPath = addLocaleToPath(currentPath, newLocale);
+    router.push(newPath);
+    
     // useEffect 会自动处理翻译加载
-  }, []);
+  }, [pathname, router]);
 
   const t = useCallback((key: string, params?: (Record<string, string | number> & { returnObjects?: boolean }) | { returnObjects: boolean }): string | any => {
     // 如果正在加载且翻译为空，返回空字符串而不是 key，避免显示 mmmm.mmm 格式

@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import dynamic from 'next/dynamic';
+import { headers } from 'next/headers';
 import './globals.css';
 import { Header } from '@/components/header';
 import { ThemeProvider } from '@/components/ui/theme-provider';
@@ -10,6 +11,8 @@ import { ToastProvider } from '@/contexts/ToastContext';
 import { Toaster } from '@/components/ui/toast';
 import { I18nProvider } from '@/contexts/I18nContext';
 import { LanguageWrapper } from '@/components/LanguageWrapper';
+import { getMetadataForLocale, getDefaultMetadata } from '@/lib/metadata';
+import { getLocaleFromPath } from '@/lib/i18n-routing';
 
 // 动态导入非关键组件
 const Footer = dynamic(() => import('@/components/footer').then(mod => ({ default: mod.Footer })), { ssr: true });
@@ -22,98 +25,101 @@ const inter = Inter({
   variable: '--font-inter',
 });
 
-export const metadata: Metadata = {
-  title: {
-    default: 'CreatiKit.io - 免费在线创意工具箱 | 图片压缩、3D预览、设计工具',
-    template: '%s | CreatiKit.io',
-  },
-  description: 'CreatiKit.io 提供20+免费在线创意工具：图片压缩、背景移除、3D模型预览、像素艺术生成、二维码生成、调色板、Markdown编辑器、白板工具等。无需注册，完全免费，所有处理在浏览器本地完成，保护您的隐私安全。',
-  keywords: [
-    '在线工具',
-    '图片压缩',
-    '图片处理',
-    '3D预览',
-    '背景移除',
-    '像素艺术',
-    '二维码生成',
-    '调色板',
-    'Markdown编辑器',
-    '在线白板',
-    '创意工具',
-    '免费工具',
-    '图片转像素',
-    'GIF工具',
-    '文本分析',
-    '时间戳转换',
-    '哈希计算',
-    '物理实验室',
-    '化学实验室',
-    '生物沙盒',
-    '在线钢琴',
-    '数据可视化',
-    '表情符号',
-    '在线工具箱',
-  ],
-  authors: [{ name: 'CreatiKit Team' }],
-  creator: 'CreatiKit',
-  publisher: 'CreatiKit',
-  formatDetection: {
-    email: false,
-    address: false,
-    telephone: false,
-  },
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://creatikit.asia'),
-  alternates: {
-    canonical: '/',
-  },
-  openGraph: {
-    type: 'website',
-    locale: 'zh_CN',
-    url: 'https://creatikit.asia',
-    siteName: 'CreatiKit.io',
-    title: 'CreatiKit.io - 免费在线创意工具箱',
-    description: '提供20+免费在线创意工具：图片压缩、背景移除、3D预览、像素艺术、二维码生成等。无需注册，完全免费，所有处理在浏览器本地完成。',
-    images: [
-      {
-        url: '/og-image.png',
-        width: 1200,
-        height: 630,
-        alt: 'CreatiKit.io - 免费在线创意工具箱',
+/**
+ * 动态生成多语言元数据
+ * 根据 URL 路径中的语言前缀返回对应的元数据
+ */
+export async function generateMetadata(): Promise<Metadata> {
+  const headersList = await headers();
+  const pathname = headersList.get('x-pathname') || headersList.get('referer') || '/';
+  
+  // 从路径中提取语言
+  const locale = getLocaleFromPath(pathname) || 'en'; // 默认为英文
+  
+  // 获取对应语言的元数据
+  const localeMetadata = getMetadataForLocale(locale);
+  
+  // 基础元数据（所有语言共享）
+  const baseMetadata: Metadata = {
+    authors: [{ name: 'CreatiKit Team' }],
+    creator: 'CreatiKit',
+    publisher: 'CreatiKit',
+    formatDetection: {
+      email: false,
+      address: false,
+      telephone: false,
+    },
+    metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://creatikit.asia'),
+    alternates: {
+      canonical: '/',
+      languages: {
+        'zh-CN': 'https://creatikit.asia/zh-CN',
+        'en': 'https://creatikit.asia/en',
+        'ja-JP': 'https://creatikit.asia/ja-JP',
+        'ko-KR': 'https://creatikit.asia/ko-KR',
+        'x-default': 'https://creatikit.asia/en', // 默认语言（英文，用于 Google 等国际搜索引擎）
       },
-    ],
-  },
-  twitter: {
-    card: 'summary_large_image',
-    title: 'CreatiKit.io - 免费在线创意工具箱',
-    description: '提供20+免费在线创意工具：图片压缩、背景移除、3D预览、像素艺术、二维码生成等。',
-    images: ['/og-image.png'],
-    creator: '@creatikit',
-  },
-  robots: {
-    index: true,
-    follow: true,
-    googleBot: {
+    },
+    robots: {
       index: true,
       follow: true,
-      'max-video-preview': -1,
-      'max-image-preview': 'large',
-      'max-snippet': -1,
+      googleBot: {
+        index: true,
+        follow: true,
+        'max-video-preview': -1,
+        'max-image-preview': 'large',
+        'max-snippet': -1,
+      },
+      // 注意：百度爬虫配置在robots.txt中已设置，这里不需要额外配置
     },
-  },
-  icons: {
-    icon: '/favicon.svg',
-    shortcut: '/favicon.svg',
-    apple: '/favicon.svg',
-  },
-  verification: {
-    // 可以添加Google Search Console验证码
-    // google: 'your-google-verification-code',
-  },
-  // 百度网站验证
-  other: {
-    'baidu-site-verification': 'codeva-vrSUPylANY',
-  },
-};
+    icons: {
+      icon: '/favicon.svg',
+      shortcut: '/favicon.svg',
+      apple: '/favicon.svg',
+    },
+    verification: {
+      // Google Search Console验证码（在Google Search Console获取）
+      // google: 'your-google-verification-code',
+      
+      // Bing Webmaster Tools验证码（在Bing Webmaster Tools获取）
+      // other: {
+      //   'msvalidate.01': 'your-bing-verification-code',
+      // },
+      
+      // Yandex验证码（在Yandex Webmaster获取）
+      // yandex: 'your-yandex-verification-code',
+      
+      // 其他搜索引擎验证码可以添加到 other 字段中
+    },
+    // 搜索引擎验证标签
+    other: {
+      // 百度网站验证（已配置）
+      'baidu-site-verification': 'codeva-vrSUPylANY',
+      
+      // 搜狗验证（在搜狗站长平台获取后取消注释）
+      // 'sogou_site_verification': 'your-sogou-verification-code',
+      
+      // 360验证（在360站长平台获取后取消注释）
+      // '360-site-verification': 'your-360-verification-code',
+      
+      // 神马搜索验证（在神马搜索站长平台获取后取消注释）
+      // 'shenma-site-verification': 'your-shenma-verification-code',
+      
+      // Naver验证（在Naver Webmaster获取后取消注释）
+      // 'naver-site-verification': 'your-naver-verification-code',
+    },
+  };
+  
+  // 合并语言特定的元数据和基础元数据
+  return {
+    ...localeMetadata,
+    ...baseMetadata,
+    alternates: {
+      ...baseMetadata.alternates,
+      ...localeMetadata.alternates,
+    },
+  };
+}
 
 // 移除动态导入，采用正确的方式处理主题水合
 export default function RootLayout({

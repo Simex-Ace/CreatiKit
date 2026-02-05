@@ -9,31 +9,25 @@ import { ToolStructuredData } from '@/components/ToolStructuredData';
  */
 export async function generateMetadata(): Promise<Metadata> {
   const headersList = await headers();
-  const pathname = headersList.get('x-pathname') || '/svg-editor';
+  const pathname = headersList.get('x-pathname') || '/physics-lab';
   
   // 从路径中提取语言
   const locale = getLocaleFromPath(pathname) || 'en';
   
   // 获取工具元数据
-  return getToolMetadata('/svg-editor', locale);
+  return getToolMetadata('/physics-lab', locale);
 }
 
-export default function SVGEditorLayout({
+export default function PhysicsLabLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
   return (
     <>
-      <ToolStructuredData path="/svg-editor" />
+      <ToolStructuredData path="/physics-lab" />
       {children}
     </>
   );
 }
-
-
-
-
-
-
 

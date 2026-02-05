@@ -1,9 +1,22 @@
 import type { Metadata } from 'next';
+import { headers } from 'next/headers';
+import { getToolMetadata } from '@/lib/tool-metadata';
+import { getLocaleFromPath } from '@/lib/i18n-routing';
+import { ToolStructuredData } from '@/components/ToolStructuredData';
 
-export const metadata: Metadata = {
-  title: '在线白板 - CreatiKit',
-  description: '一个简单易用的在线白板工具，支持画笔、橡皮擦、文本和形状绘制',
-};
+/**
+ * 动态生成多语言元数据
+ */
+export async function generateMetadata(): Promise<Metadata> {
+  const headersList = await headers();
+  const pathname = headersList.get('x-pathname') || '/whiteboard';
+  
+  // 从路径中提取语言
+  const locale = getLocaleFromPath(pathname) || 'en';
+  
+  // 获取工具元数据
+  return getToolMetadata('/whiteboard', locale);
+}
 
 export default function WhiteboardLayout({
   children,
@@ -12,6 +25,7 @@ export default function WhiteboardLayout({
 }) {
   return (
     <div className="min-h-screen flex flex-col">
+      <ToolStructuredData path="/whiteboard" />
       {children}
     </div>
   );

@@ -1,4 +1,5 @@
 import { MetadataRoute } from 'next';
+import { locales, addLocaleToPath } from '@/lib/i18n-routing';
 
 // 定义路由项的类型，确保类型安全
 type RouteItem = {
@@ -9,7 +10,7 @@ type RouteItem = {
   priority: number;
 };
 
-// 定义站点的所有路由
+// 定义站点的所有路由（不包含语言前缀）
 const routes: RouteItem[] = [
   // 首页 - 最高优先级
   { path: '/', lastModified: new Date(), changeFrequency: 'daily', priority: 1.0 },
@@ -58,15 +59,47 @@ export default function sitemap(): MetadataRoute.Sitemap {
     ? 'https://creatikit.asia' 
     : 'http://localhost:3000';
 
-  // 将路由项转换为Next.js站点地图格式
-  return routes.map((route) => ({
-    // 构建完整的URL
-    url: `${baseUrl}${route.path}`,
-    // 最后修改时间
-    lastModified: route.lastModified,
-    // 更新频率
-    changeFrequency: route.changeFrequency,
-    // 优先级（0.0-1.0）
-    priority: route.priority,
-  }));
+  // 为每个路由生成所有语言版本的URL
+  // 这样每个语言版本都有独立的URL，有利于SEO
+  const sitemapEntries: MetadataRoute.Sitemap = [];
+  
+  routes.forEach((route) => {
+    locales.forEach((locale) => {
+      const localizedPath = addLocaleToPath(route.path, locale);
+      sitemapEntries.push({
+        url: `${baseUrl}${localizedPath}`,
+        lastModified: route.lastModified,
+        changeFrequency: route.changeFrequency,
+        priority: route.priority,
+      });
+    });
+  });
+
+  return sitemapEntries;
 }
+
+/**
+ * SEO优化说明：
+ * 
+ * 1. Sitemap提交指南：
+ *    - Google: https://search.google.com/search-console → Sitemaps → 添加 /sitemap.xml
+ *    - 百度: https://ziyuan.baidu.com → 数据引入 → sitemap → 添加 https://creatikit.asia/sitemap.xml
+ *    - Bing: https://www.bing.com/webmasters → Sitemaps → 提交 sitemap
+ *    - Yandex: https://webmaster.yandex.com → 索引 → Sitemap文件
+ *    - 搜狗: https://zhanzhang.sogou.com → 链接提交 → sitemap提交
+ *    - 360: https://zhanzhang.so.com → 数据提交 → sitemap提交
+ *    - 神马: https://zhanzhang.sm.cn → 链接提交 → sitemap提交
+ *    - Naver: https://searchadvisor.naver.com → 网站地图
+ * 
+ * 2. 验证网站：
+ *    - 在各搜索引擎站长平台验证网站所有权
+ *    - 添加对应的验证码到 layout.tsx 的 verification 或 other 字段
+ * 
+ * 3. 定期更新：
+ *    - 定期更新 sitemap 中的 lastModified 日期
+ *    - 确保新页面及时添加到 routes 数组中
+ * 
+ * 4. 监控收录：
+ *    - 定期检查各搜索引擎的收录情况
+ *    - 使用各平台的索引覆盖率报告
+ */

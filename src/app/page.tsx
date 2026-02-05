@@ -7,7 +7,7 @@ import { Card } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Input } from '@/components/ui/input';
 import { Image, Globe, FileCode, Monitor, Lock, Code, BookOpen, Palette, Smile, QrCode, PencilRuler, RotateCw, CloudSun, BarChart2, FlaskConical, Heart, Music, Sparkles, Shapes, ChevronDown, ChevronUp, Search, X } from 'lucide-react';
-import { useRouter } from 'next/navigation';
+import { useLocalizedRouter } from '@/hooks/useLocalizedRouter';
 import { useDevelopmentAlert } from '@/lib/useDevelopmentAlert';
 import { useI18n } from '@/contexts/I18nContext';
 
@@ -18,7 +18,7 @@ const LearnMoreModal = dynamic(() => import('@/components/ui/LearnMoreModal').th
 const BackToTop = dynamic(() => import('@/components/ui/back-to-top').then(mod => ({ default: mod.BackToTop })), { ssr: false });
 
 export default function Home() {
-  const router = useRouter();
+  const router = useLocalizedRouter();
   const { showAlert, alertVisible, alertMessage, alertDuration, closeAlert } = useDevelopmentAlert();
   const { t } = useI18n();
   const [showAllTools, setShowAllTools] = useState(false);
@@ -32,7 +32,7 @@ export default function Home() {
     const updateCount = () => {
       clearTimeout(timeoutId);
       timeoutId = setTimeout(() => {
-        setDefaultVisibleCount(window.innerWidth >= 1024 ? 9 : 6);
+      setDefaultVisibleCount(window.innerWidth >= 1024 ? 9 : 6);
       }, 150); // 防抖150ms
     };
     // 初始化时立即执行一次

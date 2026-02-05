@@ -1,27 +1,36 @@
 import type { Metadata } from 'next';
+import { headers } from 'next/headers';
+import { getToolMetadata } from '@/lib/tool-metadata';
+import { getLocaleFromPath } from '@/lib/i18n-routing';
+import { ToolStructuredData } from '@/components/ToolStructuredData';
 
-export const metadata: Metadata = {
-  title: 'CSS动画生成器 - 可视化创建CSS动画 | CreatiKit',
-  description: '免费在线CSS动画生成器，可视化创建CSS动画，实时预览效果，支持多种动画类型和参数调整，导出代码直接使用。无需注册，完全免费。',
-  keywords: ['CSS动画', '动画生成器', 'CSS动画工具', '动画制作', 'CSS keyframes', '动画编辑器', 'CSS特效', '前端动画'],
-  openGraph: {
-    title: 'CSS动画生成器 - CreatiKit',
-    description: '免费在线CSS动画生成器，可视化创建CSS动画，实时预览效果，导出代码直接使用。',
-    url: 'https://creatikit.asia/css-animator',
-    type: 'website',
-  },
-  alternates: {
-    canonical: 'https://creatikit.asia/css-animator',
-  },
-};
+/**
+ * 动态生成多语言元数据
+ */
+export async function generateMetadata(): Promise<Metadata> {
+  const headersList = await headers();
+  const pathname = headersList.get('x-pathname') || '/css-animator';
+  
+  // 从路径中提取语言
+  const locale = getLocaleFromPath(pathname) || 'en';
+  
+  // 获取工具元数据
+  return getToolMetadata('/css-animator', locale);
+}
 
 export default function CSSAnimatorLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  return children;
+  return (
+    <>
+      <ToolStructuredData path="/css-animator" />
+      {children}
+    </>
+  );
 }
+
 
 
 

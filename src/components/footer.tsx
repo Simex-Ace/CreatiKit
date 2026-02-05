@@ -1,6 +1,7 @@
 'use client'
 
-import Link from 'next/link';
+import { LocalizedLink } from '@/components/LocalizedLink';
+import Link from 'next/link'; // 保留用于外部链接
 import dynamic from 'next/dynamic';
 import { Separator } from '@/components/ui/separator';
 import { Github, Twitter, Rocket } from 'lucide-react';
@@ -27,11 +28,11 @@ export function Footer() {
       <div className="container py-10 md:py-12">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           <div className="space-y-4">
-            <Link href="/" className="inline-block">
+            <LocalizedLink href="/" className="inline-block">
               <span className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-purple-600">
                 CreatiKit
               </span>
-            </Link>
+            </LocalizedLink>
             <p className="text-sm text-muted-foreground">
               {t('footer.tagline')}
             </p>
@@ -118,24 +119,24 @@ export function Footer() {
             <h3 className="text-sm font-semibold mb-4">{t('footer.tools')}</h3>
             <ul className="space-y-2">
               <li>
-                <Link href="/compress" className="text-sm text-muted-foreground hover:text-primary">
+                <LocalizedLink href="/compress" className="text-sm text-muted-foreground hover:text-primary">
                   {t('footer.imageCompress')}
-                </Link>
+                </LocalizedLink>
               </li>
               <li>
-                <Link href="/model-viewer" className="text-sm text-muted-foreground hover:text-primary">
+                <LocalizedLink href="/model-viewer" className="text-sm text-muted-foreground hover:text-primary">
                   {t('footer.viewer3d')}
-                </Link>
+                </LocalizedLink>
               </li>
               <li>
-                <Link href="/code-tools" className="text-sm text-muted-foreground hover:text-primary">
+                <LocalizedLink href="/code-tools" className="text-sm text-muted-foreground hover:text-primary">
                   {t('footer.codeTools')}
-                </Link>
+                </LocalizedLink>
               </li>
               <li>
-                <Link href="/color-palette" className="text-sm text-muted-foreground hover:text-primary">
+                <LocalizedLink href="/color-palette" className="text-sm text-muted-foreground hover:text-primary">
                   {t('footer.designTools')}
-                </Link>
+                </LocalizedLink>
               </li>
             </ul>
           </div>
@@ -144,9 +145,9 @@ export function Footer() {
             <h3 className="text-sm font-semibold mb-4">{t('footer.resources')}</h3>
             <ul className="space-y-2">
               <li>
-                <Link href="/docs" className="text-sm text-muted-foreground hover:text-primary">
+                <LocalizedLink href="/docs" className="text-sm text-muted-foreground hover:text-primary">
                   {t('footer.docs')}
-                </Link>
+                </LocalizedLink>
               </li>
               <li>
                 <Link href="/api" className="text-sm text-muted-foreground hover:text-primary">
@@ -154,14 +155,14 @@ export function Footer() {
                 </Link>
               </li>
               <li>
-                <Link href="/blog" className="text-sm text-muted-foreground hover:text-primary">
+                <LocalizedLink href="/blog" className="text-sm text-muted-foreground hover:text-primary">
                   {t('footer.blog')}
-                </Link>
+                </LocalizedLink>
               </li>
               <li>
-                <Link href="/tutorials" className="text-sm text-muted-foreground hover:text-primary">
+                <LocalizedLink href="/tutorials" className="text-sm text-muted-foreground hover:text-primary">
                   {t('footer.tutorials')}
-                </Link>
+                </LocalizedLink>
               </li>
             </ul>
           </div>
@@ -170,24 +171,24 @@ export function Footer() {
             <h3 className="text-sm font-semibold mb-4">{t('footer.company')}</h3>
             <ul className="space-y-2">
               <li>
-                <Link href="/about" className="text-sm text-muted-foreground hover:text-primary">
+                <LocalizedLink href="/about" className="text-sm text-muted-foreground hover:text-primary">
                   {t('footer.about')}
-                </Link>
+                </LocalizedLink>
               </li>
               <li>
-                <Link href="/privacy" className="text-sm text-muted-foreground hover:text-primary">
+                <LocalizedLink href="/privacy" className="text-sm text-muted-foreground hover:text-primary">
                   {t('footer.privacy')}
-                </Link>
+                </LocalizedLink>
               </li>
               <li>
-                <Link href="/terms" className="text-sm text-muted-foreground hover:text-primary">
+                <LocalizedLink href="/terms" className="text-sm text-muted-foreground hover:text-primary">
                   {t('footer.terms')}
-                </Link>
+                </LocalizedLink>
               </li>
               <li>
-                <Link href="/contact" className="text-sm text-muted-foreground hover:text-primary">
+                <LocalizedLink href="/contact" className="text-sm text-muted-foreground hover:text-primary">
                   {t('footer.contact')}
-                </Link>
+                </LocalizedLink>
               </li>
             </ul>
           </div>

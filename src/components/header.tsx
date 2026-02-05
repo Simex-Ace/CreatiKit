@@ -1,6 +1,6 @@
 'use client'
 
-import Link from 'next/link';
+import { LocalizedLink } from '@/components/LocalizedLink';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
@@ -67,24 +67,24 @@ export function Header() {
     <header className="sticky top-0 z-[10000] w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 items-center justify-between">
         <div className="flex items-center">
-          <Link href="/" className="flex items-center space-x-2 transition-transform duration-300 ease-out hover:scale-[1.02]">
+          <LocalizedLink href="/" className="flex items-center space-x-2 transition-transform duration-300 ease-out hover:scale-[1.02]">
             <span className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-purple-600 transition-all duration-300 ease-out hover:from-blue-500 hover:to-purple-500">
               CreatiKit
             </span>
-          </Link>
+          </LocalizedLink>
           <nav className="hidden md:flex items-center ml-10 space-x-8">
-            <Link href="/" className="text-sm font-medium relative px-3 py-1.5 rounded-md transition-colors duration-300 ease-out hover:text-primary before:absolute before:inset-0 before:rounded-md before:bg-accent/30 before:opacity-0 before:transition-opacity before:duration-300 before:ease-out hover:before:opacity-100">
+            <LocalizedLink href="/" className="text-sm font-medium relative px-3 py-1.5 rounded-md transition-colors duration-300 ease-out hover:text-primary before:absolute before:inset-0 before:rounded-md before:bg-accent/30 before:opacity-0 before:transition-opacity before:duration-300 before:ease-out hover:before:opacity-100">
               <span className="relative z-10">{t('nav.home')}</span>
-            </Link>
-            <Link href="/compress" className="text-sm font-medium relative px-3 py-1.5 rounded-md transition-colors duration-300 ease-out hover:text-primary before:absolute before:inset-0 before:rounded-md before:bg-accent/30 before:opacity-0 before:transition-opacity before:duration-300 before:ease-out hover:before:opacity-100">
+            </LocalizedLink>
+            <LocalizedLink href="/compress" className="text-sm font-medium relative px-3 py-1.5 rounded-md transition-colors duration-300 ease-out hover:text-primary before:absolute before:inset-0 before:rounded-md before:bg-accent/30 before:opacity-0 before:transition-opacity before:duration-300 before:ease-out hover:before:opacity-100">
               <span className="relative z-10">{t('nav.imageCompress')}</span>
-            </Link>
-            <Link href="/model-viewer" className="text-sm font-medium relative px-3 py-1.5 rounded-md transition-colors duration-300 ease-out hover:text-primary before:absolute before:inset-0 before:rounded-md before:bg-accent/30 before:opacity-0 before:transition-opacity before:duration-300 before:ease-out hover:before:opacity-100">
+            </LocalizedLink>
+            <LocalizedLink href="/model-viewer" className="text-sm font-medium relative px-3 py-1.5 rounded-md transition-colors duration-300 ease-out hover:text-primary before:absolute before:inset-0 before:rounded-md before:bg-accent/30 before:opacity-0 before:transition-opacity before:duration-300 before:ease-out hover:before:opacity-100">
               <span className="relative z-10">{t('nav.modelViewer')}</span>
-            </Link>
-            <Link href="/color-palette" className="text-sm font-medium relative px-3 py-1.5 rounded-md transition-colors duration-300 ease-out hover:text-primary before:absolute before:inset-0 before:rounded-md before:bg-accent/30 before:opacity-0 before:transition-opacity before:duration-300 before:ease-out hover:before:opacity-100">
+            </LocalizedLink>
+            <LocalizedLink href="/color-palette" className="text-sm font-medium relative px-3 py-1.5 rounded-md transition-colors duration-300 ease-out hover:text-primary before:absolute before:inset-0 before:rounded-md before:bg-accent/30 before:opacity-0 before:transition-opacity before:duration-300 before:ease-out hover:before:opacity-100">
               <span className="relative z-10">{t('nav.colorPalette')}</span>
-            </Link>
+            </LocalizedLink>
           </nav>
         </div>
         <div className="flex items-center space-x-4">
@@ -134,18 +134,18 @@ export function Header() {
       {isMenuOpen && (
         <div className="md:hidden border-t">
           <div className="container py-4 space-y-4">
-            <Link href="/" className="block py-2 px-3 text-sm font-medium relative rounded-md transition-all duration-300 ease-out hover:text-primary hover:translate-x-1 before:absolute before:inset-0 before:rounded-md before:bg-accent/30 before:opacity-0 before:transition-opacity before:duration-300 before:ease-out hover:before:opacity-100">
+            <LocalizedLink href="/" className="block py-2 px-3 text-sm font-medium relative rounded-md transition-all duration-300 ease-out hover:text-primary hover:translate-x-1 before:absolute before:inset-0 before:rounded-md before:bg-accent/30 before:opacity-0 before:transition-opacity before:duration-300 before:ease-out hover:before:opacity-100">
               <span className="relative z-10">{t('nav.home')}</span>
-            </Link>
-            <Link href="/compress" className="block py-2 px-3 text-sm font-medium relative rounded-md transition-all duration-300 ease-out hover:text-primary hover:translate-x-1 before:absolute before:inset-0 before:rounded-md before:bg-accent/30 before:opacity-0 before:transition-opacity before:duration-300 before:ease-out hover:before:opacity-100">
+            </LocalizedLink>
+            <LocalizedLink href="/compress" className="block py-2 px-3 text-sm font-medium relative rounded-md transition-all duration-300 ease-out hover:text-primary hover:translate-x-1 before:absolute before:inset-0 before:rounded-md before:bg-accent/30 before:opacity-0 before:transition-opacity before:duration-300 before:ease-out hover:before:opacity-100">
               <span className="relative z-10">{t('nav.imageCompress')}</span>
-            </Link>
-            <Link href="/model-viewer" className="block py-2 px-3 text-sm font-medium relative rounded-md transition-all duration-300 ease-out hover:text-primary hover:translate-x-1 before:absolute before:inset-0 before:rounded-md before:bg-accent/30 before:opacity-0 before:transition-opacity before:duration-300 before:ease-out hover:before:opacity-100">
+            </LocalizedLink>
+            <LocalizedLink href="/model-viewer" className="block py-2 px-3 text-sm font-medium relative rounded-md transition-all duration-300 ease-out hover:text-primary hover:translate-x-1 before:absolute before:inset-0 before:rounded-md before:bg-accent/30 before:opacity-0 before:transition-opacity before:duration-300 before:ease-out hover:before:opacity-100">
               <span className="relative z-10">{t('nav.modelViewer')}</span>
-            </Link>
-            <Link href="/whiteboard" className="block py-2 px-3 text-sm font-medium relative rounded-md transition-all duration-300 ease-out hover:text-primary hover:translate-x-1 before:absolute before:inset-0 before:rounded-md before:bg-accent/30 before:opacity-0 before:transition-opacity before:duration-300 before:ease-out hover:before:opacity-100">
+            </LocalizedLink>
+            <LocalizedLink href="/whiteboard" className="block py-2 px-3 text-sm font-medium relative rounded-md transition-all duration-300 ease-out hover:text-primary hover:translate-x-1 before:absolute before:inset-0 before:rounded-md before:bg-accent/30 before:opacity-0 before:transition-opacity before:duration-300 before:ease-out hover:before:opacity-100">
               <span className="relative z-10">{t('nav.whiteboard')}</span>
-            </Link>
+            </LocalizedLink>
             {!loading && (
             <div className="pt-2 flex flex-col space-y-2">
                 {user ? (

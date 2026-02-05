@@ -1,24 +1,33 @@
 import type { Metadata } from 'next';
+import { headers } from 'next/headers';
+import { getToolMetadata } from '@/lib/tool-metadata';
+import { getLocaleFromPath } from '@/lib/i18n-routing';
+import { ToolStructuredData } from '@/components/ToolStructuredData';
 
-export const metadata: Metadata = {
-  title: '调色板工具 - 专业在线配色工具 | CreatiKit',
-  description: '专业在线调色板工具，支持颜色选择、配色方案生成、图片取色功能，帮助设计师快速找到完美的配色方案。所有功能免费使用。',
-  keywords: ['调色板', '配色工具', '颜色选择器', '取色器', '配色方案', '色彩搭配', '颜色工具'],
-  openGraph: {
-    title: '调色板工具 - CreatiKit',
-    description: '专业在线调色板工具，支持颜色选择、配色方案生成、图片取色功能。',
-    url: 'https://creatikit.asia/color-palette',
-  },
-  alternates: {
-    canonical: 'https://creatikit.asia/color-palette',
-  },
-};
+/**
+ * 动态生成多语言元数据
+ */
+export async function generateMetadata(): Promise<Metadata> {
+  const headersList = await headers();
+  const pathname = headersList.get('x-pathname') || '/color-palette';
+  
+  // 从路径中提取语言
+  const locale = getLocaleFromPath(pathname) || 'en';
+  
+  // 获取工具元数据
+  return getToolMetadata('/color-palette', locale);
+}
 
 export default function ColorPaletteLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  return children;
+  return (
+    <>
+      <ToolStructuredData path="/color-palette" />
+      {children}
+    </>
+  );
 }
 
