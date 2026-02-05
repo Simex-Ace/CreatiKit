@@ -4,6 +4,9 @@ import { NextRequest, NextResponse } from 'next/server';
  * 检测用户地理位置并返回推荐的语言
  * 根据IP地址判断用户所在国家，返回对应的语言代码
  */
+// 标记为动态路由，因为使用了 request.headers
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: NextRequest) {
   try {
     // 获取客户端IP地址

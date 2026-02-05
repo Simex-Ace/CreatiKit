@@ -13,8 +13,23 @@ export default function Whiteboard() {
   const [lineWidth, setLineWidth] = useState(5);
   const [history, setHistory] = useState<string[]>([]);
   const [historyIndex, setHistoryIndex] = useState(-1);
+  const [isMobile, setIsMobile] = useState(false);
   const MAX_HISTORY = 50;
   
+  // 检测是否为移动设备
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setIsMobile(window.innerWidth < 768);
+      
+      const handleResize = () => {
+        setIsMobile(window.innerWidth < 768);
+      };
+      
+      window.addEventListener('resize', handleResize);
+      return () => window.removeEventListener('resize', handleResize);
+    }
+  }, []);
+
   // 初始化画布
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -382,7 +397,7 @@ export default function Whiteboard() {
         {/* 使用说明 */}
         <div className="bg-white rounded-lg shadow-md p-4">
           <p className="text-gray-600 text-sm text-center">
-            {window.innerWidth < 768 
+            {isMobile 
               ? t('whiteboardPage.mobileInstructions')
               : t('whiteboardPage.desktopInstructions')
             }
