@@ -1750,118 +1750,124 @@ const CameraGestureDrawing = () => {
   }, []);
   
   return (
-    <div style={{position: 'fixed', left: '5%', right: '5%', top: '10%', bottom: '5%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(180deg, #071027 0%, #0b1220 60%)', color: '#e6eef8', overflow: 'hidden', boxSizing: 'border-box', borderRadius: '16px', boxShadow: '0 20px 60px rgba(0, 0, 0, 0.5)', zIndex: 10}}>
-      {/* 主摄像头（用于 MediaPipe / 备用预览） */}
-      <video
-        ref={inputVideoRef}
-        autoPlay
-        playsInline
-        muted
-        style={{
-          position: 'absolute',
-          right: '1rem',
-          top: '1rem',
-          width: '240px',
-          height: '135px',
-          borderRadius: '12px',
-          objectFit: 'cover',
-          boxShadow: '0 8px 30px rgba(2,6,23,0.7)',
-          border: '1px solid rgba(255,255,255,0.03)',
-          zIndex: '60',
-          opacity: '0.9',
-          transform: 'scaleX(-1)',
-          transition: 'all 280ms ease'
-        }}
-      />
-      
-      {/* 绘图与 UI 两个 canvas（draw 镜像由 context transform 实现；ui 不镜像） */}
-      <canvas
-        ref={drawCanvasRef}
-        style={{
-          position: 'absolute',
-          left: '0',
-          top: '0',
-          width: '100%',
-          height: '100%',
-          zIndex: '30',
-          pointerEvents: 'none'
-        }}
-      />
-      <canvas
-        ref={uiCanvasRef}
-        style={{
-          position: 'absolute',
-          left: '0',
-          top: '0',
-          width: '100%',
-          height: '100%',
-          zIndex: '100', // 提高z-index，确保控制面板显示在最上面
-          pointerEvents: 'none'
-        }}
-      />
-      
-      <div style={{position: 'absolute', left: '1rem', top: '1rem', color: '#94a3b8', fontSize: '13px', zIndex: '80'}}>{t('cameraGestureDrawingPage.title')}</div>
-      <div style={{position: 'absolute', left: '50%', transform: 'translateX(-50%)', top: '1.8rem', color: '#94a3b8', fontSize: '13px', zIndex: '80', textAlign: 'center', maxWidth: '70%'}}>{t('cameraGestureDrawingPage.instructions')}</div>
-      <footer style={{position: 'absolute', right: '1rem', bottom: '1rem', color: '#94a3b8', fontSize: '12px', zIndex: '80'}}>{t('cameraGestureDrawingPage.footer')}</footer>
-      
-      {/* 真实 DOM 预览窗（可拖动、缩放、点击切换背景模式）*/}
-      <div
-        ref={previewElRef}
-        style={{
-          position: 'absolute',
-          right: '1rem',
-          top: '1rem',
-          width: '240px',
-          height: '135px',
-          zIndex: '70',
-          borderRadius: '12px',
-          overflow: 'hidden',
-          boxShadow: '0 10px 30px rgba(0,0,0,0.6)',
-          border: '1px solid rgba(255,255,255,0.06)',
-          background: 'linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.12))',
-          cursor: 'grab',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          transition: 'box-shadow 120ms ease'
-        }}
-        title={t('cameraGestureDrawingPage.previewHint')}
-      >
-        {/* 预览视频与主 video 使用同一视频流（赋值后） */}
+    <>
+      {/* Fixed 定位的主容器 */}
+      <div style={{position: 'fixed', left: '5%', right: '5%', top: '10%', bottom: '5%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(180deg, #071027 0%, #0b1220 60%)', color: '#e6eef8', overflow: 'hidden', boxSizing: 'border-box', borderRadius: '16px', boxShadow: '0 20px 60px rgba(0, 0, 0, 0.5)', zIndex: 10}}>
+        {/* 主摄像头（用于 MediaPipe / 备用预览） */}
         <video
-          ref={previewVideoRef}
+          ref={inputVideoRef}
           autoPlay
           playsInline
           muted
           style={{
-            width: '100%',
-            height: '100%',
+            position: 'absolute',
+            right: '1rem',
+            top: '1rem',
+            width: '240px',
+            height: '135px',
+            borderRadius: '12px',
             objectFit: 'cover',
-            transform: 'scaleX(-1)'
+            boxShadow: '0 8px 30px rgba(2,6,23,0.7)',
+            border: '1px solid rgba(255,255,255,0.03)',
+            zIndex: '60',
+            opacity: '0.9',
+            transform: 'scaleX(-1)',
+            transition: 'all 280ms ease'
           }}
         />
-        <div
-          ref={previewResizerRef}
+        
+        {/* 绘图与 UI 两个 canvas（draw 镜像由 context transform 实现；ui 不镜像） */}
+        <canvas
+          ref={drawCanvasRef}
           style={{
             position: 'absolute',
-            right: '6px',
-            bottom: '6px',
-            width: '14px',
-            height: '14px',
-            background: 'rgba(255,255,255,0.08)',
-            borderRadius: '3px',
-            cursor: 'se-resize',
-            zIndex: '80',
+            left: '0',
+            top: '0',
+            width: '100%',
+            height: '100%',
+            zIndex: '30',
+            pointerEvents: 'none'
+          }}
+        />
+        <canvas
+          ref={uiCanvasRef}
+          style={{
+            position: 'absolute',
+            left: '0',
+            top: '0',
+            width: '100%',
+            height: '100%',
+            zIndex: '100', // 提高z-index，确保控制面板显示在最上面
+            pointerEvents: 'none'
+          }}
+        />
+        
+        <div style={{position: 'absolute', left: '1rem', top: '1rem', color: '#94a3b8', fontSize: '13px', zIndex: '80'}}>{t('cameraGestureDrawingPage.title')}</div>
+        <div style={{position: 'absolute', left: '50%', transform: 'translateX(-50%)', top: '1.8rem', color: '#94a3b8', fontSize: '13px', zIndex: '80', textAlign: 'center', maxWidth: '70%'}}>{t('cameraGestureDrawingPage.instructions')}</div>
+        <footer style={{position: 'absolute', right: '1rem', bottom: '1rem', color: '#94a3b8', fontSize: '12px', zIndex: '80'}}>{t('cameraGestureDrawingPage.footer')}</footer>
+        
+        {/* 真实 DOM 预览窗（可拖动、缩放、点击切换背景模式）*/}
+        <div
+          ref={previewElRef}
+          style={{
+            position: 'absolute',
+            right: '1rem',
+            top: '1rem',
+            width: '240px',
+            height: '135px',
+            zIndex: '70',
+            borderRadius: '12px',
+            overflow: 'hidden',
+            boxShadow: '0 10px 30px rgba(0,0,0,0.6)',
+            border: '1px solid rgba(255,255,255,0.06)',
+            background: 'linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.12))',
+            cursor: 'grab',
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'center'
+            justifyContent: 'center',
+            transition: 'box-shadow 120ms ease'
           }}
-          title={t('cameraGestureDrawingPage.resizeHint')}
+          title={t('cameraGestureDrawingPage.previewHint')}
         >
-          <div style={{width: '8px', height: '8px', borderRight: '2px solid rgba(255,255,255,0.28)', borderBottom: '2px solid rgba(255,255,255,0.28)', transform: 'rotate(45deg)'}} />
+          {/* 预览视频与主 video 使用同一视频流（赋值后） */}
+          <video
+            ref={previewVideoRef}
+            autoPlay
+            playsInline
+            muted
+            style={{
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover',
+              transform: 'scaleX(-1)'
+            }}
+          />
+          <div
+            ref={previewResizerRef}
+            style={{
+              position: 'absolute',
+              right: '6px',
+              bottom: '6px',
+              width: '14px',
+              height: '14px',
+              background: 'rgba(255,255,255,0.08)',
+              borderRadius: '3px',
+              cursor: 'se-resize',
+              zIndex: '80',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}
+            title={t('cameraGestureDrawingPage.resizeHint')}
+          >
+            <div style={{width: '8px', height: '8px', borderRight: '2px solid rgba(255,255,255,0.28)', borderBottom: '2px solid rgba(255,255,255,0.28)', transform: 'rotate(45deg)'}} />
+          </div>
         </div>
       </div>
-    </div>
+      
+      {/* 占位元素：确保页面有足够高度，避免 footer 与 fixed 内容重叠 */}
+      <div style={{height: '85vh', width: '100%', pointerEvents: 'none'}} aria-hidden="true" />
+    </>
   );
 };
 
