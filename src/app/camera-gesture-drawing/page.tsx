@@ -1047,13 +1047,13 @@ const CameraGestureDrawing = () => {
     uctx.stroke();
     
     const btns = [
-      {id:'pen', x:left + 18, y:top + 10, w:80, h:90, label:'笔', color:selectedToolRef.current.id==='pen' ? selectedToolRef.current.color : '#60a5fa', sel:selectedToolRef.current.id==='pen'},
-      {id:'eraser', x:left + 18 + 96, y:top + 10, w:80, h:90, label:'橡皮', color:'#f97316', sel:selectedToolRef.current.id==='eraser'},
-      {id:'settings', x:left + 18 + 192, y:top + 10, w:80, h:90, label:'随机', color:'#ffffff', sel:selectedToolRef.current.id==='settings'},
-      {id:'background', x:left + 18 + 288, y:top + 10, w:90, h:90, label:'背景', color:cameraBackgroundModeRef.current ? '#34d399' : '#94a3b8', sel:false},
-      {id:'fire', x:left + 18 + 384, y:top + 10, w:90, h:90, label:'火焰', color:fireToolActiveRef.current ? '#f97316' : '#f59e0b', sel:fireToolActiveRef.current},
-      {id:'kiBlast', x:left + 18 + 480, y:top + 10, w:90, h:90, label:'爆炸效果', color:kiBlastToolActiveRef.current ? '#8b5cf6' : '#6366f1', sel:kiBlastToolActiveRef.current},
-      {id:'lightning', x:left + 18 + 576, y:top + 10, w:90, h:90, label:'闪电', color:lightningToolActiveRef.current ? '#38bdf8' : '#94a3b8', sel:lightningToolActiveRef.current}
+      {id:'pen', x:left + 18, y:top + 10, w:80, h:90, label:t('cameraGestureDrawingPage.pen'), color:selectedToolRef.current.id==='pen' ? selectedToolRef.current.color : '#60a5fa', sel:selectedToolRef.current.id==='pen'},
+      {id:'eraser', x:left + 18 + 96, y:top + 10, w:80, h:90, label:t('cameraGestureDrawingPage.eraser'), color:'#f97316', sel:selectedToolRef.current.id==='eraser'},
+      {id:'settings', x:left + 18 + 192, y:top + 10, w:80, h:90, label:t('cameraGestureDrawingPage.settings'), color:'#ffffff', sel:selectedToolRef.current.id==='settings'},
+      {id:'background', x:left + 18 + 288, y:top + 10, w:90, h:90, label:t('cameraGestureDrawingPage.background'), color:cameraBackgroundModeRef.current ? '#34d399' : '#94a3b8', sel:false},
+      {id:'fire', x:left + 18 + 384, y:top + 10, w:90, h:90, label:t('cameraGestureDrawingPage.fire'), color:fireToolActiveRef.current ? '#f97316' : '#f59e0b', sel:fireToolActiveRef.current},
+      {id:'kiBlast', x:left + 18 + 480, y:top + 10, w:90, h:90, label:t('cameraGestureDrawingPage.kiBlast'), color:kiBlastToolActiveRef.current ? '#8b5cf6' : '#6366f1', sel:kiBlastToolActiveRef.current},
+      {id:'lightning', x:left + 18 + 576, y:top + 10, w:90, h:90, label:t('cameraGestureDrawingPage.lightning'), color:lightningToolActiveRef.current ? '#38bdf8' : '#94a3b8', sel:lightningToolActiveRef.current}
     ];
     
     for(const b of btns) {

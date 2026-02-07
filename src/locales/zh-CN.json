@@ -1074,7 +1074,14 @@
     "instructions": "张开掌心呼出面板 · 食指点选 · 拇指+食指捏合写字 · 张开捏合手指消散",
     "footer": "单文件示例 — 允许摄像头权限后生效",
     "previewHint": "点击切换背景 | 拖动移动 | 右下角拖拽缩放",
-    "resizeHint": "拖动调整大小"
+    "resizeHint": "拖动调整大小",
+    "pen": "笔",
+    "eraser": "橡皮",
+    "settings": "随机",
+    "background": "背景",
+    "fire": "火焰",
+    "kiBlast": "爆炸效果",
+    "lightning": "闪电"
   },
   "audioVisualizerPage": {
     "title": "音频可视化器",

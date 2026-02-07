@@ -1084,7 +1084,14 @@
     "instructions": "Open palm to summon panel · Point with index finger · Pinch thumb and index finger to write · Open pinched fingers to dissolve",
     "footer": "Single file example — Takes effect after allowing camera permission",
     "previewHint": "Click to toggle background | Drag to move | Drag bottom-right corner to resize",
-    "resizeHint": "Drag to resize"
+    "resizeHint": "Drag to resize",
+    "pen": "Pen",
+    "eraser": "Eraser",
+    "settings": "Random",
+    "background": "Background",
+    "fire": "Fire",
+    "kiBlast": "Blast",
+    "lightning": "Lightning"
   },
   "audioVisualizerPage": {
     "title": "Audio Visualizer",

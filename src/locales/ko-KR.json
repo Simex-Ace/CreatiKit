@@ -1084,7 +1084,14 @@
     "instructions": "손바닥을 펴서 패널 소환 · 검지로 가리키기 · 엄지와 검지를 집어서 쓰기 · 집은 손가락을 펴서 해제",
     "footer": "단일 파일 예제 — 카메라 권한 허용 후 적용",
     "previewHint": "클릭하여 배경 전환 | 드래그하여 이동 | 오른쪽 하단 모서리를 드래그하여 크기 조정",
-    "resizeHint": "드래그하여 크기 조정"
+    "resizeHint": "드래그하여 크기 조정",
+    "pen": "펜",
+    "eraser": "지우개",
+    "settings": "랜덤",
+    "background": "배경",
+    "fire": "불",
+    "kiBlast": "폭발",
+    "lightning": "번개"
   },
   "audioVisualizerPage": {
     "title": "오디오 비주얼라이저",

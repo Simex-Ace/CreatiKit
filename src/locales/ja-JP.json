@@ -1084,7 +1084,14 @@
     "instructions": "手のひらを開いてパネルを呼び出す · 人差し指で指す · 親指と人差し指をピンチして書く · ピンチした指を開いて溶解",
     "footer": "単一ファイルの例 — カメラの許可後に有効になります",
     "previewHint": "クリックして背景を切り替え | ドラッグして移動 | 右下の角をドラッグしてサイズ変更",
-    "resizeHint": "ドラッグしてサイズ変更"
+    "resizeHint": "ドラッグしてサイズ変更",
+    "pen": "ペン",
+    "eraser": "消しゴム",
+    "settings": "ランダム",
+    "background": "背景",
+    "fire": "炎",
+    "kiBlast": "爆発",
+    "lightning": "雷"
   },
   "audioVisualizerPage": {
     "title": "オーディオビジュアライザー",
