@@ -12,6 +12,7 @@ const CameraGestureDrawing = () => {
   const previewResizerRef = useRef<HTMLDivElement>(null);
   const drawCanvasRef = useRef<HTMLCanvasElement>(null);
   const uiCanvasRef = useRef<HTMLCanvasElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   
   // 内部状态（使用 useRef 避免不必要的重渲染）
   const dctxRef = useRef<CanvasRenderingContext2D | null>(null);
@@ -54,7 +55,16 @@ const CameraGestureDrawing = () => {
   const kiBlastSizeRef = useRef(0); // 爆炸能量球大小
   const kiBlastChargeStartTimeRef = useRef(0); // 聚集能量开始时间
   const selectedStrokesRef = useRef<Array<number>>([]);
+  // MediaPipe 初始化防重复 & 重试计数
+  const initializedRef = useRef(false);
+  const mediaPipeRetryRef = useRef(0);
   
+  // I18n 引用：用于在渲染循环中获取最新的 t，避免首次渲染时文本为空
+  const tRef = useRef(t);
+  useEffect(() => {
+    tRef.current = t;
+  }, [t]);
+
   // MediaPipe 相关引用
   const handsRef = useRef<any>(null);
   const cameraRef = useRef<any>(null);
@@ -63,10 +73,20 @@ const CameraGestureDrawing = () => {
   // 初始化 MediaPipe Hands
   const initMediaPipe = () => {
     if (typeof window === 'undefined') return;
+    // 已成功初始化则直接返回，避免重复创建 Hands / Camera
+    if (initializedRef.current) return;
     
-    // 检查 MediaPipe Hands 和 Camera 是否已加载
-    if (!('Hands' in window) || !('Camera' in window)) {
-      console.log('MediaPipe Hands or Camera not available yet');
+    // 检查 MediaPipe Hands 和 Camera 是否已加载；未就绪时进行有限次数重试
+    const hasHands = 'Hands' in window;
+    const hasCamera = 'Camera' in window;
+    if (!hasHands || !hasCamera) {
+      const MAX_RETRY = 20; // 最多重试约 20 次（配合 300ms 间隔，约 6 秒）
+      if (mediaPipeRetryRef.current >= MAX_RETRY) {
+        console.warn('MediaPipe Hands or Camera not available after retries');
+        return;
+      }
+      mediaPipeRetryRef.current += 1;
+      setTimeout(initMediaPipe, 300);
       return;
     }
     
@@ -112,6 +132,7 @@ const CameraGestureDrawing = () => {
       });
       
       cameraRef.current = camera;
+      initializedRef.current = true;
     }
   };
   
@@ -176,7 +197,7 @@ const CameraGestureDrawing = () => {
   // 坐标映射：forUI=true -> 返回视觉坐标用于 UI 点击检测
   // forUI=false -> 返回原始屏幕坐标（用于绘图，配合 drawCanvas 的镜像 transform）
   const toScreen = (pt: any, options: {forUI?: boolean} = {forUI: false}) => {
-    // 使用浏览器窗口尺寸，因为面板现在使用基于浏览器窗口的绝对定位
+    // 恢复使用窗口尺寸（这是你从卡片进入时一直觉得“手感正确”的坐标系）
     const w = window.innerWidth, h = window.innerHeight;
     
     // 优化基础偏移量，调整为更精确的值以匹配实际手部位置
@@ -986,7 +1007,7 @@ const CameraGestureDrawing = () => {
   // 适应画布尺寸
   const fitCanvasSize = (canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D | null, mirror: boolean = false) => {
     const ratio = window.devicePixelRatio || 1;
-    const container = document.querySelector('div[style*="position: fixed"]') as HTMLElement;
+    const container = containerRef.current;
     const width = container ? container.clientWidth : window.innerWidth;
     const height = container ? container.clientHeight : window.innerHeight;
     
@@ -1047,13 +1068,13 @@ const CameraGestureDrawing = () => {
     uctx.stroke();
     
     const btns = [
-      {id:'pen', x:left + 18, y:top + 10, w:80, h:90, label:t('cameraGestureDrawingPage.pen'), color:selectedToolRef.current.id==='pen' ? selectedToolRef.current.color : '#60a5fa', sel:selectedToolRef.current.id==='pen'},
-      {id:'eraser', x:left + 18 + 96, y:top + 10, w:80, h:90, label:t('cameraGestureDrawingPage.eraser'), color:'#f97316', sel:selectedToolRef.current.id==='eraser'},
-      {id:'settings', x:left + 18 + 192, y:top + 10, w:80, h:90, label:t('cameraGestureDrawingPage.settings'), color:'#ffffff', sel:selectedToolRef.current.id==='settings'},
-      {id:'background', x:left + 18 + 288, y:top + 10, w:90, h:90, label:t('cameraGestureDrawingPage.background'), color:cameraBackgroundModeRef.current ? '#34d399' : '#94a3b8', sel:false},
-      {id:'fire', x:left + 18 + 384, y:top + 10, w:90, h:90, label:t('cameraGestureDrawingPage.fire'), color:fireToolActiveRef.current ? '#f97316' : '#f59e0b', sel:fireToolActiveRef.current},
-      {id:'kiBlast', x:left + 18 + 480, y:top + 10, w:90, h:90, label:t('cameraGestureDrawingPage.kiBlast'), color:kiBlastToolActiveRef.current ? '#8b5cf6' : '#6366f1', sel:kiBlastToolActiveRef.current},
-      {id:'lightning', x:left + 18 + 576, y:top + 10, w:90, h:90, label:t('cameraGestureDrawingPage.lightning'), color:lightningToolActiveRef.current ? '#38bdf8' : '#94a3b8', sel:lightningToolActiveRef.current}
+      {id:'pen', x:left + 18, y:top + 10, w:80, h:90, label:tRef.current('cameraGestureDrawingPage.pen'), color:selectedToolRef.current.id==='pen' ? selectedToolRef.current.color : '#60a5fa', sel:selectedToolRef.current.id==='pen'},
+      {id:'eraser', x:left + 18 + 96, y:top + 10, w:80, h:90, label:tRef.current('cameraGestureDrawingPage.eraser'), color:'#f97316', sel:selectedToolRef.current.id==='eraser'},
+      {id:'settings', x:left + 18 + 192, y:top + 10, w:80, h:90, label:tRef.current('cameraGestureDrawingPage.settings'), color:'#ffffff', sel:selectedToolRef.current.id==='settings'},
+      {id:'background', x:left + 18 + 288, y:top + 10, w:90, h:90, label:tRef.current('cameraGestureDrawingPage.background'), color:cameraBackgroundModeRef.current ? '#34d399' : '#94a3b8', sel:false},
+      {id:'fire', x:left + 18 + 384, y:top + 10, w:90, h:90, label:tRef.current('cameraGestureDrawingPage.fire'), color:fireToolActiveRef.current ? '#f97316' : '#f59e0b', sel:fireToolActiveRef.current},
+      {id:'kiBlast', x:left + 18 + 480, y:top + 10, w:90, h:90, label:tRef.current('cameraGestureDrawingPage.kiBlast'), color:kiBlastToolActiveRef.current ? '#8b5cf6' : '#6366f1', sel:kiBlastToolActiveRef.current},
+      {id:'lightning', x:left + 18 + 576, y:top + 10, w:90, h:90, label:tRef.current('cameraGestureDrawingPage.lightning'), color:lightningToolActiveRef.current ? '#38bdf8' : '#94a3b8', sel:lightningToolActiveRef.current}
     ];
     
     for(const b of btns) {
@@ -1676,10 +1697,23 @@ const CameraGestureDrawing = () => {
     document.body.appendChild(script2);
     document.body.appendChild(script3);
     
-    // 等待脚本加载完成后初始化
+    // 使用脚本 onload 事件更可靠地触发初始化（兼容直接刷新 / URL 进入）
+    let loadedCount = 0;
+    const handleScriptLoad = () => {
+      loadedCount += 1;
+      // hands.js 和 camera_utils.js 就绪后再尝试初始化
+      if (loadedCount >= 2) {
+        initMediaPipe();
+      }
+    };
+
+    script1.addEventListener('load', handleScriptLoad);
+    script2.addEventListener('load', handleScriptLoad);
+
+    // 兜底定时器：即使 onload 丢失，也会在几秒内重试初始化
     const timer = setTimeout(() => {
       initMediaPipe();
-    }, 1000);
+    }, 4000);
     
     // 设置画布上下文
     const drawCanvas = drawCanvasRef.current;
@@ -1743,6 +1777,8 @@ const CameraGestureDrawing = () => {
     
     return () => {
       clearTimeout(timer);
+      script1.removeEventListener('load', handleScriptLoad);
+      script2.removeEventListener('load', handleScriptLoad);
       document.body.removeChild(script1);
       document.body.removeChild(script2);
       document.body.removeChild(script3);
@@ -1752,118 +1788,121 @@ const CameraGestureDrawing = () => {
   return (
     <>
       {/* Fixed 定位的主容器 */}
-      <div style={{position: 'fixed', left: '5%', right: '5%', top: '10%', bottom: '5%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(180deg, #071027 0%, #0b1220 60%)', color: '#e6eef8', overflow: 'hidden', boxSizing: 'border-box', borderRadius: '16px', boxShadow: '0 20px 60px rgba(0, 0, 0, 0.5)', zIndex: 10}}>
-        {/* 主摄像头（用于 MediaPipe / 备用预览） */}
+    <div
+      ref={containerRef}
+      style={{position: 'fixed', left: '5%', right: '5%', top: '10%', bottom: '5%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(180deg, #071027 0%, #0b1220 60%)', color: '#e6eef8', overflow: 'hidden', boxSizing: 'border-box', borderRadius: '16px', boxShadow: '0 20px 60px rgba(0, 0, 0, 0.5)', zIndex: 10}}
+    >
+      {/* 主摄像头（用于 MediaPipe / 备用预览） */}
+      <video
+        ref={inputVideoRef}
+        autoPlay
+        playsInline
+        muted
+        style={{
+          position: 'absolute',
+          right: '1rem',
+          top: '1rem',
+          width: '240px',
+          height: '135px',
+          borderRadius: '12px',
+          objectFit: 'cover',
+          boxShadow: '0 8px 30px rgba(2,6,23,0.7)',
+          border: '1px solid rgba(255,255,255,0.03)',
+          zIndex: '60',
+          opacity: '0.9',
+          transform: 'scaleX(-1)',
+          transition: 'all 280ms ease'
+        }}
+      />
+      
+      {/* 绘图与 UI 两个 canvas（draw 镜像由 context transform 实现；ui 不镜像） */}
+      <canvas
+        ref={drawCanvasRef}
+        style={{
+          position: 'absolute',
+          left: '0',
+          top: '0',
+          width: '100%',
+          height: '100%',
+          zIndex: '30',
+          pointerEvents: 'none'
+        }}
+      />
+      <canvas
+        ref={uiCanvasRef}
+        style={{
+          position: 'absolute',
+          left: '0',
+          top: '0',
+          width: '100%',
+          height: '100%',
+          zIndex: '100', // 提高z-index，确保控制面板显示在最上面
+          pointerEvents: 'none'
+        }}
+      />
+      
+      <div style={{position: 'absolute', left: '1rem', top: '1rem', color: '#94a3b8', fontSize: '13px', zIndex: '80'}}>{t('cameraGestureDrawingPage.title')}</div>
+      <div style={{position: 'absolute', left: '50%', transform: 'translateX(-50%)', top: '1.8rem', color: '#94a3b8', fontSize: '13px', zIndex: '80', textAlign: 'center', maxWidth: '70%'}}>{t('cameraGestureDrawingPage.instructions')}</div>
+      <footer style={{position: 'absolute', right: '1rem', bottom: '1rem', color: '#94a3b8', fontSize: '12px', zIndex: '80'}}>{t('cameraGestureDrawingPage.footer')}</footer>
+      
+      {/* 真实 DOM 预览窗（可拖动、缩放、点击切换背景模式）*/}
+      <div
+        ref={previewElRef}
+        style={{
+          position: 'absolute',
+          right: '1rem',
+          top: '1rem',
+          width: '240px',
+          height: '135px',
+          zIndex: '70',
+          borderRadius: '12px',
+          overflow: 'hidden',
+          boxShadow: '0 10px 30px rgba(0,0,0,0.6)',
+          border: '1px solid rgba(255,255,255,0.06)',
+          background: 'linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.12))',
+          cursor: 'grab',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          transition: 'box-shadow 120ms ease'
+        }}
+        title={t('cameraGestureDrawingPage.previewHint')}
+      >
+        {/* 预览视频与主 video 使用同一视频流（赋值后） */}
         <video
-          ref={inputVideoRef}
+          ref={previewVideoRef}
           autoPlay
           playsInline
           muted
           style={{
-            position: 'absolute',
-            right: '1rem',
-            top: '1rem',
-            width: '240px',
-            height: '135px',
-            borderRadius: '12px',
+            width: '100%',
+            height: '100%',
             objectFit: 'cover',
-            boxShadow: '0 8px 30px rgba(2,6,23,0.7)',
-            border: '1px solid rgba(255,255,255,0.03)',
-            zIndex: '60',
-            opacity: '0.9',
-            transform: 'scaleX(-1)',
-            transition: 'all 280ms ease'
+            transform: 'scaleX(-1)'
           }}
         />
-        
-        {/* 绘图与 UI 两个 canvas（draw 镜像由 context transform 实现；ui 不镜像） */}
-        <canvas
-          ref={drawCanvasRef}
-          style={{
-            position: 'absolute',
-            left: '0',
-            top: '0',
-            width: '100%',
-            height: '100%',
-            zIndex: '30',
-            pointerEvents: 'none'
-          }}
-        />
-        <canvas
-          ref={uiCanvasRef}
-          style={{
-            position: 'absolute',
-            left: '0',
-            top: '0',
-            width: '100%',
-            height: '100%',
-            zIndex: '100', // 提高z-index，确保控制面板显示在最上面
-            pointerEvents: 'none'
-          }}
-        />
-        
-        <div style={{position: 'absolute', left: '1rem', top: '1rem', color: '#94a3b8', fontSize: '13px', zIndex: '80'}}>{t('cameraGestureDrawingPage.title')}</div>
-        <div style={{position: 'absolute', left: '50%', transform: 'translateX(-50%)', top: '1.8rem', color: '#94a3b8', fontSize: '13px', zIndex: '80', textAlign: 'center', maxWidth: '70%'}}>{t('cameraGestureDrawingPage.instructions')}</div>
-        <footer style={{position: 'absolute', right: '1rem', bottom: '1rem', color: '#94a3b8', fontSize: '12px', zIndex: '80'}}>{t('cameraGestureDrawingPage.footer')}</footer>
-        
-        {/* 真实 DOM 预览窗（可拖动、缩放、点击切换背景模式）*/}
         <div
-          ref={previewElRef}
+          ref={previewResizerRef}
           style={{
             position: 'absolute',
-            right: '1rem',
-            top: '1rem',
-            width: '240px',
-            height: '135px',
-            zIndex: '70',
-            borderRadius: '12px',
-            overflow: 'hidden',
-            boxShadow: '0 10px 30px rgba(0,0,0,0.6)',
-            border: '1px solid rgba(255,255,255,0.06)',
-            background: 'linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.12))',
-            cursor: 'grab',
+            right: '6px',
+            bottom: '6px',
+            width: '14px',
+            height: '14px',
+            background: 'rgba(255,255,255,0.08)',
+            borderRadius: '3px',
+            cursor: 'se-resize',
+            zIndex: '80',
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'center',
-            transition: 'box-shadow 120ms ease'
+            justifyContent: 'center'
           }}
-          title={t('cameraGestureDrawingPage.previewHint')}
+          title={t('cameraGestureDrawingPage.resizeHint')}
         >
-          {/* 预览视频与主 video 使用同一视频流（赋值后） */}
-          <video
-            ref={previewVideoRef}
-            autoPlay
-            playsInline
-            muted
-            style={{
-              width: '100%',
-              height: '100%',
-              objectFit: 'cover',
-              transform: 'scaleX(-1)'
-            }}
-          />
-          <div
-            ref={previewResizerRef}
-            style={{
-              position: 'absolute',
-              right: '6px',
-              bottom: '6px',
-              width: '14px',
-              height: '14px',
-              background: 'rgba(255,255,255,0.08)',
-              borderRadius: '3px',
-              cursor: 'se-resize',
-              zIndex: '80',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center'
-            }}
-            title={t('cameraGestureDrawingPage.resizeHint')}
-          >
-            <div style={{width: '8px', height: '8px', borderRight: '2px solid rgba(255,255,255,0.28)', borderBottom: '2px solid rgba(255,255,255,0.28)', transform: 'rotate(45deg)'}} />
-          </div>
+          <div style={{width: '8px', height: '8px', borderRight: '2px solid rgba(255,255,255,0.28)', borderBottom: '2px solid rgba(255,255,255,0.28)', transform: 'rotate(45deg)'}} />
         </div>
       </div>
+    </div>
       
       {/* 占位元素：确保页面有足够高度，避免 footer 与 fixed 内容重叠 */}
       <div style={{height: '85vh', width: '100%', pointerEvents: 'none'}} aria-hidden="true" />
