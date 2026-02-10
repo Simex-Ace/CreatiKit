@@ -1489,7 +1489,8 @@ const CameraGestureDrawing = () => {
     cameraBackgroundModeRef.current = !cameraBackgroundModeRef.current;
     const inputVideo = inputVideoRef.current;
     const previewEl = previewElRef.current;
-    const container = document.querySelector('div[style*="position: fixed"]') as HTMLElement;
+    // 使用容器 ref，而不是通过 style 字符串查询，避免开发/生产构建差异
+    const container = containerRef.current;
     
     if(container) {
       // 添加过渡效果，与video保持一致
