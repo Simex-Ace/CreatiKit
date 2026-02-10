@@ -1513,20 +1513,21 @@ const CameraGestureDrawing = () => {
       }
       
       if(cameraBackgroundModeRef.current) {
-        // 将主摄像头 video 拉到容器背景（全屏）
+        // 将主摄像头 video 拉到容器背景（全屏），此时隐藏预览窗
         inputVideo.style.left = '0';
         inputVideo.style.top = '0';
         inputVideo.style.right = 'auto';
-        inputVideo.style.width = container ? '100%' : '240px';
-        inputVideo.style.height = container ? '100%' : '135px';
+        inputVideo.style.width = container ? '100%' : '100vw';
+        inputVideo.style.height = container ? '100%' : '100vh';
         inputVideo.style.borderRadius = '0';
         inputVideo.style.boxShadow = 'none';
         inputVideo.style.zIndex = '0';
         inputVideo.style.opacity = '1';
+        inputVideo.style.pointerEvents = 'auto';
         // 全屏模式下保持镜像效果，用户习惯看到镜像的自己
         inputVideo.style.transform = 'scaleX(-1)';
       } else {
-        // 恢复到小预览模式
+        // 退出背景模式时，恢复为右上角隐藏的小窗（仅供 MediaPipe 使用）
         inputVideo.style.right = '1rem';
         inputVideo.style.top = '1rem';
         inputVideo.style.left = 'auto';
@@ -1534,9 +1535,9 @@ const CameraGestureDrawing = () => {
         inputVideo.style.height = '135px';
         inputVideo.style.borderRadius = '12px';
         inputVideo.style.boxShadow = '0 8px 30px rgba(2,6,23,0.7)';
-        inputVideo.style.zIndex = '60';
-        inputVideo.style.opacity = '0.9';
-        // 小预览模式下保持镜像效果
+        inputVideo.style.zIndex = '0';
+        inputVideo.style.opacity = '0';         // 仍然不可见
+        inputVideo.style.pointerEvents = 'none'; // 不拦截事件
         inputVideo.style.transform = 'scaleX(-1)';
       }
     }
@@ -1809,8 +1810,9 @@ const CameraGestureDrawing = () => {
           objectFit: 'cover',
           boxShadow: '0 8px 30px rgba(2,6,23,0.7)',
           border: '1px solid rgba(255,255,255,0.03)',
-          zIndex: '60',
-          opacity: '0.9',
+          zIndex: '0',
+          opacity: '0', // 默认隐藏，由预览窗负责展示
+          pointerEvents: 'none',
           transform: 'scaleX(-1)',
           transition: 'all 280ms ease'
         }}
