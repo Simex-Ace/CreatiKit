@@ -1588,14 +1588,17 @@ const CameraGestureDrawing = () => {
     let dragging = false, resizing = false;
     let startX = 0, startY = 0, startLeft = 0, startTop = 0, startW = 0, startH = 0;
     
-    // 使用 style.left/top/right to position. We'll use right/top for initial but transform to left/top when dragging first begins for simplicity
+    // 使用 style.left/top/right to position. We'll use right/top for initial but transform to left/top when拖动开始前统一一次
     const ensurePositioning = () => {
       const cs = getComputedStyle(el);
       if(cs.right !== 'auto') {
         // convert right/top to left/top
         const right = parseFloat(cs.right);
         const top = parseFloat(cs.top);
-        el.style.left = (window.innerWidth - right - el.offsetWidth) + 'px';
+        // 以容器宽度为基准，保持与初始 right 间距一致，避免先靠内再“弹回去”
+        const container = containerRef.current;
+        const containerWidth = container ? container.clientWidth : window.innerWidth;
+        el.style.left = (containerWidth - right - el.offsetWidth) + 'px';
         el.style.top = top + 'px';
         el.style.right = 'auto';
       }
@@ -1853,7 +1856,7 @@ const CameraGestureDrawing = () => {
         ref={previewElRef}
         style={{
           position: 'absolute',
-          right: '2.5rem',
+          right: '1.5rem',
           top: '1rem',
           width: '240px',
           height: '135px',
