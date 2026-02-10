@@ -1853,7 +1853,7 @@ const CameraGestureDrawing = () => {
         ref={previewElRef}
         style={{
           position: 'absolute',
-          right: '1rem',
+          right: '2.5rem',
           top: '1rem',
           width: '240px',
           height: '135px',
