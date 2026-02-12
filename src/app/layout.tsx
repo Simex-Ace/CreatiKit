@@ -11,6 +11,7 @@ import { ToastProvider } from '@/contexts/ToastContext';
 import { Toaster } from '@/components/ui/toast';
 import { I18nProvider } from '@/contexts/I18nContext';
 import { LanguageWrapper } from '@/components/LanguageWrapper';
+import { GoogleAdsense } from '@/components/GoogleAdsense';
 import { getMetadataForLocale, getDefaultMetadata } from '@/lib/metadata';
 import { getLocaleFromPath } from '@/lib/i18n-routing';
 
@@ -132,6 +133,7 @@ export default function RootLayout({
       <body className={inter.className}>
         <I18nProvider>
           <LanguageWrapper />
+          <GoogleAdsense />
           <StructuredData />
           <ThemeProvider>
             <ToastProvider>
