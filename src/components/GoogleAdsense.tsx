@@ -24,7 +24,7 @@ export function GoogleAdsense() {
       async
       src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2256987655997953"
       crossOrigin="anonymous"
-      strategy="afterInteractive"
+      strategy="beforeInteractive" // 尽量贴近官方要求：在 <head> 中尽早加载
     />
   );
 }
