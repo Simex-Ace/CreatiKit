@@ -96,7 +96,12 @@ export async function generateMetadata(): Promise<Metadata> {
     other: {
       // 百度网站验证（已配置）
       'baidu-site-verification': 'codeva-vrSUPylANY',
-      
+
+      // Google AdSense 站点验证（Meta tag 方法）
+      // 等价于在 <head> 中添加：
+      // <meta name="google-adsense-account" content="ca-pub-2256987655979539" />
+      'google-adsense-account': 'ca-pub-2256987655979539',
+
       // 搜狗验证（在搜狗站长平台获取后取消注释）
       // 'sogou_site_verification': 'your-sogou-verification-code',
       
