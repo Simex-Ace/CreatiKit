@@ -595,7 +595,7 @@ const DataToChartPage = () => {
                           <path d="M13 17V5"/>
                           <path d="M8 17v-3"/>
                         </svg>
-                        图表预览
+                        {t('dataToChartPage.chartPreview')}
                       </div>
                       <button 
                         onClick={exportChart} 
@@ -607,7 +607,7 @@ const DataToChartPage = () => {
                         {isLoading ? (
                           <>
                             <span className="animate-spin inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full"></span>
-                            导出中...
+                            {t('dataToChartPage.exporting')}
                           </>
                         ) : (
                           <>
@@ -616,7 +616,7 @@ const DataToChartPage = () => {
                               <polyline points="7 10 12 15 17 10"/>
                               <line x1="12" y1="15" x2="12" y2="3"/>
                             </svg>
-                            导出图片
+                            {t('dataToChartPage.exportImage')}
                           </>
                         )}
                       </button>

@@ -1413,6 +1413,8 @@
     "groupField": "グループ化フィールド（オプション）",
     "noGroup": "グループ化なし",
     "chartPreview": "チャートプレビュー",
+    "exportImage": "画像をエクスポート",
+    "exporting": "エクスポート中...",
     "exportChart": "チャートをエクスポート",
     "dataFormatError": "データ形式エラー",
     "enterValidData": "有効なCSVまたはJSONデータを入力してください"

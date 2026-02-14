@@ -1414,6 +1414,8 @@
     "groupField": "그룹화 필드 (선택사항)",
     "noGroup": "그룹화 없음",
     "chartPreview": "차트 미리보기",
+    "exportImage": "이미지 내보내기",
+    "exporting": "내보내는 중...",
     "exportChart": "차트 내보내기",
     "dataFormatError": "데이터 형식 오류",
     "enterValidData": "유효한 CSV 또는 JSON 데이터를 입력해주세요"
