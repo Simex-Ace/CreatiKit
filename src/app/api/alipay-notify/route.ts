@@ -7,7 +7,7 @@
  * 环境变量：PHP_BACKEND_URL（本仓库 PHP 后端地址，如 cpolar 或部署 URL）
  */
 
-export async function POST(request) {
+export async function POST(request: Request) {
     const phpBackend = process.env.PHP_BACKEND_URL;
     if (!phpBackend) {
       console.error('PHP_BACKEND_URL 未配置');
