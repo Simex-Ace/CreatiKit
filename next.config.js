@@ -8,7 +8,7 @@ const nextConfig = {
   
   // 图片优化
   images: {
-    domains: ['localhost'],
+    domains: ['localhost', 'picsum.photos', 'api.dicebear.com'],
     remotePatterns: [
       {
         protocol: 'https',

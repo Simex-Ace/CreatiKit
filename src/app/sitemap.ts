@@ -1,5 +1,6 @@
 import { MetadataRoute } from 'next';
 import { locales, addLocaleToPath } from '@/lib/i18n-routing';
+import { articles } from '@/content/articles';
 
 // 定义路由项的类型，确保类型安全
 type RouteItem = {
@@ -51,6 +52,15 @@ const routes: RouteItem[] = [
   { path: '/ecosystem-sandbox', lastModified: new Date(), changeFrequency: 'weekly', priority: 0.7 },
   { path: '/emoji-collection', lastModified: new Date(), changeFrequency: 'weekly', priority: 0.6 },
   { path: '/camera-gesture-drawing', lastModified: new Date(), changeFrequency: 'weekly', priority: 0.6 },
+
+  // 博客与原创文章（30 篇）
+  { path: '/blog', lastModified: new Date(), changeFrequency: 'weekly', priority: 0.8 },
+  ...articles.map((a) => ({
+    path: `/blog/${a.slug}`,
+    lastModified: new Date(a.date),
+    changeFrequency: 'monthly' as const,
+    priority: 0.6,
+  })),
 ];
 
 export default function sitemap(): MetadataRoute.Sitemap {
