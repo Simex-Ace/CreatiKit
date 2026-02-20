@@ -1,0 +1,3 @@
+# Ads.txt for creatikit.asia - Google AdSense
+# https://support.google.com/adsense/answer/12171612
+google.com, pub-2256987655979539, DIRECT, f08c47fec0942fa0
