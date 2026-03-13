@@ -4,7 +4,7 @@ import { LocalizedLink } from '@/components/LocalizedLink';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
-import { Menu, X } from 'lucide-react';
+import { Menu, X, ChevronDown } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import { useDevelopmentAlert } from '@/lib/useDevelopmentAlert';
@@ -28,6 +28,7 @@ export function Header() {
   const { toast } = useToast();
   const { t } = useI18n();
 
+  const [moreOpen, setMoreOpen] = useState(false);
   const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
   
   // 当用户登录成功后，自动关闭弹窗
@@ -85,6 +86,33 @@ export function Header() {
             <LocalizedLink href="/color-palette" className="text-sm font-medium relative px-3 py-1.5 rounded-md transition-colors duration-300 ease-out hover:text-primary before:absolute before:inset-0 before:rounded-md before:bg-accent/30 before:opacity-0 before:transition-opacity before:duration-300 before:ease-out hover:before:opacity-100">
               <span className="relative z-10">{t('nav.colorPalette')}</span>
             </LocalizedLink>
+            <div
+              className="relative group"
+              onMouseEnter={() => setMoreOpen(true)}
+              onMouseLeave={() => setMoreOpen(false)}
+            >
+              <button
+                type="button"
+                className="text-sm font-medium flex items-center gap-1 px-3 py-1.5 rounded-md transition-colors duration-300 ease-out hover:text-primary before:absolute before:inset-0 before:rounded-md before:bg-accent/30 before:opacity-0 before:transition-opacity before:duration-300 before:ease-out hover:before:opacity-100 relative"
+              >
+                <span className="relative z-10">{t('nav.more') || 'More'}</span>
+                <ChevronDown className="h-4 w-4 relative z-10" />
+              </button>
+              <div className={`absolute top-full left-0 mt-1 py-2 min-w-[160px] rounded-lg border bg-background shadow-lg z-50 ${moreOpen ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'} transition-all duration-200 ${moreOpen ? 'pointer-events-auto' : ''}`}>
+                <LocalizedLink href="/about" className="block px-4 py-2 text-sm hover:bg-muted">
+                  {t('footer.about')}
+                </LocalizedLink>
+                <LocalizedLink href="/privacy" className="block px-4 py-2 text-sm hover:bg-muted">
+                  {t('footer.privacy')}
+                </LocalizedLink>
+                <LocalizedLink href="/terms" className="block px-4 py-2 text-sm hover:bg-muted">
+                  {t('footer.terms')}
+                </LocalizedLink>
+                <LocalizedLink href="/contact" className="block px-4 py-2 text-sm hover:bg-muted">
+                  {t('footer.contact')}
+                </LocalizedLink>
+              </div>
+            </div>
           </nav>
         </div>
         <div className="flex items-center space-x-4">
@@ -145,6 +173,18 @@ export function Header() {
             </LocalizedLink>
             <LocalizedLink href="/whiteboard" className="block py-2 px-3 text-sm font-medium relative rounded-md transition-all duration-300 ease-out hover:text-primary hover:translate-x-1 before:absolute before:inset-0 before:rounded-md before:bg-accent/30 before:opacity-0 before:transition-opacity before:duration-300 before:ease-out hover:before:opacity-100">
               <span className="relative z-10">{t('nav.whiteboard')}</span>
+            </LocalizedLink>
+            <LocalizedLink href="/about" className="block py-2 px-3 text-sm font-medium rounded-md hover:text-primary">
+              {t('footer.about')}
+            </LocalizedLink>
+            <LocalizedLink href="/privacy" className="block py-2 px-3 text-sm font-medium rounded-md hover:text-primary">
+              {t('footer.privacy')}
+            </LocalizedLink>
+            <LocalizedLink href="/terms" className="block py-2 px-3 text-sm font-medium rounded-md hover:text-primary">
+              {t('footer.terms')}
+            </LocalizedLink>
+            <LocalizedLink href="/contact" className="block py-2 px-3 text-sm font-medium rounded-md hover:text-primary">
+              {t('footer.contact')}
             </LocalizedLink>
             {!loading && (
             <div className="pt-2 flex flex-col space-y-2">

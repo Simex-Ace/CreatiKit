@@ -215,12 +215,12 @@ export default function Home() {
       // 有搜索内容时，显示所有匹配的工具
       return filteredTools;
     }
-    // 没有搜索内容时，显示前3个工具 + 展开后的其他工具
+    // 没有搜索内容时，显示前 defaultVisibleCount 个工具（移动端6个，桌面端9个），其余需展开查看
     if (showAllTools) {
       return filteredTools;
     }
-    return filteredTools.slice(0, 3);
-  }, [searchQuery, showAllTools, filteredTools]);
+    return filteredTools.slice(0, defaultVisibleCount);
+  }, [searchQuery, showAllTools, filteredTools, defaultVisibleCount]);
 
   // 检查工具是否应该显示
   const shouldShowTool = (toolKey: string) => {
@@ -254,6 +254,18 @@ export default function Home() {
           >
             {t('home.learnMore')}
           </Button>
+        </div>
+      </section>
+
+      {/* 平台介绍正文 - 提升内容深度，满足 AdSense 质量要求 */}
+      <section className="py-8 md:py-12 max-w-4xl mx-auto space-y-6 text-muted-foreground">
+        <h2 className="text-xl sm:text-2xl font-bold text-foreground">{t('home.platformIntroTitle')}</h2>
+        <div className="space-y-4 text-sm sm:text-base leading-relaxed">
+          <p>{t('home.platformIntroPara1')}</p>
+          <p>{t('home.platformIntroPara2')}</p>
+          <p>{t('home.platformIntroPara3')}</p>
+          <p>{t('home.platformIntroPara4')}</p>
+          <p>{t('home.platformIntroPara5')}</p>
         </div>
       </section>
 

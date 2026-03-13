@@ -1,7 +1,7 @@
 'use client'
 
 import { Card } from '@/components/ui/card';
-import { Shield, Lock, Eye, FileCheck } from 'lucide-react';
+import { Shield, Lock, Eye, FileCheck, Cookie } from 'lucide-react';
 import { useI18n } from '@/contexts/I18nContext';
 
 export default function PrivacyPage() {
@@ -52,6 +52,20 @@ export default function PrivacyPage() {
             </h2>
             <p className="text-muted-foreground leading-relaxed">
               {t('privacyPage.userAccountDesc')}
+            </p>
+          </section>
+
+          <section className="mt-8">
+            <h2 className="text-2xl font-semibold mb-4 flex items-center">
+              <Cookie className="h-6 w-6 mr-2 text-amber-600" />
+              {t('privacyPage.cookiesTitle')}
+            </h2>
+            <p className="text-muted-foreground leading-relaxed mb-4">
+              {t('privacyPage.cookiesDesc')}
+            </p>
+            <h3 className="text-lg font-semibold mb-2">{t('privacyPage.adsenseTitle')}</h3>
+            <p className="text-muted-foreground leading-relaxed">
+              {t('privacyPage.adsenseDesc')}
             </p>
           </section>
 

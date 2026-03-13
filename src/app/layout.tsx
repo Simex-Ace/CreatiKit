@@ -5,7 +5,7 @@ import { headers } from 'next/headers';
 import './globals.css';
 import { Header } from '@/components/header';
 import { ThemeProvider } from '@/components/ui/theme-provider';
-import { StructuredData } from '@/components/StructuredData';
+import { StructuredDataServer } from '@/components/StructuredDataServer';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { ToastProvider } from '@/contexts/ToastContext';
 import { Toaster } from '@/components/ui/toast';
@@ -139,7 +139,7 @@ export default function RootLayout({
         <I18nProvider>
           <LanguageWrapper />
           <GoogleAdsense />
-          <StructuredData />
+          <StructuredDataServer />
           <ThemeProvider>
             <ToastProvider>
               <AuthProvider>

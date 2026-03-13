@@ -619,6 +619,29 @@ export default function ImageCompressor() {
           </ol>
         </Card>
       </div>
+
+      {/* 常见问题 - 提升页面内容深度，满足 AdSense 内容质量要求 */}
+      <div className="space-y-4">
+        <h2 className="text-xl font-semibold">{t('compressPage.faqTitle')}</h2>
+        <Card className="p-6 space-y-6">
+          <div>
+            <h3 className="font-medium text-foreground mb-2">{t('compressPage.faqQ1')}</h3>
+            <p className="text-sm text-muted-foreground leading-relaxed">{t('compressPage.faqA1')}</p>
+          </div>
+          <div>
+            <h3 className="font-medium text-foreground mb-2">{t('compressPage.faqQ2')}</h3>
+            <p className="text-sm text-muted-foreground leading-relaxed">{t('compressPage.faqA2')}</p>
+          </div>
+          <div>
+            <h3 className="font-medium text-foreground mb-2">{t('compressPage.faqQ3')}</h3>
+            <p className="text-sm text-muted-foreground leading-relaxed">{t('compressPage.faqA3')}</p>
+          </div>
+          <div>
+            <h3 className="font-medium text-foreground mb-2">{t('compressPage.faqQ4')}</h3>
+            <p className="text-sm text-muted-foreground leading-relaxed">{t('compressPage.faqA4')}</p>
+          </div>
+        </Card>
+      </div>
       
       {/* 开发中提示（保持一致性，虽然当前页面功能已全部实现） */}
       <DevelopmentInProgress 

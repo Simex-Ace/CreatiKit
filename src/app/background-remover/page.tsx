@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useRef, useState, useCallback } from 'react';
+import { Card } from '@/components/ui/card';
 import { useI18n } from '@/contexts/I18nContext';
 
 export default function BackgroundRemover() {
@@ -515,6 +516,39 @@ export default function BackgroundRemover() {
         
         {/* Canvas元素 */}
         <canvas ref={canvasRef} className="hidden"></canvas>
+
+        {/* 使用说明与常见问题 - 提升内容深度，满足 AdSense 质量要求 */}
+        <div className="max-w-4xl mx-auto mt-12 space-y-8 px-4">
+          <div className="space-y-4">
+            <h2 className="text-xl font-semibold">{t('backgroundRemoverPage.guideTitle')}</h2>
+            <Card className="p-6">
+              <ol className="space-y-4">
+                {[1, 2, 3, 4].map((i) => (
+                  <li key={i} className="flex gap-3">
+                    <div className="flex-shrink-0 h-6 w-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-medium">
+                      {i}
+                    </div>
+                    <div>
+                      <p className="font-medium">{t(`backgroundRemoverPage.guideStep${i}Title`)}</p>
+                      <p className="text-sm text-muted-foreground">{t(`backgroundRemoverPage.guideStep${i}Desc`)}</p>
+                    </div>
+                  </li>
+                ))}
+              </ol>
+            </Card>
+          </div>
+          <div className="space-y-4">
+            <h2 className="text-xl font-semibold">{t('backgroundRemoverPage.faqTitle')}</h2>
+            <Card className="p-6 space-y-6">
+              {[1, 2, 3].map((i) => (
+                <div key={i}>
+                  <h3 className="font-medium text-foreground mb-2">{t(`backgroundRemoverPage.faqQ${i}`)}</h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed">{t(`backgroundRemoverPage.faqA${i}`)}</p>
+                </div>
+              ))}
+            </Card>
+          </div>
+        </div>
       </div>
     </div>
   );

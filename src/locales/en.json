@@ -133,7 +133,8 @@
     "imageCompress": "Image Compress",
     "modelViewer": "3D Viewer",
     "colorPalette": "Color Palette",
-    "whiteboard": "Whiteboard"
+    "whiteboard": "Whiteboard",
+    "more": "More"
   },
   "home": {
     "title": "CreatiKit.io - Free Online Creative Toolkit",
@@ -172,6 +173,12 @@
     "showLess": "Show Less",
     "searchPlaceholder": "Search tools...",
     "noSearchResults": "No matching tools found",
+    "platformIntroTitle": "About CreatiKit.io",
+    "platformIntroPara1": "CreatiKit.io is a free online toolkit for designers, developers, educators, and creative professionals. We offer more than 25 practical tools covering image processing, design assistance, code development, data visualization, science experiment simulation, and more, helping users complete creative and development tasks efficiently without installing any software.",
+    "platformIntroPara2": "For image processing, we provide image compression, background removal, pixel art generation, GIF decomposition and composition tools for website optimization, social media publishing, and design output. For design assistance, color palette, SVG editor, CSS animator, and whiteboard tools help you quickly complete color schemes, vector editing, and animation creation.",
+    "platformIntroPara3": "In development and productivity, code formatter, Markdown editor, hash calculator, timestamp converter, QR code generator, and other tools effectively improve development and operations. The SEO text analyzer helps content creators optimize article structure and keyword layout.",
+    "platformIntroPara4": "Education tools such as interactive physics lab, chemistry lab, and ecosystem sandbox provide a safe, intuitive virtual experiment environment for students and teachers. Audio visualizer, online piano, and air writing offer unique experiences for learning and recreation.",
+    "platformIntroPara5": "All tools process data locally in your browser. Your files are never uploaded to our servers, ensuring data privacy and security. We continuously update and improve existing features and add new tools to provide a better online tool experience.",
     "learnMoreAlert": "CreatiKit.io is a powerful online creative toolkit offering image compression, 3D preview, code tools, and more. All processing is done locally to protect your privacy.",
     "tools": {
       "chemistryLab": {
@@ -395,7 +402,16 @@
     "guideStep3Title": "Start compression",
     "guideStep3Desc": "Click the compress button and wait for processing to complete",
     "guideStep4Title": "Download results",
-    "guideStep4Desc": "View compression results, download images individually or in batch"
+    "guideStep4Desc": "View compression results, download images individually or in batch",
+    "faqTitle": "Frequently Asked Questions",
+    "faqQ1": "How do I choose the right compression quality?",
+    "faqA1": "Generally, 70–85% quality looks very close to the original while significantly reducing file size. For web or social media, use 75–80%; for print or archiving, 85–95% is recommended. Try adjusting from high to low to find the best balance.",
+    "faqQ2": "What's the difference between JPG, PNG, and WebP?",
+    "faqA2": "JPG is best for photos and gradients with high compression but no transparency. PNG supports transparency and lossless compression, ideal for logos and screenshots. WebP usually produces smaller files at similar quality and is supported by modern browsers. Choosing 'Auto' lets the tool pick the best format based on your image.",
+    "faqQ3": "Will compression damage my images?",
+    "faqA3": "Lossy compression (e.g., JPG or WebP at lower quality) may slightly reduce image quality, but at reasonable settings the difference is often hard to notice. PNG lossless compression preserves full quality. All processing is done locally in your browser; original files are never modified or uploaded.",
+    "faqQ4": "Does it support batch compression? How many images per batch?",
+    "faqA4": "Yes. You can upload multiple images at once for batch compression. Each image is processed independently with its own quality and format settings. Capacity depends on your device; we recommend up to about 20 images per batch for a smooth experience."
   },
   "modelViewerPage": {
     "loading": "Loading 3D model viewer...",
@@ -1077,7 +1093,23 @@
     "processedImage": "Processed Image",
     "colorPickerActive": "🎨 Click anywhere on screen to pick color (Press Esc to cancel)",
     "selectColorFromImage": "🎨 Select Color from Image",
-    "clickToSelectColor": "✨ Click anywhere on the image to select the color to remove"
+    "clickToSelectColor": "✨ Click anywhere on the image to select the color to remove",
+    "guideTitle": "How to Use",
+    "guideStep1Title": "Upload image",
+    "guideStep1Desc": "Drag and drop or click to upload JPG, PNG, GIF images",
+    "guideStep2Title": "Select color to remove",
+    "guideStep2Desc": "Use the color picker to click on the background in the image, or use quick colors or enter a hex value",
+    "guideStep3Title": "Adjust threshold",
+    "guideStep3Desc": "Use the \"magic strength\" slider to control the removal range; precise mode keeps more detail, loose mode removes more similar colors",
+    "guideStep4Title": "Download result",
+    "guideStep4Desc": "When done, right-click to save or use the download button to get a PNG with transparent background",
+    "faqTitle": "FAQ",
+    "faqQ1": "What types of images work best?",
+    "faqA1": "Best for images with relatively uniform backgrounds and clear subject-background contrast, such as product photos, ID photos, or portraits on solid-color backgrounds. Complex gradients may need multiple threshold adjustments.",
+    "faqQ2": "How do the color picker and threshold work together?",
+    "faqA2": "The color picker selects the base color to remove; the threshold determines how \"close\" a pixel must be to that color to be removed. Higher threshold removes more; too low may leave residue. Start around 50 and fine-tune.",
+    "faqQ3": "Are images uploaded to a server?",
+    "faqA3": "No. All processing is done locally in your browser. Images are never uploaded to any server, protecting your privacy."
   },
   "cameraGestureDrawingPage": {
     "title": "Air Writing · Gesture Control (MediaPipe Hands)",
@@ -1723,6 +1755,10 @@
     "noTracking": "No Tracking: We use minimal analytics tools and do not track your browsing behavior",
     "userAccount": "User Account Information",
     "userAccountDesc": "If you choose to register an account, we only collect necessary account information (such as email address) for account management and service provision. We do not sell your information to third parties.",
+    "cookiesTitle": "Cookies and Local Storage",
+    "cookiesDesc": "To provide a better user experience, we may use browser local storage (LocalStorage) to save your preferences (e.g., theme, language). This data is stored only on your device and is not transmitted to our servers. Some third-party services (such as advertising below) may use Cookies to deliver personalized ads.",
+    "adsenseTitle": "Advertising and Google AdSense",
+    "adsenseDesc": "This site may display ads provided by Google AdSense. Google uses Cookies to serve relevant ads based on your visit history. You can manage ad personalization at Google ad settings (https://adssettings.google.com) or opt out of interest-based ads at http://www.aboutads.info/choices. Our advertising partners have their own privacy policies; we recommend reviewing them.",
     "lastUpdated": "Last Updated",
     "lastUpdatedDesc": "This privacy policy was last updated on:",
     "contactUs": "If you have any questions about privacy, please contact us through the",

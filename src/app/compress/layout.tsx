@@ -3,6 +3,7 @@ import { headers } from 'next/headers';
 import { getToolMetadata } from '@/lib/tool-metadata';
 import { getLocaleFromPath } from '@/lib/i18n-routing';
 import { ToolStructuredData } from '@/components/ToolStructuredData';
+import { CompressFAQPageSchema } from '@/components/FAQPageSchema';
 
 /**
  * 动态生成多语言元数据
@@ -26,6 +27,7 @@ export default function CompressLayout({
   return (
     <>
       <ToolStructuredData path="/compress" />
+      <CompressFAQPageSchema />
       {children}
     </>
   );
