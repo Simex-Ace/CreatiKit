@@ -25,6 +25,7 @@ export default function Home() {
   const [defaultVisibleCount, setDefaultVisibleCount] = useState(6);
   const [searchQuery, setSearchQuery] = useState('');
   const [learnMoreModalVisible, setLearnMoreModalVisible] = useState(false);
+  const [platformIntroExpanded, setPlatformIntroExpanded] = useState(false);
   
   // 根据屏幕大小设置默认显示数量（移动端6个，桌面端9个）- 使用防抖优化性能
   useEffect(() => {
@@ -257,16 +258,49 @@ export default function Home() {
         </div>
       </section>
 
-      {/* 平台介绍正文 - 提升内容深度，满足 AdSense 质量要求 */}
-      <section className="py-8 md:py-12 max-w-4xl mx-auto space-y-6 text-muted-foreground">
-        <h2 className="text-xl sm:text-2xl font-bold text-foreground">{t('home.platformIntroTitle')}</h2>
-        <div className="space-y-4 text-sm sm:text-base leading-relaxed">
-          <p>{t('home.platformIntroPara1')}</p>
-          <p>{t('home.platformIntroPara2')}</p>
-          <p>{t('home.platformIntroPara3')}</p>
-          <p>{t('home.platformIntroPara4')}</p>
-          <p>{t('home.platformIntroPara5')}</p>
-        </div>
+      {/* 平台介绍 - 可收缩卡片，精简首屏 */}
+      <section className="py-6 md:py-10 max-w-3xl mx-auto px-4">
+        <Card className="overflow-hidden border-2 border-primary/10 bg-gradient-to-br from-muted/30 via-background to-muted/20 hover:border-primary/20 transition-colors duration-300">
+          <div className="p-5 md:p-6">
+            <div className="flex items-start justify-between gap-4">
+              <h2 className="text-lg sm:text-xl font-bold text-foreground shrink-0">{t('home.platformIntroTitle')}</h2>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="shrink-0 text-muted-foreground hover:text-primary -mr-2 -mt-1"
+                onClick={() => setPlatformIntroExpanded(!platformIntroExpanded)}
+              >
+                {platformIntroExpanded ? (
+                  <>
+                    <ChevronUp className="h-4 w-4 mr-1" />
+                    {t('home.platformIntroCollapse')}
+                  </>
+                ) : (
+                  <>
+                    <ChevronDown className="h-4 w-4 mr-1" />
+                    {t('home.platformIntroExpand')}
+                  </>
+                )}
+              </Button>
+            </div>
+            <p className="text-sm text-muted-foreground mt-3 leading-relaxed">
+              {t('home.platformIntroSummary')}
+            </p>
+            <div
+              className={`grid transition-all duration-300 ease-out overflow-hidden ${platformIntroExpanded ? 'grid-rows-[1fr] opacity-100 mt-5 pt-5 border-t' : 'grid-rows-[0fr] opacity-0'}`}
+            >
+              <div className="min-h-0">
+                <div className="space-y-3 text-sm text-muted-foreground leading-relaxed">
+                  <p>{t('home.platformIntroPara1')}</p>
+                  <p>{t('home.platformIntroPara2')}</p>
+                  <p>{t('home.platformIntroPara3')}</p>
+                  <p>{t('home.platformIntroPara4')}</p>
+                  <p>{t('home.platformIntroPara5')}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </Card>
       </section>
 
       <Separator />
